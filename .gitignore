@@ -1,0 +1,23 @@
+# WordPress uploads (media files)
+uploads/
+
+# WordPress cache and generated files
+cache/
+upgrade/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment / secrets
+.env
+wp-config.php
