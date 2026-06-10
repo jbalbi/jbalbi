@@ -1,0 +1,179 @@
+/* ─── JB3 Members – Frontend + Admin Styles ───────────────────────────── */
+
+/* Container */
+.jb3-form {
+    max-width: 680px;
+    margin: 0 auto;
+    font-size: 0.95rem;
+}
+
+.jb3-form--login {
+    max-width: 420px;
+}
+
+/* Grid row */
+.jb3-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 1.4rem;
+}
+
+@media (max-width: 540px) {
+    .jb3-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Field wrapper */
+.jb3-field {
+    margin-bottom: 1.2rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.jb3-field--checkbox {
+    margin-bottom: 1rem;
+}
+
+/* Labels — heredan el color del tema */
+.jb3-field > label {
+    font-weight: 600;
+    margin-bottom: .35rem;
+}
+
+.req {
+    color: var(--primary-color, #c0392b);
+    margin-left: 2px;
+}
+
+/* Inputs & selects */
+.jb3-form input[type="text"],
+.jb3-form input[type="email"],
+.jb3-form input[type="tel"],
+.jb3-form select {
+    width: 100%;
+    padding: .55rem .8rem;
+    border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+    border-radius: 5px;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    color: inherit;
+    background-color: transparent;
+    transition: border-color .15s, box-shadow .15s;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.jb3-form input:focus,
+.jb3-form select:focus {
+    outline: none;
+    border-color: var(--primary-color, #0073aa);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color, #FF5500) 25%, transparent);
+}
+
+/* Placeholder */
+.jb3-form input::placeholder {
+    color: color-mix(in srgb, currentColor 40%, transparent);
+}
+
+/* Options del select — el OS siempre dibuja fondo claro, forzamos texto oscuro */
+.jb3-form select option {
+    background-color: #ffffff;
+    color: #222222;
+}
+
+/* Checkbox group */
+.jb3-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem 1.5rem;
+    padding: .5rem 0;
+}
+
+.jb3-cb-label {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.jb3-cb-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary-color, #0073aa);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* Required note */
+.jb3-required-note {
+    font-size: .82rem;
+    opacity: 0.6;
+    margin: .2rem 0 1.4rem;
+}
+
+/* Submit button */
+.jb3-btn {
+    display: inline-block;
+    padding: .7rem 2rem;
+    background: var(--primary-color, #0073aa);
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s;
+    font-family: inherit;
+}
+
+.jb3-btn:hover,
+.jb3-btn:focus {
+    opacity: .85;
+    outline: none;
+}
+
+/* Notices */
+.jb3-notice {
+    padding: 1rem 1.2rem;
+    border-radius: 6px;
+    margin-bottom: 1.4rem;
+    border-left: 4px solid;
+    font-size: .95rem;
+}
+
+.jb3-notice ul {
+    margin: .3rem 0 0 1rem;
+    padding: 0;
+}
+
+.jb3-notice ul li {
+    margin-bottom: .2rem;
+}
+
+.jb3-success {
+    background: rgba(46, 125, 50, .15);
+    border-color: #2e7d32;
+}
+
+.jb3-error {
+    background: rgba(192, 57, 43, .15);
+    border-color: var(--primary-color, #c0392b);
+}
+
+.jb3-warning {
+    background: rgba(245, 127, 23, .15);
+    border-color: #f57f17;
+}
+
+.jb3-info {
+    background: rgba(21, 101, 192, .15);
+    border-color: #1565c0;
+}
+
+/* ─── Admin styles ────────────────────────────────────────────────────────── */
+
+.jb3-admin .jb3-admin-form table.form-table th {
+    width: 180px;
+}

@@ -1,0 +1,113 @@
+<?php
+defined( 'ABSPATH' ) || exit;
+
+class JB3_Login {
+
+    public static function init() {
+        add_shortcode( 'jb3_login',  [ __CLASS__, 'shortcode' ] );
+        add_shortcode( 'jb3_logout', [ __CLASS__, 'logout_shortcode' ] );
+        add_action( 'wp_logout',     [ __CLASS__, 'on_wp_logout' ] );
+    }
+
+    // ─── Shortcode ────────────────────────────────────────────────────────────
+
+    public static function shortcode() {
+        // Never redirect during REST API requests (Gutenberg save/preview).
+        if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+            return '';
+        }
+
+        // Only redirect actual JB3 members — admins can visit this page freely.
+        if ( is_user_logged_in() && jb3_is_member( get_current_user_id() ) ) {
+            $dashboard = (int) get_option( 'jb3_dashboard_page_id' );
+            if ( $dashboard ) {
+                wp_redirect( esc_url_raw( get_permalink( $dashboard ) ) );
+                exit;
+            }
+            return '<p class="jb3-notice jb3-info">'
+                . esc_html__( 'Ya estás logueado.', 'jb3-members' )
+                . '</p>';
+        }
+
+        $sent   = false;
+        $errors = [];
+
+        // Error passed back from magic-link handler via query string.
+        if ( ! empty( $_GET['jb3_error'] ) ) {
+            $code = sanitize_text_field( wp_unslash( $_GET['jb3_error'] ) );
+            if ( 'invalid_link' === $code ) {
+                $errors[] = __( 'El enlace de acceso no es válido o ha expirado. Por favor solicitá uno nuevo.', 'jb3-members' );
+            }
+        }
+
+        if ( isset( $_POST['jb3_login_nonce'] )
+            && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['jb3_login_nonce'] ) ), 'jb3_login' ) ) {
+            [ $errors, $sent ] = self::process();
+        }
+
+        ob_start();
+        include JB3_DIR . 'public/views/login-form.php';
+        return ob_get_clean();
+    }
+
+    // ─── Logout shortcode ────────────────────────────────────────────────────
+
+    public static function logout_shortcode() {
+        // Redirect before any output — shortcode content fires too late for header().
+        add_action( 'template_redirect', function() {
+            if ( is_user_logged_in() ) {
+                wp_logout();
+            }
+            wp_redirect( home_url( '/' ) );
+            exit;
+        } );
+        return '';
+    }
+
+    // ─── JB3 token cleanup on any WordPress logout ───────────────────────────
+
+    public static function on_wp_logout( $user_id ) {
+        if ( $user_id && jb3_is_member( $user_id ) ) {
+            JB3_Magic_Link::force_logout( $user_id );
+        }
+    }
+
+    // ─── Form processing ──────────────────────────────────────────────────────
+
+    private static function process() {
+        $email = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
+
+        if ( ! is_email( $email ) ) {
+            return [ [ __( 'Por favor ingresá un email válido.', 'jb3-members' ) ], false ];
+        }
+
+        // Rate limit: max 3 solicitudes por email cada 10 minutos.
+        $rl_key   = 'jb3_rl_' . md5( strtolower( $email ) );
+        $rl_count = (int) get_transient( $rl_key );
+        if ( $rl_count >= 3 ) {
+            return [ [ __( 'Demasiadas solicitudes. Esperá unos minutos antes de intentar nuevamente.', 'jb3-members' ) ], false ];
+        }
+        set_transient( $rl_key, $rl_count + 1, 10 * MINUTE_IN_SECONDS );
+
+        $user = get_user_by( 'email', $email );
+
+        // If user doesn't exist or isn't a jb3_member, show the same generic
+        // success message to prevent email enumeration.
+        if ( ! $user || ! jb3_is_member( $user->ID ) ) {
+            return [ [], true ];
+        }
+
+        // User exists but is still pending approval.
+        if ( ! jb3_is_approved( $user->ID ) ) {
+            return [
+                [ __( 'Tu cuenta está pendiente de aprobación. Recibirás un correo cuando sea activada.', 'jb3-members' ) ],
+                false,
+            ];
+        }
+
+        // All good: generate and send magic link.
+        JB3_Email::send_magic_link( $user->ID );
+
+        return [ [], true ];
+    }
+}
