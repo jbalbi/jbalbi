@@ -4,29 +4,52 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Bulk sync: WordPress (source of truth) → Mailchimp.
  *
- * Phase 1 — WP → MC:  upsert every approved jb3_member + every admin.
- *                      Members with newsletter=0 are archived instead.
- * Phase 2 — MC → WP:  contacts in Mailchimp that have no WP account are
- *                      archived (DELETE = archive, not permanent delete).
+ * Architecture: server-side WP-Cron chain. The admin page only polls for
+ * status every few seconds; the actual processing runs on the server even
+ * if the browser is closed.
  *
- * Uses Mailchimp Batch API so each AJAX chunk submits up to WP_CHUNK/MC_CHUNK
- * operations in a single HTTP call; Mailchimp processes them asynchronously.
- * Progress tracks "submitted to Mailchimp", not "confirmed by Mailchimp".
+ * Phase 1 — WP → MC
+ *   Iterates approved jb3_members in chunks of WP_CHUNK. Members with
+ *   newsletter=0 are archived instead of upserted. Admin users are always
+ *   subscribed (for test emails). Uses Mailchimp Batch API — one HTTP call
+ *   per chunk, Mailchimp processes operations asynchronously.
+ *   Optimization: update_meta_cache() preloads all user meta in one SQL
+ *   query per chunk instead of N×7 individual queries.
+ *
+ * Phase 2 — MC → Archive
+ *   Fetches Mailchimp members in pages of MC_CHUNK. For each page, a single
+ *   SQL IN() query checks which emails exist in WordPress. Those that don't
+ *   are archived via Batch API DELETE (archive = recoverable, not permanent).
+ *
+ * Cron chain: each cron tick processes one chunk, schedules the next tick
+ * immediately via wp_schedule_single_event(time()) + spawn_cron(), and saves
+ * state to wp_options. The chain is self-sustaining without browser presence.
  */
 class JB3_Sync {
 
-    const OPTION   = 'jb3_sync_state';
-    const WP_CHUNK = 100;   // WP users per batch submission
-    const MC_CHUNK = 500;   // MC members per fetch page
+    const OPTION    = 'jb3_sync_state';
+    const CRON_HOOK = 'jb3_sync_process_chunk';
+    const WP_CHUNK  = 500;  // Users per Batch API submission
+    const MC_CHUNK  = 500;  // MC members per fetch page
 
     // -------------------------------------------------------------------------
-    // Boot
+    // Boot & teardown
     // -------------------------------------------------------------------------
 
     public static function init() {
+        // AJAX handlers (admin-ajax.php runs in admin context — fine here)
         add_action( 'wp_ajax_jb3_sync_start',  [ __CLASS__, 'ajax_start'  ] );
-        add_action( 'wp_ajax_jb3_sync_chunk',  [ __CLASS__, 'ajax_chunk'  ] );
         add_action( 'wp_ajax_jb3_sync_cancel', [ __CLASS__, 'ajax_cancel' ] );
+        add_action( 'wp_ajax_jb3_sync_status', [ __CLASS__, 'ajax_status' ] );
+
+        // Cron hook — must be registered outside is_admin() so it fires
+        // when wp-cron.php runs (non-admin context).
+        add_action( self::CRON_HOOK, [ __CLASS__, 'cron_process_chunk' ] );
+    }
+
+    /** Called on plugin deactivation to avoid orphan scheduled events. */
+    public static function deactivate() {
+        wp_clear_scheduled_hook( self::CRON_HOOK );
     }
 
     public static function get_state() {
@@ -34,7 +57,7 @@ class JB3_Sync {
     }
 
     // -------------------------------------------------------------------------
-    // AJAX: initialize a new sync run
+    // AJAX: start a new sync run
     // -------------------------------------------------------------------------
 
     public static function ajax_start() {
@@ -42,6 +65,9 @@ class JB3_Sync {
         if ( ! current_user_can( 'manage_options' ) ) {
             wp_send_json_error( 'No autorizado.' );
         }
+
+        // Cancel any in-progress sync before starting fresh
+        wp_clear_scheduled_hook( self::CRON_HOOK );
 
         $wp_total  = count( get_users( [ 'role' => 'jb3_member', 'number' => -1, 'fields' => 'ID' ] ) );
         $admin_ids = array_map( 'intval', get_users( [ 'role' => 'administrator', 'number' => -1, 'fields' => 'ID' ] ) );
@@ -58,25 +84,52 @@ class JB3_Sync {
             'archived'   => 0,
             'errors'     => [],
             'started_at' => current_time( 'mysql' ),
+            'updated_at' => current_time( 'mysql' ),
         ];
 
         update_option( self::OPTION, $state, false );
+
+        // Fire first chunk immediately
+        wp_schedule_single_event( time(), self::CRON_HOOK );
+        spawn_cron();
+
         wp_send_json_success( $state );
     }
 
     // -------------------------------------------------------------------------
-    // AJAX: process one chunk (advance state by one step)
+    // AJAX: cancel and clear all state
     // -------------------------------------------------------------------------
 
-    public static function ajax_chunk() {
+    public static function ajax_cancel() {
         check_ajax_referer( 'jb3_sync_nonce' );
         if ( ! current_user_can( 'manage_options' ) ) {
             wp_send_json_error( 'No autorizado.' );
         }
+        wp_clear_scheduled_hook( self::CRON_HOOK );
+        delete_option( self::OPTION );
+        wp_send_json_success();
+    }
 
+    // -------------------------------------------------------------------------
+    // AJAX: return current state (polled by admin page every few seconds)
+    // -------------------------------------------------------------------------
+
+    public static function ajax_status() {
+        check_ajax_referer( 'jb3_sync_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( 'No autorizado.' );
+        }
+        wp_send_json_success( self::get_state() );
+    }
+
+    // =========================================================================
+    // Cron: process one chunk, then schedule the next
+    // =========================================================================
+
+    public static function cron_process_chunk() {
         $state = get_option( self::OPTION );
-        if ( ! is_array( $state ) ) {
-            wp_send_json_error( 'No hay sincronización activa. Iniciá de nuevo.' );
+        if ( ! is_array( $state ) || 'done' === $state['phase'] ) {
+            return;
         }
 
         if ( 'wp_to_mc' === $state['phase'] ) {
@@ -85,21 +138,14 @@ class JB3_Sync {
             $state = self::process_mc_chunk( $state );
         }
 
+        $state['updated_at'] = current_time( 'mysql' );
         update_option( self::OPTION, $state, false );
-        wp_send_json_success( $state );
-    }
 
-    // -------------------------------------------------------------------------
-    // AJAX: cancel and clear state
-    // -------------------------------------------------------------------------
-
-    public static function ajax_cancel() {
-        check_ajax_referer( 'jb3_sync_nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_send_json_error( 'No autorizado.' );
+        if ( 'done' !== $state['phase'] ) {
+            // Self-scheduling chain: schedule next chunk and wake cron immediately
+            wp_schedule_single_event( time(), self::CRON_HOOK );
+            spawn_cron();
         }
-        delete_option( self::OPTION );
-        wp_send_json_success();
     }
 
     // =========================================================================
@@ -114,7 +160,7 @@ class JB3_Sync {
             return $state;
         }
 
-        // --- Still have jb3_members to process ---
+        // --- Still have jb3_members to iterate ---
         if ( $state['wp_offset'] < $state['wp_total'] ) {
             $user_ids = get_users( [
                 'role'    => 'jb3_member',
@@ -124,6 +170,9 @@ class JB3_Sync {
                 'orderby' => 'ID',
                 'order'   => 'ASC',
             ] );
+
+            // Preload all user meta in a single SQL query (vs N×7 individual queries)
+            update_meta_cache( 'user', $user_ids );
 
             $operations = [];
             foreach ( $user_ids as $uid ) {
@@ -146,7 +195,7 @@ class JB3_Sync {
             return $state;
         }
 
-        // --- Sync admin users (once) ---
+        // --- Sync admin users once ---
         if ( ! $state['admin_done'] ) {
             $operations = [];
             foreach ( $state['admins'] as $admin_id ) {
@@ -185,7 +234,7 @@ class JB3_Sync {
             return $state;
         }
 
-        // Fetch one page of MC members (any non-archived status)
+        // Fetch one page of MC members (omitting status = all non-archived)
         $url = 'https://' . $server . '.api.mailchimp.com/3.0/lists/' . $list_id . '/members?' . http_build_query( [
             'count'  => self::MC_CHUNK,
             'offset' => $state['mc_offset'],
@@ -218,25 +267,28 @@ class JB3_Sync {
             $state['mc_total'] = $total;
         }
 
-        // Build archive ops for contacts that have no WP account
-        $to_archive = [];
-        foreach ( $members as $mc_member ) {
-            $email   = strtolower( trim( $mc_member['email_address'] ) );
-            $wp_user = get_user_by( 'email', $email );
-            if ( ! $wp_user ) {
-                $to_archive[] = [
-                    'method' => 'DELETE',
-                    'path'   => '/lists/' . $list_id . '/members/' . md5( $email ),
-                ];
-            }
-        }
+        if ( ! empty( $members ) ) {
+            // Single SQL query to check which of these MC emails exist in WP
+            $mc_emails = array_map( fn( $m ) => strtolower( trim( $m['email_address'] ) ), $members );
+            $in_wp     = self::emails_in_wp( $mc_emails );
 
-        if ( ! empty( $to_archive ) ) {
-            $err = self::submit_batch( $to_archive, $api_key, $server );
-            if ( $err ) {
-                $state['errors'][] = 'Lote archivo (offset ' . $state['mc_offset'] . '): ' . $err;
-            } else {
-                $state['archived'] += count( $to_archive );
+            $to_archive = [];
+            foreach ( $mc_emails as $email ) {
+                if ( ! isset( $in_wp[ $email ] ) ) {
+                    $to_archive[] = [
+                        'method' => 'DELETE',
+                        'path'   => '/lists/' . $list_id . '/members/' . md5( $email ),
+                    ];
+                }
+            }
+
+            if ( ! empty( $to_archive ) ) {
+                $err = self::submit_batch( $to_archive, $api_key, $server );
+                if ( $err ) {
+                    $state['errors'][] = 'Lote archivo (offset ' . $state['mc_offset'] . '): ' . $err;
+                } else {
+                    $state['archived'] += count( $to_archive );
+                }
             }
         }
 
@@ -254,8 +306,8 @@ class JB3_Sync {
     // =========================================================================
 
     /**
-     * Build a PUT (subscribe) or DELETE (archive) batch operation for a jb3_member.
-     * Returns null for pending members and invalid users.
+     * Build a PUT (subscribe) or DELETE (archive) Batch API operation for a
+     * jb3_member. Returns null for pending/invalid users.
      */
     private static function build_member_op( int $user_id, string $list_id ): ?array {
         $user = get_userdata( $user_id );
@@ -263,7 +315,7 @@ class JB3_Sync {
             return null;
         }
 
-        // Only sync approved members
+        // Only approved members are synced
         if ( 'approved' !== jb3_get_status( $user_id ) ) {
             return null;
         }
@@ -271,7 +323,7 @@ class JB3_Sync {
         $email = strtolower( trim( $user->user_email ) );
         $hash  = md5( $email );
 
-        // Opted out of newsletter → archive in MC (mirrors sync_user behavior)
+        // Opted out → archive (mirrors individual sync_user behavior)
         if ( ! (bool) get_user_meta( $user_id, 'jb3_newsletter', true ) ) {
             return [
                 'method' => 'DELETE',
@@ -279,7 +331,7 @@ class JB3_Sync {
             ];
         }
 
-        // Build interest map (general + newsletter-countries)
+        // Build interest map (general + newsletter-country groups)
         $interests_raw = (array) get_user_meta( $user_id, 'jb3_interests', true );
         $interests     = [];
         foreach ( array_keys( JB3_Mailchimp::get_cached_interests() ) as $id ) {
@@ -313,8 +365,8 @@ class JB3_Sync {
     }
 
     /**
-     * Build a PUT (subscribe) batch operation for an administrator.
-     * Admins are always subscribed so they can receive test emails.
+     * Build a PUT (always subscribed) Batch API operation for an admin user.
+     * Admins are always synced so they receive test emails.
      */
     private static function build_admin_op( int $user_id, string $list_id ): ?array {
         $user = get_userdata( $user_id );
@@ -345,12 +397,38 @@ class JB3_Sync {
     }
 
     // =========================================================================
-    // Mailchimp Batch API helper
+    // Helpers
     // =========================================================================
 
     /**
-     * POST /3.0/batches — Mailchimp processes ops asynchronously.
-     * Returns null on success, or an error string.
+     * Returns a hash-set of WP user emails (lowercased) that appear in the
+     * given $emails list. Single SQL IN() query — O(1) per lookup thereafter.
+     *
+     * @param  string[] $emails Lowercased email addresses from Mailchimp.
+     * @return array<string, true>  email → true for emails found in WP.
+     */
+    private static function emails_in_wp( array $emails ): array {
+        if ( empty( $emails ) ) {
+            return [];
+        }
+        global $wpdb;
+        $placeholders = implode( ',', array_fill( 0, count( $emails ), '%s' ) );
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $rows = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT LOWER(user_email) FROM {$wpdb->users} WHERE LOWER(user_email) IN ($placeholders)",
+                ...$emails
+            )
+        );
+        return array_flip( $rows );
+    }
+
+    /**
+     * POST /3.0/batches — Mailchimp queues operations asynchronously.
+     * Returns null on success, error string on failure.
+     *
+     * @param  array  $operations Array of Batch API operation objects.
+     * @return string|null
      */
     private static function submit_batch( array $operations, string $api_key, string $server ): ?string {
         $resp = wp_remote_post(
@@ -371,17 +449,13 @@ class JB3_Sync {
 
         $code = wp_remote_retrieve_response_code( $resp );
         if ( $code < 200 || $code >= 300 ) {
-            return 'API error ' . $code . ': ' . wp_remote_retrieve_body( $resp );
+            return 'API error ' . $code;
         }
 
         return null;
     }
 
-    // =========================================================================
-    // Helpers
-    // =========================================================================
-
-    /** Returns [ api_key, list_id, server ] or [ '', '', '' ] if not configured. */
+    /** Returns [ api_key, list_id, server ] or [ '', '', '' ] if unconfigured. */
     private static function mc_creds(): array {
         $api_key = get_option( 'jb3_mc_api_key', '' );
         $list_id = get_option( 'jb3_mc_list_id', '' );

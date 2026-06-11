@@ -42,6 +42,7 @@ foreach ( $jb3_includes as $file ) {
 register_activation_hook( __FILE__, [ 'JB3_Database', 'install' ] );
 register_activation_hook( __FILE__, [ 'JB3_Cleanup', 'schedule' ] );
 register_deactivation_hook( __FILE__, [ 'JB3_Cleanup', 'deactivate' ] );
+register_deactivation_hook( __FILE__, [ 'JB3_Sync', 'deactivate' ] );
 
 add_action( 'plugins_loaded', 'jb3_members_boot' );
 
@@ -53,6 +54,7 @@ function jb3_members_boot() {
     JB3_Auth_Guard::init();
     JB3_Cleanup::init();
     JB3_Mailchimp::init();
+    JB3_Sync::init(); // must run outside is_admin() — cron fires in non-admin context
 
     if ( is_admin() ) {
         JB3_Admin::init();
