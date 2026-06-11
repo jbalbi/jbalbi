@@ -330,10 +330,14 @@ class JB3_Sync {
         if ( ! $user ) {
             return null;
         }
-        $hash = md5( strtolower( trim( $user->user_email ) ) );
 
-        // Build interests from WP meta — explicit false for every group so MC
-        // clears anything that was previously set for this admin.
+        $email = strtolower( trim( $user->user_email ) );
+        $hash  = md5( $email );
+
+        if ( ! (bool) get_user_meta( $user_id, 'jb3_newsletter', true ) ) {
+            return [ 'method' => 'DELETE', 'path' => '/lists/' . $list_id . '/members/' . $hash ];
+        }
+
         $interests_raw = (array) get_user_meta( $user_id, 'jb3_interests', true );
         $interests     = [];
         foreach ( array_keys( JB3_Mailchimp::get_cached_interests() ) as $id ) {
