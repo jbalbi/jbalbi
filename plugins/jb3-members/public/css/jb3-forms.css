@@ -54,7 +54,7 @@
     width: 100%;
     padding: .55rem .8rem;
     border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
-    border-radius: 5px;
+    border-radius: 0;
     font-size: 0.95rem;
     line-height: 1.4;
     color: inherit;
@@ -120,7 +120,7 @@
     background: var(--primary-color, #0073aa);
     color: #fff;
     border: none;
-    border-radius: 5px;
+    border-radius: 0;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -137,7 +137,7 @@
 /* Notices */
 .jb3-notice {
     padding: 1rem 1.2rem;
-    border-radius: 6px;
+    border-radius: 0;
     margin-bottom: 1.4rem;
     border-left: 4px solid;
     font-size: .95rem;

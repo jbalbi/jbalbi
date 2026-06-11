@@ -1406,7 +1406,7 @@ class JB3_Admin {
                         <li><?php esc_html_e( 'Los administradores siempre se sincronizan (para recibir emails de prueba).', 'jb3-members' ); ?></li>
                         <li><?php esc_html_e( 'Fase 2 — Mailchimp → Archivo: contactos en Mailchimp sin cuenta en WordPress quedan archivados (recuperables, no se borran definitivamente).', 'jb3-members' ); ?></li>
                     </ul>
-                    <p style="margin:10px 0 0;background:#fff3cd;border:1px solid #ffc107;padding:8px 10px;border-radius:3px;">
+                    <p style="margin:10px 0 0;background:#fff3cd;border:1px solid #ffc107;padding:8px 10px;">
                         <strong><?php esc_html_e( 'Mantené el browser abierto durante el proceso.', 'jb3-members' ); ?></strong>
                         <?php esc_html_e( 'Si se corta la conexión, el progreso queda guardado — recargá la página y hacé clic en "Reanudar".', 'jb3-members' ); ?>
                     </p>
@@ -1421,13 +1421,13 @@ class JB3_Admin {
                 <!-- Progress bars -->
                 <div id="jb3-sync-progress" style="display:none;margin:20px 0;">
                     <p style="margin:0 0 4px;font-weight:600;"><?php esc_html_e( 'Fase 1: WordPress → Mailchimp', 'jb3-members' ); ?></p>
-                    <div style="background:#e0e0e0;border-radius:4px;height:22px;width:100%;max-width:520px;overflow:hidden;">
+                    <div style="background:#e0e0e0;height:22px;width:100%;max-width:520px;overflow:hidden;">
                         <div id="jb3-bar-wp" style="background:#0073aa;height:22px;width:0%;transition:width .5s;"></div>
                     </div>
                     <p id="jb3-label-wp" style="margin:4px 0 16px;color:#555;font-size:13px;"></p>
 
                     <p style="margin:0 0 4px;font-weight:600;"><?php esc_html_e( 'Fase 2: Mailchimp → Archivo', 'jb3-members' ); ?></p>
-                    <div style="background:#e0e0e0;border-radius:4px;height:22px;width:100%;max-width:520px;overflow:hidden;">
+                    <div style="background:#e0e0e0;height:22px;width:100%;max-width:520px;overflow:hidden;">
                         <div id="jb3-bar-mc" style="background:#e65100;height:22px;width:0%;transition:width .5s;"></div>
                     </div>
                     <p id="jb3-label-mc" style="margin:4px 0 0;color:#555;font-size:13px;"></p>

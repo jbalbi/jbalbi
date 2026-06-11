@@ -157,7 +157,7 @@ $posted_interests = isset( $_POST['interests'] ) && is_array( $_POST['interests'
     <h3 style="margin:0 0 .5rem;"><?php esc_html_e( 'Eliminar cuenta', 'jb3-members' ); ?></h3>
     <p style="margin:0 0 1rem;opacity:.7;"><?php esc_html_e( 'Al eliminar tu cuenta se borrarán todos tus datos del sitio y serás dado de baja de nuestras listas de correo.', 'jb3-members' ); ?></p>
     <button type="submit" name="jb3_delete_account" value="1"
-            style="background:#c0392b;color:#fff;border:none;padding:.6rem 1.4rem;border-radius:5px;cursor:pointer;font-size:.95rem;">
+            style="background:#c0392b;color:#fff;border:none;padding:.6rem 1.4rem;cursor:pointer;font-size:.95rem;">
         <?php esc_html_e( 'Eliminar mi cuenta', 'jb3-members' ); ?>
     </button>
 </form>

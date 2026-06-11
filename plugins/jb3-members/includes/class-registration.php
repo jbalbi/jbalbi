@@ -219,7 +219,7 @@ class JB3_Registration {
 
     private static function approval_page( $color, $heading, $message ) {
         return '<div style="font-family:sans-serif;max-width:560px;margin:60px auto;padding:40px;'
-            . 'background:#fafafa;border-radius:10px;border-top:4px solid ' . esc_attr( $color ) . ';text-align:center;">'
+            . 'background:#fafafa;border-top:4px solid ' . esc_attr( $color ) . ';text-align:center;">'
             . '<h2 style="color:' . esc_attr( $color ) . ';">' . esc_html( $heading ) . '</h2>'
             . '<p style="font-size:1.1em;color:#333;">' . wp_kses( $message, [ 'strong' => [] ] ) . '</p>'
             . '</div>';

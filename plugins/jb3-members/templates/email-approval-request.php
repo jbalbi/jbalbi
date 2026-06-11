@@ -30,7 +30,7 @@ $site_name   = get_bloginfo( 'name' );
 <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;color:#333;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:20px 10px;">
 <tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+<table width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#fff;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
 
     <!-- Header -->
     <tr><td style="background:#0073aa;padding:28px 32px;">
@@ -69,9 +69,9 @@ $site_name   = get_bloginfo( 'name' );
 
         <p style="margin:28px 0 8px;font-size:15px;">¿Querés aprobar a este usuario?</p>
 
-        <table cellpadding="0" cellspacing="0"><tr><td style="border-radius:5px;background:#2e7d32;">
+        <table cellpadding="0" cellspacing="0"><tr><td style="background:#2e7d32;">
             <a href="<?php echo esc_url( $approve_url ); ?>"
-               style="display:inline-block;padding:14px 32px;color:#fff;text-decoration:none;font-size:16px;font-weight:700;border-radius:5px;">
+               style="display:inline-block;padding:14px 32px;color:#fff;text-decoration:none;font-size:16px;font-weight:700;">
                 ✓ &nbsp;<?php esc_html_e( 'Aprobar usuario', 'jb3-members' ); ?>
             </a>
         </td></tr></table>
