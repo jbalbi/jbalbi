@@ -24,6 +24,9 @@ class JB3_Admin {
         add_action( 'wp_ajax_jb3_logout_user',        [ __CLASS__, 'ajax_logout_user' ] );
         add_action( 'wp_ajax_jb3_fetch_mc_interests', [ __CLASS__, 'ajax_fetch_mc_interests' ] );
 
+        // Bulk Mailchimp sync (AJAX handlers live in JB3_Sync).
+        JB3_Sync::init();
+
         // Settings registration.
         add_action( 'admin_init', [ __CLASS__, 'register_settings' ] );
 
@@ -83,6 +86,14 @@ class JB3_Admin {
             'jb3-import',
             [ __CLASS__, 'page_import' ]
         );
+        add_submenu_page(
+            'jb3-members',
+            __( 'Sincronizar Mailchimp', 'jb3-members' ),
+            __( 'Sincronizar Mailchimp', 'jb3-members' ),
+            'manage_options',
+            'jb3-sync',
+            [ __CLASS__, 'page_sync' ]
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -90,7 +101,12 @@ class JB3_Admin {
     // -------------------------------------------------------------------------
 
     public static function enqueue( $hook ) {
-        if ( ! in_array( $hook, [ 'toplevel_page_jb3-members', 'jb3-members_page_jb3-settings' ], true ) ) {
+        $allowed = [
+            'toplevel_page_jb3-members',
+            'jb3-members_page_jb3-settings',
+            'jb3-members_page_jb3-sync',
+        ];
+        if ( ! in_array( $hook, $allowed, true ) ) {
             return;
         }
         wp_enqueue_style( 'jb3-admin', JB3_URL . 'public/css/jb3-forms.css', [], JB3_VERSION );
@@ -1354,6 +1370,290 @@ class JB3_Admin {
         set_transient( 'jb3_import_results_' . $uid, $results, 60 );
         wp_safe_redirect( add_query_arg( [ 'page' => 'jb3-import' ], admin_url( 'admin.php' ) ) );
         exit;
+    }
+
+    // -------------------------------------------------------------------------
+    // Sync Mailchimp page
+    // -------------------------------------------------------------------------
+
+    public static function page_sync() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Sin permiso.', 'jb3-members' ) );
+        }
+
+        $has_mc = get_option( 'jb3_mc_api_key' ) && get_option( 'jb3_mc_list_id' );
+        $state  = JB3_Sync::get_state();
+        $nonce  = wp_create_nonce( 'jb3_sync_nonce' );
+
+        // Count totals for informational display
+        $wp_members = count( get_users( [ 'role' => 'jb3_member', 'number' => -1, 'fields' => 'ID' ] ) );
+        $wp_admins  = count( get_users( [ 'role' => 'administrator', 'number' => -1, 'fields' => 'ID' ] ) );
+        ?>
+        <div class="wrap" id="jb3-sync-wrap">
+            <h1><?php esc_html_e( 'Sincronizar con Mailchimp', 'jb3-members' ); ?></h1>
+
+            <?php if ( ! $has_mc ) : ?>
+                <div class="notice notice-error">
+                    <p>
+                        <?php
+                        echo wp_kses(
+                            sprintf(
+                                __( 'Mailchimp no está configurado. <a href="%s">Ir a Configuración</a>.', 'jb3-members' ),
+                                esc_url( admin_url( 'admin.php?page=jb3-settings' ) )
+                            ),
+                            [ 'a' => [ 'href' => [] ] ]
+                        );
+                        ?>
+                    </p>
+                </div>
+            <?php else : ?>
+
+                <div class="notice notice-info inline" style="margin:16px 0;padding:12px 16px;">
+                    <p style="margin:0 0 8px;"><strong><?php esc_html_e( '¿Qué hace esta sincronización?', 'jb3-members' ); ?></strong></p>
+                    <ul style="list-style:disc;margin:0 0 0 20px;">
+                        <li><?php esc_html_e( 'Fase 1 — WordPress → Mailchimp: sube todos los miembros aprobados con newsletter activo. Los que tienen newsletter inactivo quedan archivados en Mailchimp.', 'jb3-members' ); ?></li>
+                        <li><?php esc_html_e( 'Los usuarios administradores se sincronizan siempre (para recibir emails de prueba).', 'jb3-members' ); ?></li>
+                        <li><?php esc_html_e( 'Fase 2 — Mailchimp → Archivo: los contactos en Mailchimp que no tienen cuenta en WordPress quedan archivados (no se borran definitivamente; son recuperables desde Mailchimp).', 'jb3-members' ); ?></li>
+                    </ul>
+                    <p style="margin:8px 0 0;">
+                        <?php
+                        printf(
+                            esc_html__( 'Base de datos actual: %1$d miembros · %2$d administradores.', 'jb3-members' ),
+                            $wp_members,
+                            $wp_admins
+                        );
+                        ?>
+                    </p>
+                </div>
+
+                <div id="jb3-sync-ui" style="margin:20px 0;">
+
+                    <!-- Progress area (hidden until sync starts or state exists) -->
+                    <div id="jb3-sync-progress" style="display:none;margin-bottom:20px;">
+
+                        <p style="margin:0 0 4px;font-weight:600;"><?php esc_html_e( 'Fase 1: WordPress → Mailchimp', 'jb3-members' ); ?></p>
+                        <div style="background:#e0e0e0;border-radius:4px;height:22px;width:100%;max-width:520px;overflow:hidden;">
+                            <div id="jb3-bar-wp" style="background:#0073aa;height:22px;width:0%;transition:width .4s;"></div>
+                        </div>
+                        <p id="jb3-label-wp" style="margin:4px 0 16px;color:#555;"></p>
+
+                        <p style="margin:0 0 4px;font-weight:600;"><?php esc_html_e( 'Fase 2: Mailchimp → Archivo', 'jb3-members' ); ?></p>
+                        <div style="background:#e0e0e0;border-radius:4px;height:22px;width:100%;max-width:520px;overflow:hidden;">
+                            <div id="jb3-bar-mc" style="background:#e65100;height:22px;width:0%;transition:width .4s;"></div>
+                        </div>
+                        <p id="jb3-label-mc" style="margin:4px 0 0;color:#555;"></p>
+
+                    </div>
+
+                    <!-- Results area (shown when done) -->
+                    <div id="jb3-sync-results" style="display:none;"></div>
+
+                    <!-- Errors area -->
+                    <div id="jb3-sync-errors" style="display:none;margin-top:12px;"></div>
+
+                    <!-- Action buttons -->
+                    <p style="margin-top:16px;">
+                        <button id="jb3-btn-start" class="button button-primary button-large">
+                            <?php esc_html_e( 'Iniciar sincronización', 'jb3-members' ); ?>
+                        </button>
+                        <button id="jb3-btn-cancel" class="button button-large" style="display:none;margin-left:8px;">
+                            <?php esc_html_e( 'Cancelar', 'jb3-members' ); ?>
+                        </button>
+                        <span id="jb3-sync-spinner" class="spinner" style="display:none;float:none;vertical-align:middle;margin-left:8px;"></span>
+                    </p>
+
+                </div>
+
+                <script>
+                (function () {
+                    var ajaxurl  = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
+                    var nonce    = <?php echo wp_json_encode( $nonce ); ?>;
+                    var state    = <?php echo wp_json_encode( $state ?: null ); ?>;
+                    var running  = false;
+
+                    var btnStart   = document.getElementById('jb3-btn-start');
+                    var btnCancel  = document.getElementById('jb3-btn-cancel');
+                    var spinner    = document.getElementById('jb3-sync-spinner');
+                    var divProg    = document.getElementById('jb3-sync-progress');
+                    var divRes     = document.getElementById('jb3-sync-results');
+                    var divErr     = document.getElementById('jb3-sync-errors');
+                    var barWp      = document.getElementById('jb3-bar-wp');
+                    var labelWp    = document.getElementById('jb3-label-wp');
+                    var barMc      = document.getElementById('jb3-bar-mc');
+                    var labelMc    = document.getElementById('jb3-label-mc');
+
+                    function escHtml(s) {
+                        return String(s)
+                            .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                            .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+                    }
+
+                    function post(action, cb) {
+                        var fd = new FormData();
+                        fd.append('action', action);
+                        fd.append('_ajax_nonce', nonce);
+                        fetch(ajaxurl, { method: 'POST', body: fd })
+                            .then(function(r){ return r.json(); })
+                            .then(cb)
+                            .catch(function(e){
+                                running = false;
+                                setSpinner(false);
+                                alert('Error de red: ' + e.message + '. Recargá la página para ver el estado actual.');
+                            });
+                    }
+
+                    function setSpinner(on) {
+                        spinner.style.display = on ? 'inline-block' : 'none';
+                        spinner.className = on ? 'spinner is-active' : 'spinner';
+                    }
+
+                    function pct(done, total) {
+                        if (total <= 0) return 0;
+                        return Math.min(100, Math.round(done * 100 / total));
+                    }
+
+                    function renderState() {
+                        if (!state) {
+                            divProg.style.display = 'none';
+                            divRes.style.display  = 'none';
+                            divErr.style.display  = 'none';
+                            btnStart.disabled     = false;
+                            btnStart.textContent  = <?php echo wp_json_encode( __( 'Iniciar sincronización', 'jb3-members' ) ); ?>;
+                            btnCancel.style.display = 'none';
+                            return;
+                        }
+
+                        var phase = state.phase;
+
+                        if (phase === 'done') {
+                            // --- Results ---
+                            divProg.style.display = 'none';
+                            var html = '<div class="notice notice-success inline" style="padding:12px 16px;">'
+                                     + '<p style="margin:0;"><strong>' + <?php echo wp_json_encode( __( 'Sincronización completada.', 'jb3-members' ) ); ?> + '</strong></p>'
+                                     + '<p style="margin:4px 0 0;">'
+                                     + escHtml(state.upserted) + ' <?php echo esc_js( __( 'usuario(s) enviados a Mailchimp', 'jb3-members' ) ); ?>.<br>'
+                                     + escHtml(state.archived) + ' <?php echo esc_js( __( 'contacto(s) archivados', 'jb3-members' ) ); ?>.<br>'
+                                     + '<?php echo esc_js( __( 'Iniciada:', 'jb3-members' ) ); ?> ' + escHtml(state.started_at)
+                                     + '</p></div>';
+                            divRes.innerHTML = html;
+                            divRes.style.display = 'block';
+
+                            btnStart.disabled     = false;
+                            btnStart.textContent  = <?php echo wp_json_encode( __( 'Sincronizar de nuevo', 'jb3-members' ) ); ?>;
+                            btnCancel.style.display = 'none';
+
+                        } else {
+                            // --- In progress ---
+                            divProg.style.display = 'block';
+                            divRes.style.display  = 'none';
+
+                            // Phase 1 bar
+                            var p1done  = (phase === 'mc_to_wp' || phase === 'done');
+                            var wp_done = p1done ? state.wp_total : state.wp_offset;
+                            var wp_pct  = p1done ? 100 : pct(state.wp_offset, state.wp_total);
+                            barWp.style.width = wp_pct + '%';
+                            labelWp.textContent = escHtml(state.upserted) + ' <?php echo esc_js( __( 'usuario(s) enviados', 'jb3-members' ) ); ?>';
+
+                            // Phase 2 bar
+                            if (phase === 'mc_to_wp') {
+                                var mc_pct = state.mc_total > 0 ? pct(state.mc_offset, state.mc_total) : 0;
+                                barMc.style.width = mc_pct + '%';
+                                labelMc.textContent = (state.mc_total > 0
+                                    ? state.mc_offset + ' / ' + state.mc_total + ' — '
+                                    : '<?php echo esc_js( __( 'Verificando...', 'jb3-members' ) ); ?> — ')
+                                    + escHtml(state.archived) + ' <?php echo esc_js( __( 'archivados', 'jb3-members' ) ); ?>';
+                            } else {
+                                barMc.style.width = '0%';
+                                labelMc.textContent = '<?php echo esc_js( __( 'Pendiente', 'jb3-members' ) ); ?>';
+                            }
+
+                            btnStart.disabled       = true;
+                            btnCancel.style.display = 'inline-block';
+                        }
+
+                        // Errors
+                        if (state.errors && state.errors.length > 0) {
+                            var errHtml = '<details><summary style="cursor:pointer;color:#c0392b;">'
+                                        + state.errors.length + ' <?php echo esc_js( __( 'error(s) — clic para ver', 'jb3-members' ) ); ?>'
+                                        + '</summary><ul style="margin:8px 0 0 20px;list-style:disc;">';
+                            state.errors.forEach(function(e){ errHtml += '<li>' + escHtml(e) + '</li>'; });
+                            errHtml += '</ul></details>';
+                            divErr.innerHTML     = errHtml;
+                            divErr.style.display = 'block';
+                        } else {
+                            divErr.style.display = 'none';
+                        }
+                    }
+
+                    function processChunk() {
+                        if (!running) return;
+                        setSpinner(true);
+                        post('jb3_sync_chunk', function(resp) {
+                            setSpinner(false);
+                            if (!resp.success) {
+                                running = false;
+                                alert('Error: ' + resp.data);
+                                return;
+                            }
+                            state = resp.data;
+                            renderState();
+                            if (state.phase !== 'done') {
+                                setTimeout(processChunk, 150);
+                            } else {
+                                running = false;
+                            }
+                        });
+                    }
+
+                    // --- Start button ---
+                    btnStart.addEventListener('click', function () {
+                        if (running) return;
+                        running = true;
+                        divRes.style.display = 'none';
+                        btnStart.disabled    = true;
+                        btnStart.textContent = <?php echo wp_json_encode( __( 'Iniciando…', 'jb3-members' ) ); ?>;
+                        setSpinner(true);
+
+                        post('jb3_sync_start', function(resp) {
+                            setSpinner(false);
+                            if (!resp.success) {
+                                running = false;
+                                btnStart.disabled = false;
+                                alert('Error al iniciar: ' + resp.data);
+                                return;
+                            }
+                            state = resp.data;
+                            renderState();
+                            processChunk();
+                        });
+                    });
+
+                    // --- Cancel button ---
+                    btnCancel.addEventListener('click', function () {
+                        running = false;
+                        setSpinner(false);
+                        post('jb3_sync_cancel', function() {
+                            state = null;
+                            renderState();
+                        });
+                    });
+
+                    // --- Restore state on page load ---
+                    if (state && state.phase !== 'done') {
+                        // Sync was interrupted; show state and offer to resume
+                        renderState();
+                        btnStart.disabled    = false;
+                        btnStart.textContent = <?php echo wp_json_encode( __( 'Reanudar sincronización', 'jb3-members' ) ); ?>;
+                        btnCancel.style.display = 'inline-block';
+                    } else if (state && state.phase === 'done') {
+                        renderState();
+                    }
+                })();
+                </script>
+
+            <?php endif; ?>
+        </div>
+        <?php
     }
 
     // -------------------------------------------------------------------------

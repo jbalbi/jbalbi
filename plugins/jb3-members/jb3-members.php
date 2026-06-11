@@ -31,6 +31,7 @@ $jb3_includes = [
     'includes/class-auth-guard.php',
     'includes/class-cleanup.php',
     'includes/class-mailchimp.php',
+    'includes/class-sync.php',
     'admin/class-admin.php',
 ];
 
