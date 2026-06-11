@@ -54,9 +54,9 @@ function jb3_members_boot() {
     JB3_Auth_Guard::init();
     JB3_Cleanup::init();
     JB3_Mailchimp::init();
-    JB3_Sync::init(); // must run outside is_admin() — cron fires in non-admin context
 
     if ( is_admin() ) {
+        JB3_Sync::init();
         JB3_Admin::init();
     }
 }

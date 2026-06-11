@@ -1370,7 +1370,7 @@ class JB3_Admin {
     }
 
     // -------------------------------------------------------------------------
-    // Sync Mailchimp page
+    // Sync Mailchimp: page + browser-driven chunk loop
     // -------------------------------------------------------------------------
 
     public static function page_sync() {
@@ -1406,9 +1406,9 @@ class JB3_Admin {
                         <li><?php esc_html_e( 'Los administradores siempre se sincronizan (para recibir emails de prueba).', 'jb3-members' ); ?></li>
                         <li><?php esc_html_e( 'Fase 2 — Mailchimp → Archivo: contactos en Mailchimp sin cuenta en WordPress quedan archivados (recuperables, no se borran definitivamente).', 'jb3-members' ); ?></li>
                     </ul>
-                    <p style="margin:10px 0 0;background:#e8f4f8;padding:8px 10px;border-radius:3px;">
-                        <strong><?php esc_html_e( 'El proceso corre en el servidor.', 'jb3-members' ); ?></strong>
-                        <?php esc_html_e( 'Podés cerrar esta página — la sincronización continúa igual. Volvé cuando quieras para ver el progreso.', 'jb3-members' ); ?>
+                    <p style="margin:10px 0 0;background:#fff3cd;border:1px solid #ffc107;padding:8px 10px;border-radius:3px;">
+                        <strong><?php esc_html_e( 'Mantené el browser abierto durante el proceso.', 'jb3-members' ); ?></strong>
+                        <?php esc_html_e( 'Si se corta la conexión, el progreso queda guardado — recargá la página y hacé clic en "Reanudar".', 'jb3-members' ); ?>
                     </p>
                     <p style="margin:6px 0 0;color:#555;">
                         <?php printf(
@@ -1434,11 +1434,11 @@ class JB3_Admin {
                     <p id="jb3-last-update" style="margin:10px 0 0;color:#888;font-size:12px;"></p>
                 </div>
 
-                <!-- Stall warning -->
-                <div id="jb3-sync-stall" style="display:none;">
+                <!-- Network error / reconnect -->
+                <div id="jb3-sync-error" style="display:none;">
                     <div class="notice notice-warning inline" style="padding:10px 14px;">
-                        <p style="margin:0;"><?php esc_html_e( 'El proceso no actualizó en más de 5 minutos. Puede ser que WP-Cron esté deshabilitado en tu hosting. Recargá la página para forzar el siguiente paso.', 'jb3-members' ); ?>
-                        <button id="jb3-btn-nudge" class="button" style="margin-left:10px;"><?php esc_html_e( 'Forzar siguiente paso', 'jb3-members' ); ?></button></p>
+                        <p style="margin:0;"><?php esc_html_e( 'Se interrumpió la conexión. El progreso está guardado — restablecé la conexión y hacé clic en Reanudar.', 'jb3-members' ); ?>
+                        &nbsp;<button id="jb3-btn-resume" class="button button-primary" style="margin-left:6px;"><?php esc_html_e( 'Reanudar', 'jb3-members' ); ?></button></p>
                     </div>
                 </div>
 
@@ -1461,22 +1461,19 @@ class JB3_Admin {
 
                 <script>
                 (function () {
-                    var POLL_INTERVAL = 3000;  // ms between status polls
-                    var STALL_MINUTES = 5;     // minutes without update = stall
-
-                    var ajaxurl = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
-                    var nonce   = <?php echo wp_json_encode( $nonce ); ?>;
-                    var state   = <?php echo wp_json_encode( $state ?: null ); ?>;
-                    var pollTimer = null;
+                    var ajaxurl  = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
+                    var nonce    = <?php echo wp_json_encode( $nonce ); ?>;
+                    var state    = <?php echo wp_json_encode( $state ?: null ); ?>;
+                    var running  = false;
 
                     var btnStart  = document.getElementById('jb3-btn-start');
                     var btnCancel = document.getElementById('jb3-btn-cancel');
-                    var btnNudge  = document.getElementById('jb3-btn-nudge');
+                    var btnResume = document.getElementById('jb3-btn-resume');
                     var spinner   = document.getElementById('jb3-sync-spinner');
                     var divProg   = document.getElementById('jb3-sync-progress');
                     var divRes    = document.getElementById('jb3-sync-results');
                     var divErr    = document.getElementById('jb3-sync-errors');
-                    var divStall  = document.getElementById('jb3-sync-stall');
+                    var divNetErr = document.getElementById('jb3-sync-error');
                     var barWp     = document.getElementById('jb3-bar-wp');
                     var labelWp   = document.getElementById('jb3-label-wp');
                     var barMc     = document.getElementById('jb3-bar-mc');
@@ -1494,37 +1491,24 @@ class JB3_Admin {
                         spinner.style.display = on ? 'inline-block' : 'none';
                         spinner.className     = on ? 'spinner is-active' : 'spinner';
                     }
-                    function post(action, data, cb) {
+                    function post(action, cb) {
                         var fd = new FormData();
                         fd.append('action', action);
                         fd.append('_ajax_nonce', nonce);
-                        if (data) { Object.keys(data).forEach(function(k){ fd.append(k, data[k]); }); }
-                        fetch(ajaxurl, { method: 'POST', body: fd })
-                            .then(function(r){ return r.json(); })
-                            .then(cb)
-                            .catch(function(e){ console.error('[JB3 Sync] ' + e.message); });
-                    }
-
-                    // ----------------------------------------------------------------
-                    // Stall detection: compare updated_at against current time
-                    // ----------------------------------------------------------------
-                    function isStalled(st) {
-                        if (!st || !st.updated_at || st.phase === 'done') return false;
-                        var updTs = new Date(st.updated_at.replace(' ', 'T') + 'Z');
-                        var diffMin = (Date.now() - updTs.getTime()) / 60000;
-                        return diffMin > STALL_MINUTES;
+                        return fetch(ajaxurl, { method: 'POST', body: fd })
+                            .then(function(r) { return r.json(); })
+                            .then(cb);
                     }
 
                     // ----------------------------------------------------------------
                     // Render current state into the UI
                     // ----------------------------------------------------------------
                     function renderState() {
-                        divStall.style.display = 'none';
-
                         if (!state) {
-                            divProg.style.display = 'none';
-                            divRes.style.display  = 'none';
-                            divErr.style.display  = 'none';
+                            divProg.style.display   = 'none';
+                            divRes.style.display    = 'none';
+                            divErr.style.display    = 'none';
+                            divNetErr.style.display = 'none';
                             btnStart.disabled       = false;
                             btnStart.textContent    = <?php echo wp_json_encode( __( 'Iniciar sincronización', 'jb3-members' ) ); ?>;
                             btnCancel.style.display = 'none';
@@ -1535,8 +1519,8 @@ class JB3_Admin {
                         var phase = state.phase;
 
                         if (phase === 'done') {
-                            stopPolling();
-                            divProg.style.display = 'none';
+                            divProg.style.display   = 'none';
+                            divNetErr.style.display = 'none';
                             var html = '<div class="notice notice-success inline" style="padding:12px 16px;">'
                                 + '<p style="margin:0;"><strong><?php echo esc_js( __( 'Sincronización completada.', 'jb3-members' ) ); ?></strong></p>'
                                 + '<p style="margin:6px 0 0;">'
@@ -1545,25 +1529,25 @@ class JB3_Admin {
                                 + '<span style="color:#888;font-size:12px;"><?php echo esc_js( __( 'Iniciada:', 'jb3-members' ) ); ?> '
                                 + escHtml(state.started_at) + ' · <?php echo esc_js( __( 'Completada:', 'jb3-members' ) ); ?> ' + escHtml(state.updated_at) + '</span>'
                                 + '</p></div>';
-                            divRes.innerHTML     = html;
-                            divRes.style.display = 'block';
+                            divRes.innerHTML        = html;
+                            divRes.style.display    = 'block';
                             btnStart.disabled       = false;
                             btnStart.textContent    = <?php echo wp_json_encode( __( 'Sincronizar de nuevo', 'jb3-members' ) ); ?>;
                             btnCancel.style.display = 'none';
                             setSpinner(false);
+                            running = false;
 
                         } else {
-                            // In progress
-                            divProg.style.display = 'block';
-                            divRes.style.display  = 'none';
+                            divProg.style.display   = 'block';
+                            divRes.style.display    = 'none';
+                            divNetErr.style.display = 'none';
                             btnStart.disabled       = true;
                             btnCancel.style.display = 'inline-block';
                             setSpinner(true);
 
                             // Phase 1 bar
                             var p1done = (phase === 'mc_to_wp');
-                            var wp_pct = p1done ? 100 : pct(state.wp_offset, state.wp_total);
-                            barWp.style.width   = wp_pct + '%';
+                            barWp.style.width   = (p1done ? 100 : pct(state.wp_offset, state.wp_total)) + '%';
                             labelWp.textContent = (p1done
                                 ? '<?php echo esc_js( __( 'Completa', 'jb3-members' ) ); ?> — '
                                 : (state.wp_offset + ' / ' + state.wp_total + ' — '))
@@ -1571,8 +1555,7 @@ class JB3_Admin {
 
                             // Phase 2 bar
                             if (phase === 'mc_to_wp') {
-                                var mc_pct = state.mc_total > 0 ? pct(state.mc_offset, state.mc_total) : 0;
-                                barMc.style.width   = mc_pct + '%';
+                                barMc.style.width   = (state.mc_total > 0 ? pct(state.mc_offset, state.mc_total) : 0) + '%';
                                 labelMc.textContent = (state.mc_total > 0
                                     ? state.mc_offset + ' / ' + state.mc_total
                                     : '<?php echo esc_js( __( 'Verificando…', 'jb3-members' ) ); ?>')
@@ -1584,11 +1567,6 @@ class JB3_Admin {
 
                             if (state.updated_at) {
                                 lastUpd.textContent = '<?php echo esc_js( __( 'Última actualización:', 'jb3-members' ) ); ?> ' + state.updated_at;
-                            }
-
-                            // Stall detection
-                            if (isStalled(state)) {
-                                divStall.style.display = 'block';
                             }
                         }
 
@@ -1607,24 +1585,34 @@ class JB3_Admin {
                     }
 
                     // ----------------------------------------------------------------
-                    // Polling: fetch status every POLL_INTERVAL ms
+                    // Chunk loop: browser calls jb3_sync_chunk until done
                     // ----------------------------------------------------------------
-                    function startPolling() {
-                        stopPolling();
-                        pollTimer = setInterval(function() {
-                            post('jb3_sync_status', null, function(resp) {
-                                if (resp && resp.success) {
-                                    state = resp.data;
-                                    renderState();
-                                    if (!state || state.phase === 'done') {
-                                        stopPolling();
-                                    }
-                                }
-                            });
-                        }, POLL_INTERVAL);
+                    function processChunk() {
+                        if (!running) return;
+                        post('jb3_sync_chunk', function(resp) {
+                            if (!running) return;
+                            if (!resp || !resp.success) {
+                                // Server returned an error — show reconnect UI
+                                showNetworkError();
+                                return;
+                            }
+                            state = resp.data;
+                            renderState();
+                            if (state.phase !== 'done') {
+                                setTimeout(processChunk, 0);
+                            }
+                        }).catch(function() {
+                            if (!running) return;
+                            showNetworkError();
+                        });
                     }
-                    function stopPolling() {
-                        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+
+                    function showNetworkError() {
+                        running = false;
+                        setSpinner(false);
+                        btnCancel.style.display = 'none';
+                        btnStart.disabled       = true;
+                        divNetErr.style.display = 'block';
                     }
 
                     // ----------------------------------------------------------------
@@ -1634,47 +1622,60 @@ class JB3_Admin {
                         btnStart.disabled    = true;
                         btnStart.textContent = <?php echo wp_json_encode( __( 'Iniciando…', 'jb3-members' ) ); ?>;
                         setSpinner(true);
-                        divRes.style.display = 'none';
+                        divRes.style.display    = 'none';
+                        divNetErr.style.display = 'none';
 
-                        post('jb3_sync_start', null, function(resp) {
+                        post('jb3_sync_start', function(resp) {
                             if (!resp || !resp.success) {
                                 btnStart.disabled = false;
                                 setSpinner(false);
-                                alert('<?php echo esc_js( __( 'Error al iniciar:', 'jb3-members' ) ); ?> ' + (resp ? resp.data : 'red error'));
+                                alert('<?php echo esc_js( __( 'Error al iniciar:', 'jb3-members' ) ); ?> ' + (resp ? resp.data : ''));
                                 return;
                             }
-                            state = resp.data;
+                            state   = resp.data;
+                            running = true;
                             renderState();
-                            startPolling();
+                            processChunk();
+                        }).catch(function() {
+                            btnStart.disabled = false;
+                            setSpinner(false);
+                            alert('<?php echo esc_js( __( 'Error de red al iniciar. Verificá tu conexión.', 'jb3-members' ) ); ?>');
                         });
                     });
 
                     btnCancel.addEventListener('click', function () {
-                        stopPolling();
-                        post('jb3_sync_cancel', null, function() {
+                        running = false;
+                        post('jb3_sync_cancel', function() {
+                            state = null;
+                            renderState();
+                        }).catch(function() {
                             state = null;
                             renderState();
                         });
                     });
 
-                    // Stall: force next step via a status poll (triggers WP-Cron via page request)
-                    btnNudge.addEventListener('click', function () {
-                        divStall.style.display = 'none';
-                        post('jb3_sync_status', null, function(resp) {
-                            if (resp && resp.success) {
-                                state = resp.data;
-                                renderState();
-                                if (state && state.phase !== 'done') { startPolling(); }
-                            }
-                        });
+                    btnResume.addEventListener('click', function () {
+                        divNetErr.style.display = 'none';
+                        btnStart.disabled       = true;
+                        btnCancel.style.display = 'inline-block';
+                        setSpinner(true);
+                        running = true;
+                        processChunk();
                     });
 
                     // ----------------------------------------------------------------
-                    // On page load: restore state if a sync was in progress
+                    // On page load: if a sync was in progress, offer Resume
                     // ----------------------------------------------------------------
                     if (state) {
                         renderState();
-                        if (state.phase !== 'done') { startPolling(); }
+                        if (state.phase !== 'done') {
+                            // Don't auto-resume — show the reconnect button so user can
+                            // confirm they're ready before the chunk loop kicks off
+                            btnStart.disabled       = true;
+                            btnCancel.style.display = 'inline-block';
+                            divNetErr.style.display = 'block';
+                            divProg.style.display   = 'block';
+                        }
                     }
                 })();
                 </script>
