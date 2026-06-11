@@ -331,6 +331,19 @@ class JB3_Sync {
             return null;
         }
         $hash = md5( strtolower( trim( $user->user_email ) ) );
+
+        // Build interests from WP meta — explicit false for every group so MC
+        // clears anything that was previously set for this admin.
+        $interests_raw = (array) get_user_meta( $user_id, 'jb3_interests', true );
+        $interests     = [];
+        foreach ( array_keys( JB3_Mailchimp::get_cached_interests() ) as $id ) {
+            $interests[ $id ] = in_array( $id, $interests_raw, true );
+        }
+        $nl_ids = (array) get_user_meta( $user_id, 'jb3_newsletter_countries', true );
+        foreach ( array_keys( JB3_Mailchimp::get_newsletter_interests() ) as $id ) {
+            $interests[ $id ] = in_array( $id, $nl_ids, true );
+        }
+
         return [
             'method' => 'PUT',
             'path'   => '/lists/' . $list_id . '/members/' . $hash,
@@ -348,6 +361,7 @@ class JB3_Sync {
                     'COUNTRY' => get_user_meta( $user_id, 'jb3_country',   true ) ?: '',
                     'ESTADO'  => 'Admin',
                 ],
+                'interests' => $interests,
             ] ),
         ];
     }
