@@ -51,11 +51,15 @@ class JB3_Auth_Guard {
             return;
         }
 
-        $user_id = get_current_user_id();
-        if ( ! jb3_is_member( $user_id ) ) {
+        $user_id   = get_current_user_id();
+        $is_admin  = current_user_can( 'manage_options' );
+        $is_member = jb3_is_member( $user_id );
+
+        if ( ! $is_admin && ! $is_member ) {
             return;
         }
-        if ( 'approved' !== jb3_get_status( $user_id ) ) {
+        // Skip pending members (not yet approved); admins are always checked.
+        if ( $is_member && ! $is_admin && 'approved' !== jb3_get_status( $user_id ) ) {
             return;
         }
 
