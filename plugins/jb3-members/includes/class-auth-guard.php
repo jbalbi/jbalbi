@@ -47,8 +47,15 @@ class JB3_Auth_Guard {
             return;
         }
 
+        if ( ! get_option( 'jb3_force_profile_completion' ) ) {
+            return;
+        }
+
         $user_id = get_current_user_id();
         if ( ! jb3_is_member( $user_id ) ) {
+            return;
+        }
+        if ( 'approved' !== jb3_get_status( $user_id ) ) {
             return;
         }
 
@@ -65,7 +72,9 @@ class JB3_Auth_Guard {
         }
 
         if ( ! jb3_profile_complete( $user_id ) ) {
-            wp_redirect( esc_url_raw( get_permalink( $profile_page_id ) ) );
+            $current_url  = esc_url_raw( ( is_ssl() ? 'https' : 'http' ) . '://' . wp_unslash( $_SERVER['HTTP_HOST'] ) . wp_unslash( $_SERVER['REQUEST_URI'] ) );
+            $redirect_url = add_query_arg( 'redirect_to', rawurlencode( $current_url ), get_permalink( $profile_page_id ) );
+            wp_redirect( esc_url_raw( $redirect_url ) );
             exit;
         }
     }

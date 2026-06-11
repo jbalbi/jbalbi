@@ -25,13 +25,27 @@ class JB3_Profile_Update {
             exit;
         }
 
-        $user_id = get_current_user_id();
-        $errors  = [];
-        $success = false;
+        $user_id     = get_current_user_id();
+        $errors      = [];
+        $success     = false;
+        $redirect_to = '';
+
+        // Capture redirect_to from GET (set by enforce_complete_profile).
+        if ( ! empty( $_GET['redirect_to'] ) ) {
+            $redirect_to = wp_validate_redirect( wp_unslash( $_GET['redirect_to'] ), '' );
+        }
 
         if ( isset( $_POST['jb3_profile_nonce'] )
             && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['jb3_profile_nonce'] ) ), 'jb3_profile_' . $user_id ) ) {
             [ $errors, $success ] = self::process( $user_id );
+
+            if ( $success && ! empty( $_POST['jb3_redirect_to'] ) ) {
+                $back = wp_validate_redirect( wp_unslash( $_POST['jb3_redirect_to'] ), '' );
+                if ( $back ) {
+                    wp_redirect( esc_url_raw( $back ) );
+                    exit;
+                }
+            }
         }
 
         $user = get_userdata( $user_id );

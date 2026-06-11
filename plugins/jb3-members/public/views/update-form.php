@@ -47,6 +47,9 @@ $posted_interests = isset( $_POST['interests'] ) && is_array( $_POST['interests'
 
 <form method="post" class="jb3-form" novalidate autocomplete="on">
     <?php wp_nonce_field( 'jb3_profile_' . $user->ID, 'jb3_profile_nonce' ); ?>
+    <?php if ( $redirect_to ) : ?>
+        <input type="hidden" name="jb3_redirect_to" value="<?php echo esc_attr( $redirect_to ); ?>">
+    <?php endif; ?>
 
     <div class="jb3-row">
         <div class="jb3-field">

@@ -123,6 +123,7 @@ class JB3_Admin {
         register_setting( 'jb3_settings', 'jb3_dashboard_page_id',    [ 'type' => 'integer', 'sanitize_callback' => 'absint' ] );
         register_setting( 'jb3_settings', 'jb3_mc_api_key',  [ 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ] );
         register_setting( 'jb3_settings', 'jb3_mc_list_id', [ 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ] );
+        register_setting( 'jb3_settings', 'jb3_force_profile_completion', [ 'type' => 'integer', 'sanitize_callback' => 'absint' ] );
     }
 
     // -------------------------------------------------------------------------
@@ -615,6 +616,23 @@ class JB3_Admin {
                 });
                 </script>
                 <?php endif; ?>
+
+                <!-- Comportamiento -->
+                <hr>
+                <h2><?php esc_html_e( 'Comportamiento', 'jb3-members' ); ?></h2>
+                <table class="form-table">
+                    <tr>
+                        <th><?php esc_html_e( 'Perfil obligatorio', 'jb3-members' ); ?></th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="jb3_force_profile_completion" value="1"
+                                    <?php checked( 1, get_option( 'jb3_force_profile_completion' ) ); ?>>
+                                <?php esc_html_e( 'Obligar a los miembros aprobados a completar su perfil antes de navegar el sitio', 'jb3-members' ); ?>
+                            </label>
+                            <p class="description"><?php esc_html_e( 'Si está activo, cualquier miembro con campos requeridos vacíos será redirigido al perfil. Una vez completado, vuelve a la página que intentaba visitar.', 'jb3-members' ); ?></p>
+                        </td>
+                    </tr>
+                </table>
 
                 <?php submit_button(); ?>
             </form>
