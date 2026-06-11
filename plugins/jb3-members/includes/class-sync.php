@@ -60,8 +60,11 @@ class JB3_Sync {
             wp_send_json_error( 'No autorizado.' );
         }
 
-        $wp_total  = count( get_users( [ 'role' => 'jb3_member', 'number' => -1, 'fields' => 'ID' ] ) );
-        $admin_ids = array_map( 'intval', get_users( [ 'role' => 'administrator', 'number' => -1, 'fields' => 'ID' ] ) );
+        $member_ids = array_map( 'intval', get_users( [ 'role' => 'jb3_member', 'number' => -1, 'fields' => 'ID' ] ) );
+        $wp_total   = count( $member_ids );
+        // Exclude admins who are also jb3_members — the member loop handles them already.
+        $all_admins = array_map( 'intval', get_users( [ 'role' => 'administrator', 'number' => -1, 'fields' => 'ID' ] ) );
+        $admin_ids  = array_values( array_diff( $all_admins, $member_ids ) );
 
         $state = [
             'phase'      => 'wp_to_mc',
