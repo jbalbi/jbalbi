@@ -35,6 +35,10 @@ class JB3_Admin {
         add_action( 'edit_user_profile',        [ __CLASS__, 'render_user_profile' ] );
         add_action( 'edit_user_profile_update', [ __CLASS__, 'save_user_profile' ] );
         add_action( 'personal_options_update',  [ __CLASS__, 'save_user_profile' ] );
+
+        // Guard: if an admin's role is changed away from administrator via the
+        // native WP Role dropdown, restore it so admins never lose their access.
+        add_action( 'set_user_role', [ __CLASS__, 'guard_admin_role' ], 10, 3 );
     }
 
     // -------------------------------------------------------------------------
@@ -1683,6 +1687,26 @@ class JB3_Admin {
             <?php endif; ?>
         </div>
         <?php
+    }
+
+    // -------------------------------------------------------------------------
+    // Guard: preserve administrator role
+    // -------------------------------------------------------------------------
+
+    /**
+     * Fires when WordPress's native Role dropdown saves a new role via set_role().
+     * set_role() replaces ALL roles — if an admin's role is accidentally changed
+     * to something else, this hook immediately adds 'administrator' back.
+     *
+     * @param int    $user_id   The user whose role changed.
+     * @param string $new_role  The role that was just set.
+     * @param array  $old_roles The roles the user had before.
+     */
+    public static function guard_admin_role( int $user_id, string $new_role, array $old_roles ) {
+        if ( in_array( 'administrator', $old_roles, true ) && $new_role !== 'administrator' ) {
+            $user = new WP_User( $user_id );
+            $user->add_role( 'administrator' );
+        }
     }
 
     // -------------------------------------------------------------------------
