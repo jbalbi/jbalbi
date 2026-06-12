@@ -231,19 +231,20 @@ class JB3_Mailchimp {
         $url  = 'https://' . self::server() . '.api.mailchimp.com/3.0/lists/' . self::list_id() . '/members/' . $hash;
         $auth = [ 'Authorization' => 'Basic ' . base64_encode( 'jb3:' . self::api_key() ) ];
 
-        // Desuscribir primero.
+        // Desuscribir + archivar — fire-and-forget (blocking=false): no bloquea al usuario.
         wp_remote_request( $url, [
-            'method'  => 'PATCH',
-            'headers' => array_merge( $auth, [ 'Content-Type' => 'application/json' ] ),
-            'body'    => wp_json_encode( [ 'status' => 'unsubscribed' ] ),
-            'timeout' => 15,
+            'method'   => 'PATCH',
+            'headers'  => array_merge( $auth, [ 'Content-Type' => 'application/json' ] ),
+            'body'     => wp_json_encode( [ 'status' => 'unsubscribed' ] ),
+            'timeout'  => 15,
+            'blocking' => false,
         ] );
 
-        // Archivar (DELETE sin /actions/delete-permanent = archivo, no borrado permanente).
         wp_remote_request( $url, [
-            'method'  => 'DELETE',
-            'headers' => $auth,
-            'timeout' => 15,
+            'method'   => 'DELETE',
+            'headers'  => $auth,
+            'timeout'  => 15,
+            'blocking' => false,
         ] );
     }
 
@@ -275,16 +276,20 @@ class JB3_Mailchimp {
             return;
         }
 
-        $status = jb3_get_status( $user_id );
-        if ( 'approved' !== $status ) {
+        $is_admin = user_can( $user_id, 'manage_options' );
+        $status   = jb3_get_status( $user_id );
+
+        if ( ! $is_admin && 'approved' !== $status ) {
             return;
         }
 
         $newsletter = (bool) get_user_meta( $user_id, 'jb3_newsletter', true );
 
-        // Sin newsletter: archivar en Mailchimp y salir.
+        // Sin newsletter: archivar miembros, pero simplemente saltear admins (no archivarlos).
         if ( ! $newsletter ) {
-            self::archive_contact( $user->user_email );
+            if ( ! $is_admin ) {
+                self::archive_contact( $user->user_email );
+            }
             return;
         }
 

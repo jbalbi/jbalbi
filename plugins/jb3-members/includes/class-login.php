@@ -6,7 +6,9 @@ class JB3_Login {
     public static function init() {
         add_shortcode( 'jb3_login',  [ __CLASS__, 'shortcode' ] );
         add_shortcode( 'jb3_logout', [ __CLASS__, 'logout_shortcode' ] );
-        add_action( 'wp_logout',     [ __CLASS__, 'on_wp_logout' ] );
+        add_action( 'wp_logout',         [ __CLASS__, 'on_wp_logout' ] );
+        // Priority 1 — runs before enforce_complete_profile (priority 5).
+        add_action( 'template_redirect', [ __CLASS__, 'handle_logout_page' ], 1 );
     }
 
     // ─── Shortcode ────────────────────────────────────────────────────────────
@@ -50,24 +52,33 @@ class JB3_Login {
         return ob_get_clean();
     }
 
+    // ─── Logout page handler (template_redirect priority 1) ──────────────────
+
+    public static function handle_logout_page() {
+        global $post;
+        if ( ! is_a( $post, 'WP_Post' ) ) {
+            return;
+        }
+        if ( ! has_shortcode( $post->post_content, 'jb3_logout' ) ) {
+            return;
+        }
+        if ( is_user_logged_in() ) {
+            wp_logout();
+        }
+        wp_redirect( home_url( '/' ) );
+        exit;
+    }
+
     // ─── Logout shortcode ────────────────────────────────────────────────────
 
     public static function logout_shortcode() {
-        // Redirect before any output — shortcode content fires too late for header().
-        add_action( 'template_redirect', function() {
-            if ( is_user_logged_in() ) {
-                wp_logout();
-            }
-            wp_redirect( home_url( '/' ) );
-            exit;
-        } );
         return '';
     }
 
     // ─── JB3 token cleanup on any WordPress logout ───────────────────────────
 
     public static function on_wp_logout( $user_id ) {
-        if ( $user_id && jb3_is_member( $user_id ) ) {
+        if ( $user_id && ( jb3_is_member( $user_id ) || user_can( $user_id, 'manage_options' ) ) ) {
             JB3_Magic_Link::force_logout( $user_id );
         }
     }
@@ -91,14 +102,15 @@ class JB3_Login {
 
         $user = get_user_by( 'email', $email );
 
-        // If user doesn't exist or isn't a jb3_member, show the same generic
+        // If user doesn't exist or isn't a jb3_member (and isn't an admin), show the same generic
         // success message to prevent email enumeration.
-        if ( ! $user || ! jb3_is_member( $user->ID ) ) {
+        $is_admin = $user && user_can( $user->ID, 'manage_options' );
+        if ( ! $user || ( ! jb3_is_member( $user->ID ) && ! $is_admin ) ) {
             return [ [], true ];
         }
 
-        // User exists but is still pending approval.
-        if ( ! jb3_is_approved( $user->ID ) ) {
+        // User exists but is still pending approval (admins bypass this check).
+        if ( ! $is_admin && ! jb3_is_approved( $user->ID ) ) {
             return [
                 [ __( 'Tu cuenta está pendiente de aprobación. Recibirás un correo cuando sea activada.', 'jb3-members' ) ],
                 false,

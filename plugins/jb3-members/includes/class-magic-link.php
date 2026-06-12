@@ -111,8 +111,8 @@ class JB3_Magic_Link {
             return false;
         }
 
-        // Only approved members can use magic links.
-        if ( ! jb3_is_approved( $user_id ) ) {
+        // Only approved members (or admins) can use magic links.
+        if ( ! jb3_is_approved( $user_id ) && ! user_can( $user_id, 'manage_options' ) ) {
             return false;
         }
 
@@ -125,7 +125,7 @@ class JB3_Magic_Link {
      * Extend "remember me" cookies to 120 days for jb3_member users.
      */
     public static function extend_cookie_expiration( $expiration, $user_id, $remember ) {
-        if ( $remember && jb3_is_member( $user_id ) ) {
+        if ( $remember && ( jb3_is_member( $user_id ) || user_can( $user_id, 'manage_options' ) ) ) {
             return self::SESSION_DAYS * DAY_IN_SECONDS;
         }
         return $expiration;

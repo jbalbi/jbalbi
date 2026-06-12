@@ -10,19 +10,30 @@ class JB3_Admin {
         // Form processing must run at admin_init — before any output is sent.
         add_action( 'admin_init', [ __CLASS__, 'handle_rep_actions' ] );
 
-        // CSV export / import — must run at admin_init before any output.
+        // CSV export — must run at admin_init before any output.
         add_action( 'admin_init', [ __CLASS__, 'handle_export' ] );
-        add_action( 'admin_init', [ __CLASS__, 'handle_import' ] );
 
         // Users list – custom columns.
         add_filter( 'manage_users_columns',       [ __CLASS__, 'user_columns' ] );
         add_filter( 'manage_users_custom_column', [ __CLASS__, 'user_column_value' ], 10, 3 );
         add_filter( 'user_row_actions',           [ __CLASS__, 'user_row_actions' ], 10, 2 );
+        add_filter( 'list_table_primary_column',  [ __CLASS__, 'users_primary_column' ], 10, 2 );
 
         // AJAX handlers for user actions (run via admin-ajax.php — headers not yet sent).
         add_action( 'wp_ajax_jb3_approve_user',       [ __CLASS__, 'ajax_approve_user' ] );
         add_action( 'wp_ajax_jb3_logout_user',        [ __CLASS__, 'ajax_logout_user' ] );
         add_action( 'wp_ajax_jb3_fetch_mc_interests', [ __CLASS__, 'ajax_fetch_mc_interests' ] );
+
+        // CSV import — browser-driven chunk loop.
+        add_action( 'wp_ajax_jb3_import_start',  [ __CLASS__, 'ajax_import_start' ] );
+        add_action( 'wp_ajax_jb3_import_chunk',  [ __CLASS__, 'ajax_import_chunk' ] );
+        add_action( 'wp_ajax_jb3_import_cancel', [ __CLASS__, 'ajax_import_cancel' ] );
+
+        // Bulk delete — browser-driven chunk loop.
+        add_action( 'wp_ajax_jb3_delete_start',  [ __CLASS__, 'ajax_delete_start' ] );
+        add_action( 'wp_ajax_jb3_delete_chunk',  [ __CLASS__, 'ajax_delete_chunk' ] );
+        add_action( 'wp_ajax_jb3_delete_cancel', [ __CLASS__, 'ajax_delete_cancel' ] );
+
 
         // Settings registration.
         add_action( 'admin_init', [ __CLASS__, 'register_settings' ] );
@@ -95,6 +106,14 @@ class JB3_Admin {
             'jb3-sync',
             [ __CLASS__, 'page_sync' ]
         );
+        add_submenu_page(
+            'jb3-members',
+            __( 'Borrar Miembros', 'jb3-members' ),
+            __( 'Borrar Miembros', 'jb3-members' ),
+            'manage_options',
+            'jb3-delete',
+            [ __CLASS__, 'page_delete' ]
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -123,7 +142,6 @@ class JB3_Admin {
         register_setting( 'jb3_settings', 'jb3_dashboard_page_id',    [ 'type' => 'integer', 'sanitize_callback' => 'absint' ] );
         register_setting( 'jb3_settings', 'jb3_mc_api_key',  [ 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ] );
         register_setting( 'jb3_settings', 'jb3_mc_list_id', [ 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ] );
-        register_setting( 'jb3_settings', 'jb3_force_profile_completion', [ 'type' => 'integer', 'sanitize_callback' => 'absint' ] );
     }
 
     // -------------------------------------------------------------------------
@@ -617,23 +635,6 @@ class JB3_Admin {
                 </script>
                 <?php endif; ?>
 
-                <!-- Comportamiento -->
-                <hr>
-                <h2><?php esc_html_e( 'Comportamiento', 'jb3-members' ); ?></h2>
-                <table class="form-table">
-                    <tr>
-                        <th><?php esc_html_e( 'Perfil obligatorio', 'jb3-members' ); ?></th>
-                        <td>
-                            <label>
-                                <input type="checkbox" name="jb3_force_profile_completion" value="1"
-                                    <?php checked( 1, get_option( 'jb3_force_profile_completion' ) ); ?>>
-                                <?php esc_html_e( 'Obligar a los miembros aprobados a completar su perfil antes de navegar el sitio', 'jb3-members' ); ?>
-                            </label>
-                            <p class="description"><?php esc_html_e( 'Si está activo, cualquier miembro con campos requeridos vacíos será redirigido al perfil. Una vez completado, vuelve a la página que intentaba visitar.', 'jb3-members' ); ?></p>
-                        </td>
-                    </tr>
-                </table>
-
                 <?php submit_button(); ?>
             </form>
         </div>
@@ -644,19 +645,41 @@ class JB3_Admin {
     // Users list columns
     // -------------------------------------------------------------------------
 
+    public static function users_primary_column( $column, $screen ) {
+        return 'users' === $screen ? 'email' : $column;
+    }
+
     public static function user_columns( $columns ) {
-        $columns['jb3_status']  = __( 'Estado JB3', 'jb3-members' );
-        $columns['jb3_country'] = __( 'País', 'jb3-members' );
-        $columns['jb3_company'] = __( 'Empresa', 'jb3-members' );
-        return $columns;
+        unset( $columns['username'] );
+        unset( $columns['posts'] );
+
+        $cb = isset( $columns['cb'] ) ? [ 'cb' => $columns['cb'] ] : [];
+        unset( $columns['cb'] );
+
+        // email first, then remaining WP columns, then our custom ones.
+        $email = isset( $columns['email'] ) ? [ 'email' => $columns['email'] ] : [];
+        unset( $columns['email'] );
+
+        return array_merge( $cb, $email, $columns, [
+            'jb3_status'  => __( 'Estado JB3', 'jb3-members' ),
+            'jb3_country' => __( 'País', 'jb3-members' ),
+            'jb3_company' => __( 'Empresa', 'jb3-members' ),
+        ] );
     }
 
     public static function user_column_value( $value, $column, $user_id ) {
-        if ( ! jb3_is_member( $user_id ) ) {
+        $is_admin  = user_can( $user_id, 'manage_options' );
+        $is_member = jb3_is_member( $user_id );
+
+        if ( ! $is_member && ! $is_admin ) {
             return '—';
         }
+
         switch ( $column ) {
             case 'jb3_status':
+                if ( $is_admin ) {
+                    return '<span style="color:#1565c0;font-weight:600;">' . esc_html__( 'Admin', 'jb3-members' ) . '</span>';
+                }
                 $status = jb3_get_status( $user_id );
                 $labels = [
                     'pending'  => '<span style="color:#e65100;font-weight:600;">' . esc_html__( 'Pendiente', 'jb3-members' ) . '</span>',
@@ -666,11 +689,15 @@ class JB3_Admin {
 
             case 'jb3_country':
                 $code = get_user_meta( $user_id, 'jb3_country', true );
-                $all  = jb3_countries();
+                if ( ! $code ) {
+                    return '—';
+                }
+                $all = jb3_countries();
                 return esc_html( $all[ $code ] ?? $code );
 
             case 'jb3_company':
-                return esc_html( get_user_meta( $user_id, 'jb3_company', true ) );
+                $company = get_user_meta( $user_id, 'jb3_company', true );
+                return $company ? esc_html( $company ) : '—';
         }
         return $value;
     }
@@ -890,12 +917,22 @@ class JB3_Admin {
             <tr>
                 <th><?php esc_html_e( 'Intereses', 'jb3-members' ); ?></th>
                 <td>
-                    <?php foreach ( jb3_interests() as $key => $label ) : ?>
-                        <label style="display:inline-block;margin-right:20px;margin-bottom:6px;">
-                            <input type="checkbox" name="jb3_interests[]" value="<?php echo esc_attr( $key ); ?>" <?php checked( in_array( $key, $interests, true ) ); ?>>
-                            <?php echo esc_html( $label ); ?>
-                        </label>
-                    <?php endforeach; ?>
+                    <?php $mc_interests = jb3_interests(); ?>
+                    <?php if ( ! empty( $mc_interests ) ) : ?>
+                        <?php foreach ( $mc_interests as $key => $label ) : ?>
+                            <label style="display:inline-block;margin-right:20px;margin-bottom:6px;">
+                                <input type="checkbox" name="jb3_interests[]" value="<?php echo esc_attr( $key ); ?>" <?php checked( in_array( $key, $interests, true ) ); ?>>
+                                <?php echo esc_html( $label ); ?>
+                            </label>
+                        <?php endforeach; ?>
+                    <?php elseif ( ! empty( $interests ) ) : ?>
+                        <p style="color:#b32d2e;margin:0 0 6px;">
+                            <?php esc_html_e( 'Mailchimp no disponible — intereses almacenados (guardar este perfil los eliminará):', 'jb3-members' ); ?>
+                        </p>
+                        <code><?php echo esc_html( implode( ', ', $interests ) ); ?></code>
+                    <?php else : ?>
+                        <span style="color:#999;"><?php esc_html_e( 'Sin intereses almacenados.', 'jb3-members' ); ?></span>
+                    <?php endif; ?>
                 </td>
             </tr>
             <tr>
@@ -924,14 +961,8 @@ class JB3_Admin {
             || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['jb3_profile_nonce'] ) ), 'jb3_save_profile_' . $user_id ) ) {
             return;
         }
-        if ( ! jb3_is_member( $user_id ) ) {
-            if ( user_can( $user_id, 'manage_options' ) ) {
-                $u = new WP_User( $user_id );
-                $u->add_role( 'jb3_member' );
-                update_user_meta( $user_id, 'jb3_status', 'approved' );
-            } else {
-                return;
-            }
+        if ( ! jb3_is_member( $user_id ) && ! user_can( $user_id, 'manage_options' ) ) {
+            return;
         }
 
         $old_status = get_user_meta( $user_id, 'jb3_status', true ) ?: 'pending';
@@ -963,9 +994,17 @@ class JB3_Admin {
         update_user_meta( $user_id, 'jb3_phone',      $phone );
         update_user_meta( $user_id, 'jb3_country',    $country );
         update_user_meta( $user_id, 'jb3_sector',     $sector );
-        update_user_meta( $user_id, 'jb3_newsletter',          $newsletter );
-        update_user_meta( $user_id, 'jb3_interests',           $interests );
-        update_user_meta( $user_id, 'jb3_newsletter_countries', $nl_countries );
+        update_user_meta( $user_id, 'jb3_newsletter', $newsletter );
+
+        delete_user_meta( $user_id, 'jb3_interests' );
+        if ( ! empty( $interests ) ) {
+            update_user_meta( $user_id, 'jb3_interests', $interests );
+        }
+
+        delete_user_meta( $user_id, 'jb3_newsletter_countries' );
+        if ( ! empty( $nl_countries ) ) {
+            update_user_meta( $user_id, 'jb3_newsletter_countries', $nl_countries );
+        }
 
         if ( $status === 'approved' && ! get_user_meta( $user_id, 'jb3_approved_at', true ) ) {
             update_user_meta( $user_id, 'jb3_approved_at', current_time( 'mysql' ) );
@@ -1098,71 +1137,23 @@ class JB3_Admin {
     }
 
     // -------------------------------------------------------------------------
-    // Import: handle CSV upload (admin_init)
+    // Import: browser-driven chunk loop (AJAX)
     // -------------------------------------------------------------------------
 
-    public static function handle_import() {
-        if ( empty( $_GET['page'] ) || 'jb3-import' !== $_GET['page'] ) {
-            return;
-        }
-        if ( 'POST' !== $_SERVER['REQUEST_METHOD'] || ! isset( $_POST['jb3_import_nonce'] ) ) {
-            return;
-        }
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( esc_html__( 'Sin permiso.', 'jb3-members' ) );
-        }
-        if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['jb3_import_nonce'] ) ), 'jb3_import_users' ) ) {
-            wp_die( esc_html__( 'Verificación de seguridad fallida.', 'jb3-members' ) );
-        }
+    private static function import_state_key(): string {
+        return 'jb3_import_state_' . get_current_user_id();
+    }
 
-        $uid     = get_current_user_id();
-        $results = [ 'created' => 0, 'updated' => 0, 'errors' => [] ];
-
-        $upload = $_FILES['jb3_csv'] ?? null;
-
-        if ( ! $upload || $upload['error'] !== UPLOAD_ERR_OK ) {
-            $results['errors'][] = __( 'Error al subir el archivo.', 'jb3-members' );
-            self::redirect_after_import( $results, $uid );
-        }
-
-        if ( strtolower( pathinfo( $upload['name'], PATHINFO_EXTENSION ) ) !== 'csv' ) {
-            $results['errors'][] = __( 'El archivo debe tener extensión .csv', 'jb3-members' );
-            self::redirect_after_import( $results, $uid );
-        }
-
-        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
-        $handle = fopen( $upload['tmp_name'], 'r' );
-        if ( ! $handle ) {
-            $results['errors'][] = __( 'No se pudo leer el archivo.', 'jb3-members' );
-            self::redirect_after_import( $results, $uid );
-        }
-
-        $first_line = fgets( $handle );
-        if ( $first_line === false || trim( $first_line ) === '' ) {
-            fclose( $handle );
-            $results['errors'][] = __( 'El archivo está vacío.', 'jb3-members' );
-            self::redirect_after_import( $results, $uid );
-        }
-
-        $first_line = ltrim( $first_line, "\xEF\xBB\xBF" ); // Strip UTF-8 BOM.
-        $delimiter  = substr_count( $first_line, ';' ) >= substr_count( $first_line, ',' ) ? ';' : ',';
-        $headers    = array_map( 'trim', str_getcsv( $first_line, $delimiter ) );
-
-        if ( array_search( 'Email', $headers, true ) === false ) {
-            fclose( $handle );
-            $results['errors'][] = __( 'El CSV debe tener una columna "Email".', 'jb3-members' );
-            self::redirect_after_import( $results, $uid );
-        }
-
-        $col_map = [
-            'Nombre'             => 'first_name',
-            'Apellido'           => 'last_name',
-            'Estado'             => 'jb3_status',
-            'País'               => 'jb3_country',
-            'Empresa'            => 'jb3_company',
-            'Cargo'              => 'jb3_job_title',
-            'Teléfono'           => 'jb3_phone',
-            'Sector'             => 'jb3_sector',
+    private static function import_col_map(): array {
+        return [
+            'Nombre'                   => 'first_name',
+            'Apellido'                 => 'last_name',
+            'Estado'                   => 'jb3_status',
+            'País'                     => 'jb3_country',
+            'Empresa'                  => 'jb3_company',
+            'Cargo'                    => 'jb3_job_title',
+            'Teléfono'                 => 'jb3_phone',
+            'Sector'                   => 'jb3_sector',
             'Newsletter'               => 'jb3_newsletter',
             'Newsletters'              => 'jb3_newsletter_countries',
             'Intereses'                => 'jb3_interests',
@@ -1182,27 +1173,185 @@ class JB3_Admin {
             'jb3_registered_at'        => 'jb3_registered_at',
             'jb3_approved_at'          => 'jb3_approved_at',
         ];
+    }
 
+    public static function ajax_import_start() {
+        check_ajax_referer( 'jb3_import_ajax', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( __( 'Sin permiso.', 'jb3-members' ) );
+        }
+
+        $upload = $_FILES['jb3_csv'] ?? null;
+        if ( ! $upload || $upload['error'] !== UPLOAD_ERR_OK ) {
+            wp_send_json_error( __( 'Error al subir el archivo.', 'jb3-members' ) );
+        }
+        if ( strtolower( pathinfo( $upload['name'], PATHINFO_EXTENSION ) ) !== 'csv' ) {
+            wp_send_json_error( __( 'El archivo debe tener extensión .csv', 'jb3-members' ) );
+        }
+
+        // Copy to a persistent temp file so chunks can resume across requests.
+        $tmp_file = wp_tempnam( 'jb3_import_' );
+        if ( ! move_uploaded_file( $upload['tmp_name'], $tmp_file ) ) {
+            wp_send_json_error( __( 'No se pudo guardar el archivo temporal.', 'jb3-members' ) );
+        }
+
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
+        $handle = fopen( $tmp_file, 'r' );
+        if ( ! $handle ) {
+            @unlink( $tmp_file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+            wp_send_json_error( __( 'No se pudo leer el archivo.', 'jb3-members' ) );
+        }
+
+        $first_line = fgets( $handle );
+        if ( $first_line === false || trim( $first_line ) === '' ) {
+            fclose( $handle );
+            @unlink( $tmp_file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+            wp_send_json_error( __( 'El archivo está vacío.', 'jb3-members' ) );
+        }
+
+        $first_line = ltrim( $first_line, "\xEF\xBB\xBF" ); // Strip UTF-8 BOM.
+        $delimiter  = substr_count( $first_line, ';' ) >= substr_count( $first_line, ',' ) ? ';' : ',';
+        $headers    = array_map( 'trim', str_getcsv( $first_line, $delimiter ) );
+
+        if ( ! in_array( 'Email', $headers, true ) ) {
+            fclose( $handle );
+            @unlink( $tmp_file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+            wp_send_json_error( __( 'El CSV debe tener una columna "Email".', 'jb3-members' ) );
+        }
+
+        // Record byte offset after header row, then count data rows.
+        $data_start = ftell( $handle );
+        $total      = 0;
+        while ( fgetcsv( $handle, 0, $delimiter ) !== false ) {
+            $total++;
+        }
+        fclose( $handle );
+
+        if ( $total === 0 ) {
+            @unlink( $tmp_file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+            wp_send_json_error( __( 'El archivo no contiene filas de datos.', 'jb3-members' ) );
+        }
+
+        $state = [
+            'file'      => $tmp_file,
+            'delimiter' => $delimiter,
+            'headers'   => $headers,
+            'total'     => $total,
+            'offset'    => $data_start,
+            'row_num'   => 1,
+            'processed' => 0,
+            'created'   => 0,
+            'updated'   => 0,
+            'errors'    => [],
+            'phase'     => 'running',
+        ];
+
+        update_option( self::import_state_key(), $state, false );
+        wp_send_json_success( $state );
+    }
+
+    public static function ajax_import_chunk() {
+        check_ajax_referer( 'jb3_import_ajax', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( __( 'Sin permiso.', 'jb3-members' ) );
+        }
+
+        $state = get_option( self::import_state_key() );
+        if ( ! $state || $state['phase'] !== 'running' ) {
+            wp_send_json_error( __( 'No hay importación en curso.', 'jb3-members' ) );
+        }
+        if ( ! file_exists( $state['file'] ) ) {
+            delete_option( self::import_state_key() );
+            wp_send_json_error( __( 'El archivo temporal no existe.', 'jb3-members' ) );
+        }
+
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
+        $handle = fopen( $state['file'], 'r' );
+        if ( ! $handle ) {
+            wp_send_json_error( __( 'No se pudo leer el archivo temporal.', 'jb3-members' ) );
+        }
+        fseek( $handle, $state['offset'] );
+
+        $delimiter          = $state['delimiter'];
+        $headers            = $state['headers'];
+        $col_map            = self::import_col_map();
         $countries_by_name  = array_flip( jb3_countries() );
         $interests_by_label = array_flip( jb3_interests() );
         $nl_interests       = JB3_Mailchimp::get_newsletter_interests();
         $nl_by_name         = array_flip( $nl_interests );
 
-        $row_num = 1;
-        while ( ( $row = fgetcsv( $handle, 0, $delimiter ) ) !== false ) {
+        $created   = $state['created'];
+        $updated   = $state['updated'];
+        $errors    = $state['errors'];
+        $row_num   = $state['row_num'];
+        $processed = $state['processed'];
+
+        // ── Read the full chunk into memory, then close the file ────────────────
+        $chunk_rows = [];
+        while ( count( $chunk_rows ) < 200 && ( $raw = fgetcsv( $handle, 0, $delimiter ) ) !== false ) {
+            $chunk_rows[] = $raw;
+        }
+        $new_offset = ftell( $handle );
+        fclose( $handle );
+        $handle = null;
+
+        // ── Bulk email + ID lookup: 1 SQL instead of N get_user_by() calls ───
+        $id_col_idx    = array_search( 'ID', $headers, true );
+        $lookup_emails = [];
+        $lookup_ids    = [];
+        foreach ( $chunk_rows as $raw ) {
+            $email = sanitize_email( trim( $raw[ array_search( 'Email', $headers, true ) ] ?? '' ) );
+            if ( is_email( $email ) ) {
+                $lookup_emails[] = strtolower( $email );
+            }
+            if ( $id_col_idx !== false ) {
+                $csv_id = absint( $raw[ $id_col_idx ] ?? 0 );
+                if ( $csv_id ) {
+                    $lookup_ids[] = $csv_id;
+                }
+            }
+        }
+
+        $email_to_id = [];
+        if ( ! empty( $lookup_emails ) ) {
+            global $wpdb;
+            $placeholders = implode( ',', array_fill( 0, count( $lookup_emails ), '%s' ) );
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery
+            foreach ( $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT ID, LOWER(user_email) AS lc_email FROM {$wpdb->users} WHERE LOWER(user_email) IN ($placeholders)",
+                    ...$lookup_emails
+                )
+            ) as $db_row ) {
+                $email_to_id[ $db_row->lc_email ] = (int) $db_row->ID;
+            }
+        }
+
+        // Prime WP user object + meta caches for all existing users in this chunk
+        $preload_ids = array_unique( array_merge( array_values( $email_to_id ), $lookup_ids ) );
+        if ( ! empty( $preload_ids ) ) {
+            get_users( [ 'include' => $preload_ids, 'number' => -1 ] );
+            update_meta_cache( 'user', $preload_ids );
+        }
+
+        // ── Process rows ─────────────────────────────────────────────────────
+        foreach ( $chunk_rows as $raw ) {
             $row_num++;
+            $processed++;
 
             $data = [];
             foreach ( $headers as $i => $col ) {
-                $data[ $col ] = isset( $row[ $i ] ) ? trim( $row[ $i ] ) : '';
+                $data[ $col ] = isset( $raw[ $i ] ) ? trim( $raw[ $i ] ) : '';
             }
 
             $email = sanitize_email( $data['Email'] ?? '' );
             if ( ! is_email( $email ) ) {
-                $results['errors'][] = sprintf(
-                    __( 'Fila %1$d: email inválido «%2$s».', 'jb3-members' ),
-                    $row_num, esc_html( $data['Email'] ?? '' )
-                );
+                if ( count( $errors ) < 200 ) {
+                    $errors[] = sprintf(
+                        __( 'Fila %1$d: email inválido «%2$s».', 'jb3-members' ),
+                        $row_num, esc_html( $data['Email'] ?? '' )
+                    );
+                }
                 continue;
             }
 
@@ -1225,7 +1374,7 @@ class JB3_Admin {
                         break;
 
                     case 'jb3_status':
-                        $status_map = [ 'Aprobado' => 'approved', 'Pendiente' => 'pending' ];
+                        $status_map            = [ 'Aprobado' => 'approved', 'Pendiente' => 'pending' ];
                         $meta_fields[ $field ] = $status_map[ $val ] ?? ( in_array( $val, [ 'approved', 'pending' ], true ) ? $val : 'pending' );
                         break;
 
@@ -1246,9 +1395,9 @@ class JB3_Admin {
                         $ids   = [];
                         foreach ( $parts as $part ) {
                             if ( isset( $nl_by_name[ $part ] ) ) {
-                                $ids[] = $nl_by_name[ $part ]; // nombre → ID Mailchimp
+                                $ids[] = $nl_by_name[ $part ];
                             } elseif ( isset( $nl_interests[ $part ] ) ) {
-                                $ids[] = $part; // ya es un ID válido
+                                $ids[] = $part;
                             }
                         }
                         if ( ! empty( $ids ) ) {
@@ -1280,25 +1429,27 @@ class JB3_Admin {
                 }
             }
 
-            // Look up existing user: by ID column first, then by email.
-            $existing   = null;
-            $id_col_idx = array_search( 'ID', $headers, true );
+            // Look up existing user from pre-built cache (no extra DB calls).
+            $existing = null;
             if ( $id_col_idx !== false ) {
-                $csv_id = absint( $row[ $id_col_idx ] ?? 0 );
+                $csv_id = absint( $raw[ $id_col_idx ] ?? 0 );
                 if ( $csv_id ) {
-                    $existing = get_userdata( $csv_id );
+                    $existing = get_userdata( $csv_id ); // served from WP object cache
                 }
             }
             if ( ! $existing ) {
-                $existing = get_user_by( 'email', $email );
+                $existing_id = $email_to_id[ strtolower( $email ) ] ?? null;
+                $existing    = $existing_id ? get_userdata( $existing_id ) : null; // served from WP object cache
             }
 
             if ( $existing ) {
                 if ( user_can( $existing->ID, 'manage_options' ) ) {
-                    $results['errors'][] = sprintf(
-                        __( 'Fila %1$d: "%2$s" es administrador/a y no puede modificarse desde la importación.', 'jb3-members' ),
-                        $row_num, $email
-                    );
+                    if ( count( $errors ) < 200 ) {
+                        $errors[] = sprintf(
+                            __( 'Fila %1$d: "%2$s" es administrador/a y no puede modificarse desde la importación.', 'jb3-members' ),
+                            $row_num, $email
+                        );
+                    }
                     continue;
                 }
 
@@ -1311,9 +1462,8 @@ class JB3_Admin {
                     );
                 }
                 $result = wp_update_user( $wp_fields );
-                if ( is_wp_error( $result ) ) {
-                    $results['errors'][] = sprintf( __( 'Fila %1$d: %2$s', 'jb3-members' ), $row_num, $result->get_error_message() );
-                    // Don't skip meta updates — phone, sector, etc. must still be saved.
+                if ( is_wp_error( $result ) && count( $errors ) < 200 ) {
+                    $errors[] = sprintf( __( 'Fila %1$d: %2$s', 'jb3-members' ), $row_num, $result->get_error_message() );
                 }
 
                 // Newsletter: si el CSV intenta re-suscribir a alguien que optó por no recibir, se respeta su elección.
@@ -1334,12 +1484,12 @@ class JB3_Admin {
                     }
                 }
 
-                do_action( 'jb3_sync_to_mailchimp', $existing->ID );
-                $results['updated']++;
+                $updated++;
 
             } else {
-                $user_data = array_merge( $wp_fields, [
-                    'user_login' => 'jb3_tmp_' . wp_generate_password( 8, false ),
+                $user_login = strlen( $email ) <= 60 ? $email : 'jb3_tmp_' . wp_generate_password( 8, false );
+                $user_data  = array_merge( $wp_fields, [
+                    'user_login' => $user_login,
                     'user_email' => $email,
                     'user_pass'  => wp_generate_password( 20 ),
                     'role'       => 'jb3_member',
@@ -1347,15 +1497,18 @@ class JB3_Admin {
 
                 $user_id = wp_insert_user( $user_data );
                 if ( is_wp_error( $user_id ) ) {
-                    $results['errors'][] = sprintf( __( 'Fila %1$d: %2$s', 'jb3-members' ), $row_num, $user_id->get_error_message() );
+                    if ( count( $errors ) < 200 ) {
+                        $errors[] = sprintf( __( 'Fila %1$d: %2$s', 'jb3-members' ), $row_num, $user_id->get_error_message() );
+                    }
                     continue;
                 }
 
-                // Set username to the WordPress-assigned ID.
-                global $wpdb;
-                $wpdb->update( $wpdb->users, [ 'user_login' => (string) $user_id ], [ 'ID' => $user_id ] );
-                clean_user_cache( $user_id );
-                update_user_meta( $user_id, 'nickname', (string) $user_id );
+                // Fallback: replace temp login with numeric ID for long-email edge case.
+                if ( strlen( $email ) > 60 ) {
+                    global $wpdb;
+                    $wpdb->update( $wpdb->users, [ 'user_login' => (string) $user_id ], [ 'ID' => $user_id ] );
+                    clean_user_cache( $user_id );
+                }
 
                 foreach ( $meta_fields as $key => $val ) {
                     update_user_meta( $user_id, $key, $val );
@@ -1374,21 +1527,39 @@ class JB3_Admin {
                     update_user_meta( $user_id, 'jb3_registered_at', current_time( 'mysql' ) );
                 }
 
-                do_action( 'jb3_sync_to_mailchimp', $user_id );
-                $results['created']++;
+                $created++;
             }
         }
 
-        fclose( $handle );
-        set_transient( 'jb3_import_results_' . $uid, $results, 60 );
-        wp_safe_redirect( add_query_arg( [ 'page' => 'jb3-import', 'imported' => '1' ], admin_url( 'admin.php' ) ) );
-        exit;
+        $state['offset']    = $new_offset;
+        $state['row_num']   = $row_num;
+        $state['processed'] = $processed;
+        $state['created']   = $created;
+        $state['updated']   = $updated;
+        $state['errors']    = $errors;
+
+        if ( $processed >= $state['total'] ) {
+            $state['phase'] = 'done';
+            @unlink( $state['file'] ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+            delete_option( self::import_state_key() );
+        } else {
+            update_option( self::import_state_key(), $state, false );
+        }
+
+        wp_send_json_success( $state );
     }
 
-    private static function redirect_after_import( array $results, int $uid ): void {
-        set_transient( 'jb3_import_results_' . $uid, $results, 60 );
-        wp_safe_redirect( add_query_arg( [ 'page' => 'jb3-import' ], admin_url( 'admin.php' ) ) );
-        exit;
+    public static function ajax_import_cancel() {
+        check_ajax_referer( 'jb3_import_ajax', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( __( 'Sin permiso.', 'jb3-members' ) );
+        }
+        $state = get_option( self::import_state_key() );
+        if ( $state && ! empty( $state['file'] ) && file_exists( $state['file'] ) ) {
+            @unlink( $state['file'] ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+        }
+        delete_option( self::import_state_key() );
+        wp_send_json_success();
     }
 
     // -------------------------------------------------------------------------
@@ -1728,7 +1899,7 @@ class JB3_Admin {
     }
 
     // -------------------------------------------------------------------------
-    // Import: admin page
+    // Import: admin page (browser-driven chunk loop)
     // -------------------------------------------------------------------------
 
     public static function page_import() {
@@ -1736,83 +1907,528 @@ class JB3_Admin {
             wp_die( esc_html__( 'Sin permiso.', 'jb3-members' ) );
         }
 
-        $uid     = get_current_user_id();
-        $results = get_transient( 'jb3_import_results_' . $uid );
-        delete_transient( 'jb3_import_results_' . $uid );
-
-        $form_url = add_query_arg( [ 'page' => 'jb3-import' ], admin_url( 'admin.php' ) );
+        $nonce          = wp_create_nonce( 'jb3_import_ajax' );
+        $ajax_url       = admin_url( 'admin-ajax.php' );
+        $existing_state = get_option( self::import_state_key() );
         ?>
         <div class="wrap">
             <h1><?php esc_html_e( 'Importar Usuarios', 'jb3-members' ); ?></h1>
 
-            <?php if ( $results !== false ) : ?>
-                <div class="notice notice-<?php echo empty( $results['errors'] ) ? 'success' : 'warning'; ?> is-dismissible">
-                    <p>
-                        <?php
-                        printf(
-                            esc_html__( '%1$d usuario(s) creado(s), %2$d actualizado(s).', 'jb3-members' ),
-                            (int) $results['created'],
-                            (int) $results['updated']
-                        );
-                        ?>
-                    </p>
-                    <?php if ( ! empty( $results['errors'] ) ) : ?>
-                        <p><strong><?php esc_html_e( 'Errores:', 'jb3-members' ); ?></strong></p>
-                        <ul style="list-style:disc;margin-left:20px;">
-                            <?php foreach ( $results['errors'] as $err ) : ?>
-                                <li><?php echo esc_html( $err ); ?></li>
+            <!-- Upload form — hidden while import runs -->
+            <div id="jb3im-upload"<?php echo $existing_state ? ' style="display:none"' : ''; ?>>
+                <p><?php esc_html_e( 'Subí un archivo CSV. La primera fila debe contener los nombres de columna. La columna "Email" es obligatoria.', 'jb3-members' ); ?></p>
+                <p><?php esc_html_e( 'Si el email ya existe se actualizan sus datos; si no existe se crea un nuevo miembro (auto-aprobado).', 'jb3-members' ); ?></p>
+
+                <details style="margin-bottom:16px;">
+                    <summary style="cursor:pointer;font-weight:600;"><?php esc_html_e( 'Columnas reconocidas', 'jb3-members' ); ?></summary>
+                    <table class="widefat" style="max-width:560px;margin-top:8px;">
+                        <thead><tr><th><?php esc_html_e( 'Columna CSV', 'jb3-members' ); ?></th><th><?php esc_html_e( 'Campo', 'jb3-members' ); ?></th></tr></thead>
+                        <tbody>
+                            <?php foreach ( [
+                                [ 'Email',              __( 'Email (obligatorio)', 'jb3-members' ) ],
+                                [ 'Nombre',             __( 'Nombre', 'jb3-members' ) ],
+                                [ 'Apellido',           __( 'Apellido', 'jb3-members' ) ],
+                                [ 'Estado',             __( 'Estado (Aprobado / Pendiente)', 'jb3-members' ) ],
+                                [ 'País',               __( 'País (nombre o código ISO)', 'jb3-members' ) ],
+                                [ 'Empresa',            __( 'Empresa', 'jb3-members' ) ],
+                                [ 'Cargo',              __( 'Cargo', 'jb3-members' ) ],
+                                [ 'Teléfono',           __( 'Teléfono', 'jb3-members' ) ],
+                                [ 'Sector',             __( 'Sector', 'jb3-members' ) ],
+                                [ 'Newsletter',         __( 'Newsletter (Sí / No)', 'jb3-members' ) ],
+                                [ 'Newsletters',        __( 'Newsletters por País (nombres separados por coma)', 'jb3-members' ) ],
+                                [ 'Intereses',          __( 'Intereses (separados por coma)', 'jb3-members' ) ],
+                                [ 'Fecha Registro JB3', __( 'Fecha de registro JB3', 'jb3-members' ) ],
+                                [ 'Fecha Aprobación',   __( 'Fecha de aprobación', 'jb3-members' ) ],
+                            ] as [ $col, $desc ] ) : ?>
+                                <tr><td><code><?php echo esc_html( $col ); ?></code></td><td><?php echo esc_html( $desc ); ?></td></tr>
                             <?php endforeach; ?>
-                        </ul>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
+                        </tbody>
+                    </table>
+                    <p style="margin-top:8px;">
+                        <a href="<?php echo esc_url( wp_nonce_url( add_query_arg( [ 'page' => 'jb3-export', 'action' => 'download' ], admin_url( 'admin.php' ) ), 'jb3_export_users' ) ); ?>">
+                            <?php esc_html_e( '↓ Descargar CSV actual como plantilla', 'jb3-members' ); ?>
+                        </a>
+                    </p>
+                </details>
 
-            <p><?php esc_html_e( 'Subí un archivo CSV. La primera fila debe contener los nombres de columna. La columna "Email" es obligatoria.', 'jb3-members' ); ?></p>
-            <p><?php esc_html_e( 'Si el email ya existe se actualizan sus datos; si no existe se crea un nuevo miembro (auto-aprobado).', 'jb3-members' ); ?></p>
+                <form id="jb3im-form">
+                    <table class="form-table">
+                        <tr>
+                            <th><label for="jb3_csv"><?php esc_html_e( 'Archivo CSV', 'jb3-members' ); ?></label></th>
+                            <td><input type="file" id="jb3_csv" name="jb3_csv" accept=".csv,text/csv" required></td>
+                        </tr>
+                    </table>
+                    <p class="submit">
+                        <button type="submit" id="jb3im-btn-start" class="button button-primary button-large">
+                            <?php esc_html_e( 'Importar', 'jb3-members' ); ?>
+                        </button>
+                    </p>
+                </form>
+            </div>
 
-            <details style="margin-bottom:16px;">
-                <summary style="cursor:pointer;font-weight:600;"><?php esc_html_e( 'Columnas reconocidas', 'jb3-members' ); ?></summary>
-                <table class="widefat" style="max-width:560px;margin-top:8px;">
-                    <thead><tr><th><?php esc_html_e( 'Columna CSV', 'jb3-members' ); ?></th><th><?php esc_html_e( 'Campo', 'jb3-members' ); ?></th></tr></thead>
-                    <tbody>
-                        <?php foreach ( [
-                            [ 'Email',              __( 'Email (obligatorio)', 'jb3-members' ) ],
-                            [ 'Nombre',             __( 'Nombre', 'jb3-members' ) ],
-                            [ 'Apellido',           __( 'Apellido', 'jb3-members' ) ],
-                            [ 'Estado',             __( 'Estado (Aprobado / Pendiente)', 'jb3-members' ) ],
-                            [ 'País',               __( 'País (nombre o código ISO)', 'jb3-members' ) ],
-                            [ 'Empresa',            __( 'Empresa', 'jb3-members' ) ],
-                            [ 'Cargo',              __( 'Cargo', 'jb3-members' ) ],
-                            [ 'Teléfono',           __( 'Teléfono', 'jb3-members' ) ],
-                            [ 'Sector',             __( 'Sector', 'jb3-members' ) ],
-                            [ 'Newsletter',  __( 'Newsletter (Sí / No)', 'jb3-members' ) ],
-                            [ 'Newsletters', __( 'Newsletters por País (nombres separados por coma)', 'jb3-members' ) ],
-                            [ 'Intereses',   __( 'Intereses (separados por coma)', 'jb3-members' ) ],
-                            [ 'Fecha Registro JB3', __( 'Fecha de registro JB3', 'jb3-members' ) ],
-                            [ 'Fecha Aprobación',   __( 'Fecha de aprobación', 'jb3-members' ) ],
-                        ] as [ $col, $desc ] ) : ?>
-                            <tr><td><code><?php echo esc_html( $col ); ?></code></td><td><?php echo esc_html( $desc ); ?></td></tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-                <p style="margin-top:8px;">
-                    <a href="<?php echo esc_url( wp_nonce_url( add_query_arg( [ 'page' => 'jb3-export', 'action' => 'download' ], admin_url( 'admin.php' ) ), 'jb3_export_users' ) ); ?>">
-                        <?php esc_html_e( '↓ Descargar CSV actual como plantilla', 'jb3-members' ); ?>
-                    </a>
-                </p>
-            </details>
+            <!-- Progress panel — visible while import runs -->
+            <div id="jb3im-progress"<?php echo ! $existing_state ? ' style="display:none"' : ''; ?>>
+                <progress id="jb3im-bar" value="0" max="100" style="width:100%;max-width:600px;height:22px;display:block;margin-bottom:8px;"></progress>
+                <p id="jb3im-txt" style="margin:0 0 12px;"></p>
+                <button id="jb3im-btn-cancel" class="button button-secondary">
+                    <?php esc_html_e( 'Cancelar', 'jb3-members' ); ?>
+                </button>
+            </div>
 
-            <form method="post" action="<?php echo esc_url( $form_url ); ?>" enctype="multipart/form-data">
-                <?php wp_nonce_field( 'jb3_import_users', 'jb3_import_nonce' ); ?>
-                <table class="form-table">
-                    <tr>
-                        <th><label for="jb3_csv"><?php esc_html_e( 'Archivo CSV', 'jb3-members' ); ?></label></th>
-                        <td><input type="file" id="jb3_csv" name="jb3_csv" accept=".csv,text/csv" required></td>
-                    </tr>
-                </table>
-                <?php submit_button( __( 'Importar', 'jb3-members' ), 'primary' ); ?>
-            </form>
+            <!-- Results panel — shown after completion or cancel -->
+            <div id="jb3im-results"></div>
         </div>
+
+        <script>
+        (function() {
+            var ajaxUrl = <?php echo wp_json_encode( $ajax_url ); ?>;
+            var nonce   = <?php echo wp_json_encode( $nonce ); ?>;
+            var running = false;
+            var state   = null;
+
+            var divUpload   = document.getElementById('jb3im-upload');
+            var divProgress = document.getElementById('jb3im-progress');
+            var divResults  = document.getElementById('jb3im-results');
+            var bar         = document.getElementById('jb3im-bar');
+            var txt         = document.getElementById('jb3im-txt');
+            var btnCancel   = document.getElementById('jb3im-btn-cancel');
+            var btnStart    = document.getElementById('jb3im-btn-start');
+
+            function ajax(body, onSuccess, onError) {
+                fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body })
+                    .then(function(r) { return r.json(); })
+                    .then(function(resp) {
+                        if (resp && resp.success) { onSuccess(resp.data); }
+                        else { onError(resp && resp.data ? resp.data : '<?php echo esc_js( __( 'Error desconocido.', 'jb3-members' ) ); ?>'); }
+                    })
+                    .catch(function(e) { onError('<?php echo esc_js( __( 'Error de red:', 'jb3-members' ) ); ?> ' + e.message); });
+            }
+
+            function renderState(s) {
+                var pct = s.total > 0 ? Math.round(s.processed / s.total * 100) : 0;
+                bar.value = pct;
+                var errStr = s.errors.length > 0 ? ', ' + s.errors.length + ' error(es)' : '';
+                txt.textContent = s.processed + ' / ' + s.total + ' (' + pct + '%) — '
+                    + s.created + ' creado(s), ' + s.updated + ' actualizado(s)' + errStr;
+            }
+
+            function showResults(s, cancelled) {
+                divUpload.style.display   = '';
+                divProgress.style.display = 'none';
+
+                var cls  = (!cancelled && s.errors.length === 0) ? 'success' : 'warning';
+                var html = '<div class="notice notice-' + cls + ' is-dismissible" style="margin-top:16px;"><p>';
+
+                if (cancelled) {
+                    html += '<strong><?php echo esc_js( __( 'Importación cancelada.', 'jb3-members' ) ); ?></strong> ';
+                    html += s.processed + ' <?php echo esc_js( __( 'filas procesadas', 'jb3-members' ) ); ?>: ';
+                } else {
+                    html += '<strong>';
+                }
+                html += s.created + ' <?php echo esc_js( __( 'usuario(s) creado(s)', 'jb3-members' ) ); ?>, '
+                      + s.updated + ' <?php echo esc_js( __( 'actualizado(s).', 'jb3-members' ) ); ?>';
+                if (!cancelled) { html += '</strong>'; }
+                html += '</p>';
+
+                if (s.errors.length > 0) {
+                    html += '<p><strong><?php echo esc_js( __( 'Errores:', 'jb3-members' ) ); ?></strong></p>'
+                          + '<ul style="list-style:disc;margin-left:20px;">';
+                    var limit = Math.min(s.errors.length, 200);
+                    for (var i = 0; i < limit; i++) {
+                        html += '<li>' + s.errors[i].replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</li>';
+                    }
+                    if (s.errors.length > 200) {
+                        html += '<li>... y ' + (s.errors.length - 200) + ' más.</li>';
+                    }
+                    html += '</ul>';
+                }
+                html += '</div>';
+                divResults.innerHTML = html;
+            }
+
+            function processChunk() {
+                if (!running) return;
+                var body = new FormData();
+                body.append('action', 'jb3_import_chunk');
+                body.append('nonce', nonce);
+                ajax(body, function(s) {
+                    if (!running) return;
+                    state = s;
+                    renderState(s);
+                    if (s.phase === 'done') {
+                        running = false;
+                        showResults(s, false);
+                    } else {
+                        setTimeout(processChunk, 0);
+                    }
+                }, function(err) {
+                    if (!running) return;
+                    running = false;
+                    txt.textContent = '<?php echo esc_js( __( 'Error:', 'jb3-members' ) ); ?> ' + err;
+                    btnCancel.textContent = '<?php echo esc_js( __( 'Cerrar', 'jb3-members' ) ); ?>';
+                });
+            }
+
+            // Form submit — upload CSV and start.
+            document.getElementById('jb3im-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                var fileInput = document.getElementById('jb3_csv');
+                if (!fileInput.files.length) return;
+
+                btnStart.disabled = true;
+                divUpload.style.display   = 'none';
+                divProgress.style.display = '';
+                divResults.innerHTML      = '';
+                bar.value = 0;
+                txt.textContent = '<?php echo esc_js( __( 'Subiendo archivo…', 'jb3-members' ) ); ?>';
+                running = true;
+
+                var body = new FormData();
+                body.append('action', 'jb3_import_start');
+                body.append('nonce', nonce);
+                body.append('jb3_csv', fileInput.files[0], fileInput.files[0].name);
+
+                ajax(body, function(s) {
+                    state = s;
+                    renderState(s);
+                    processChunk();
+                }, function(err) {
+                    running = false;
+                    btnStart.disabled = false;
+                    divUpload.style.display   = '';
+                    divProgress.style.display = 'none';
+                    divResults.innerHTML = '<div class="notice notice-error"><p>' + err + '</p></div>';
+                });
+            });
+
+            // Cancel button.
+            btnCancel.addEventListener('click', function() {
+                if (!running) {
+                    divProgress.style.display = 'none';
+                    return;
+                }
+                running = false;
+                btnCancel.disabled = true;
+                var body = new FormData();
+                body.append('action', 'jb3_import_cancel');
+                body.append('nonce', nonce);
+                fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body })
+                    .finally(function() {
+                        btnCancel.disabled = false;
+                        showResults(state || { processed: 0, created: 0, updated: 0, errors: [] }, true);
+                    });
+            });
+
+            <?php if ( $existing_state ) : ?>
+            // Resume in-progress import from a previous session.
+            state = <?php echo wp_json_encode( $existing_state ); ?>;
+            renderState(state);
+            if (confirm(
+                '<?php echo esc_js( __( 'Hay una importación en curso. ¿Querés reanudarla?', 'jb3-members' ) ); ?>'
+                + ' (' + state.processed + '/' + state.total + ' <?php echo esc_js( __( 'filas procesadas', 'jb3-members' ) ); ?>)'
+            )) {
+                running = true;
+                processChunk();
+            }
+            <?php endif; ?>
+        })();
+        </script>
+        <?php
+    }
+
+    // =========================================================================
+    // Bulk delete: page + browser-driven chunk loop
+    // =========================================================================
+
+    private static function delete_state_key() {
+        return 'jb3_delete_state_' . get_current_user_id();
+    }
+
+    public static function ajax_delete_start() {
+        check_ajax_referer( 'jb3_delete_ajax', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( 'No autorizado.' );
+        }
+
+        $filter = sanitize_text_field( wp_unslash( $_POST['filter'] ?? 'all' ) );
+        if ( ! in_array( $filter, [ 'all', 'pending', 'approved' ], true ) ) {
+            $filter = 'all';
+        }
+
+        $query = [ 'role' => 'jb3_member', 'number' => -1, 'fields' => 'ID' ];
+        if ( 'pending' === $filter ) {
+            $query['meta_key']   = 'jb3_status';
+            $query['meta_value'] = 'pending';
+        } elseif ( 'approved' === $filter ) {
+            $query['meta_key']   = 'jb3_status';
+            $query['meta_value'] = 'approved';
+        }
+
+        $total = count( get_users( $query ) );
+
+        $state = [
+            'filter'  => $filter,
+            'total'   => $total,
+            'deleted' => 0,
+            'errors'  => [],
+            'phase'   => 'running',
+        ];
+
+        update_option( self::delete_state_key(), $state, false );
+        wp_send_json_success( $state );
+    }
+
+    public static function ajax_delete_chunk() {
+        check_ajax_referer( 'jb3_delete_ajax', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( 'No autorizado.' );
+        }
+
+        $state = get_option( self::delete_state_key() );
+        if ( ! is_array( $state ) || 'running' !== $state['phase'] ) {
+            wp_send_json_error( 'No hay borrado en curso.' );
+        }
+
+        $filter = $state['filter'];
+        $query  = [ 'role' => 'jb3_member', 'number' => 50, 'fields' => 'ID', 'orderby' => 'ID', 'order' => 'ASC' ];
+        if ( 'pending' === $filter ) {
+            $query['meta_key']   = 'jb3_status';
+            $query['meta_value'] = 'pending';
+        } elseif ( 'approved' === $filter ) {
+            $query['meta_key']   = 'jb3_status';
+            $query['meta_value'] = 'approved';
+        }
+
+        $user_ids = get_users( $query );
+
+        if ( empty( $user_ids ) ) {
+            $state['phase'] = 'done';
+            delete_option( self::delete_state_key() );
+            wp_send_json_success( $state );
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/user.php';
+
+        // Suppress per-user Mailchimp archive during bulk delete — the sync
+        // page handles cleanup of contacts that no longer exist in WordPress.
+        remove_action( 'delete_user', [ 'JB3_Mailchimp', 'handle_user_delete' ] );
+
+        foreach ( $user_ids as $uid ) {
+            $uid = (int) $uid;
+            // Never delete administrators.
+            if ( user_can( $uid, 'manage_options' ) ) {
+                continue;
+            }
+            $result = wp_delete_user( $uid );
+            if ( $result ) {
+                $state['deleted']++;
+            } elseif ( count( $state['errors'] ) < 100 ) {
+                $state['errors'][] = sprintf( __( 'No se pudo borrar el usuario ID %d.', 'jb3-members' ), $uid );
+            }
+        }
+
+        update_option( self::delete_state_key(), $state, false );
+        wp_send_json_success( $state );
+    }
+
+    public static function ajax_delete_cancel() {
+        check_ajax_referer( 'jb3_delete_ajax', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( 'No autorizado.' );
+        }
+        delete_option( self::delete_state_key() );
+        wp_send_json_success();
+    }
+
+    public static function page_delete() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Sin permiso.', 'jb3-members' ) );
+        }
+
+        $nonce         = wp_create_nonce( 'jb3_delete_ajax' );
+        $state         = get_option( self::delete_state_key() );
+        $total_members = count( get_users( [ 'role' => 'jb3_member', 'number' => -1, 'fields' => 'ID' ] ) );
+        $total_pending = count( get_users( [ 'role' => 'jb3_member', 'number' => -1, 'fields' => 'ID', 'meta_key' => 'jb3_status', 'meta_value' => 'pending' ] ) );
+        $total_approved = $total_members - $total_pending;
+        ?>
+        <div class="wrap" id="jb3-delete-wrap">
+            <h1><?php esc_html_e( 'Borrar Miembros en Lote', 'jb3-members' ); ?></h1>
+
+            <div class="notice notice-warning inline" style="margin:16px 0;padding:12px 16px;">
+                <p style="margin:0;"><strong><?php esc_html_e( '⚠ Esta acción es irreversible.', 'jb3-members' ); ?></strong>
+                <?php esc_html_e( 'Los miembros borrados son archivados en Mailchimp. Los administradores nunca se borran.', 'jb3-members' ); ?></p>
+            </div>
+
+            <table class="form-table" style="max-width:480px;">
+                <tr>
+                    <th><?php esc_html_e( 'Qué borrar', 'jb3-members' ); ?></th>
+                    <td>
+                        <label style="display:block;margin-bottom:6px;">
+                            <input type="radio" name="jb3_delete_filter" value="all" checked>
+                            <?php printf( esc_html__( 'Todos los miembros (%d)', 'jb3-members' ), $total_members ); ?>
+                        </label>
+                        <label style="display:block;margin-bottom:6px;">
+                            <input type="radio" name="jb3_delete_filter" value="pending">
+                            <?php printf( esc_html__( 'Solo pendientes (%d)', 'jb3-members' ), $total_pending ); ?>
+                        </label>
+                        <label style="display:block;">
+                            <input type="radio" name="jb3_delete_filter" value="approved">
+                            <?php printf( esc_html__( 'Solo aprobados (%d)', 'jb3-members' ), $total_approved ); ?>
+                        </label>
+                    </td>
+                </tr>
+            </table>
+
+            <div id="jb3-delete-progress" style="display:none;margin:20px 0;">
+                <div style="background:#e0e0e0;height:22px;width:100%;max-width:520px;overflow:hidden;">
+                    <div id="jb3-delete-bar" style="background:#b32d2e;height:22px;width:0%;transition:width .4s;"></div>
+                </div>
+                <p id="jb3-delete-label" style="margin:6px 0 0;color:#555;font-size:13px;"></p>
+            </div>
+
+            <div id="jb3-delete-result" style="display:none;margin:20px 0;"></div>
+            <div id="jb3-delete-errors" style="display:none;margin-top:10px;"></div>
+
+            <p style="margin-top:20px;">
+                <button id="jb3-delete-btn-start" class="button button-primary button-large" style="background:#b32d2e;border-color:#8c1c1c;">
+                    <?php esc_html_e( 'Iniciar borrado', 'jb3-members' ); ?>
+                </button>
+                <button id="jb3-delete-btn-cancel" class="button button-large" style="display:none;margin-left:8px;">
+                    <?php esc_html_e( 'Cancelar', 'jb3-members' ); ?>
+                </button>
+                <span id="jb3-delete-spinner" class="spinner" style="display:none;float:none;vertical-align:middle;margin-left:8px;"></span>
+            </p>
+        </div>
+
+        <script>
+        (function () {
+            var ajaxurl = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
+            var nonce   = <?php echo wp_json_encode( $nonce ); ?>;
+            var running = false;
+            var state   = <?php echo wp_json_encode( $state ?: null ); ?>;
+
+            var btnStart  = document.getElementById('jb3-delete-btn-start');
+            var btnCancel = document.getElementById('jb3-delete-btn-cancel');
+            var spinner   = document.getElementById('jb3-delete-spinner');
+            var divProg   = document.getElementById('jb3-delete-progress');
+            var bar       = document.getElementById('jb3-delete-bar');
+            var label     = document.getElementById('jb3-delete-label');
+            var divRes    = document.getElementById('jb3-delete-result');
+            var divErr    = document.getElementById('jb3-delete-errors');
+
+            function escHtml(s) {
+                return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            }
+            function setSpinner(on) {
+                spinner.style.display = on ? 'inline-block' : 'none';
+                spinner.className     = on ? 'spinner is-active' : 'spinner';
+            }
+            function updateBar(s) {
+                var pct = s.total > 0 ? Math.min(100, Math.round(s.deleted * 100 / s.total)) : 100;
+                bar.style.width  = pct + '%';
+                label.textContent = s.deleted + ' / ' + s.total + ' <?php echo esc_js( __( 'borrados', 'jb3-members' ) ); ?>';
+            }
+            function showErrors(errs) {
+                if (!errs || !errs.length) { divErr.style.display = 'none'; return; }
+                divErr.style.display = 'block';
+                divErr.innerHTML = '<details><summary style="cursor:pointer;color:#b32d2e;">'
+                    + errs.length + ' <?php echo esc_js( __( 'errores', 'jb3-members' ) ); ?></summary><ul style="margin:.5rem 0 0 1.2rem;">'
+                    + errs.map(function(e){ return '<li>' + escHtml(e) + '</li>'; }).join('')
+                    + '</ul></details>';
+            }
+            function showDone(s) {
+                divRes.style.display = 'block';
+                divRes.innerHTML = '<div class="notice notice-success inline" style="padding:10px 14px;"><p style="margin:0;">'
+                    + '<strong><?php echo esc_js( __( 'Completado.', 'jb3-members' ) ); ?></strong> '
+                    + escHtml(s.deleted) + ' <?php echo esc_js( __( 'miembros borrados.', 'jb3-members' ) ); ?>'
+                    + '</p></div>';
+                showErrors(s.errors);
+                btnStart.disabled       = false;
+                btnStart.textContent    = <?php echo wp_json_encode( __( 'Borrar de nuevo', 'jb3-members' ) ); ?>;
+                btnCancel.style.display = 'none';
+                setSpinner(false);
+                running = false;
+                // Reload page to update member counts.
+                setTimeout(function(){ location.reload(); }, 1500);
+            }
+            function post(action, extra, cb) {
+                var fd = new FormData();
+                fd.append('action', action);
+                fd.append('nonce', nonce);
+                for (var k in extra) { fd.append(k, extra[k]); }
+                fetch(ajaxurl, { method: 'POST', body: fd })
+                    .then(function(r){ return r.json(); })
+                    .then(cb)
+                    .catch(function(){ if (running) setTimeout(function(){ post(action, extra, cb); }, 3000); });
+            }
+            function processChunk() {
+                if (!running) return;
+                post('jb3_delete_chunk', {}, function(resp) {
+                    if (!resp.success) { running = false; setSpinner(false); return; }
+                    state = resp.data;
+                    divProg.style.display = 'block';
+                    updateBar(state);
+                    if (state.phase === 'done') {
+                        showDone(state);
+                    } else {
+                        processChunk();
+                    }
+                });
+            }
+
+            btnStart.addEventListener('click', function() {
+                if (running) return;
+                var filter = document.querySelector('input[name="jb3_delete_filter"]:checked').value;
+                var label_text = {
+                    all:      <?php echo wp_json_encode( __( 'todos los miembros', 'jb3-members' ) ); ?>,
+                    pending:  <?php echo wp_json_encode( __( 'los miembros pendientes', 'jb3-members' ) ); ?>,
+                    approved: <?php echo wp_json_encode( __( 'los miembros aprobados', 'jb3-members' ) ); ?>
+                }[filter];
+                if (!confirm(<?php echo wp_json_encode( __( '¿Estás seguro? Vas a borrar ', 'jb3-members' ) ); ?> + label_text + <?php echo wp_json_encode( __( '. Esta acción no se puede deshacer.', 'jb3-members' ) ); ?>)) return;
+
+                running = true;
+                btnStart.disabled       = true;
+                btnCancel.style.display = 'inline-block';
+                divRes.style.display    = 'none';
+                divErr.style.display    = 'none';
+                setSpinner(true);
+
+                post('jb3_delete_start', { filter: filter }, function(resp) {
+                    if (!resp.success) { running = false; setSpinner(false); btnStart.disabled = false; return; }
+                    state = resp.data;
+                    divProg.style.display = 'block';
+                    updateBar(state);
+                    processChunk();
+                });
+            });
+
+            btnCancel.addEventListener('click', function() {
+                running = false;
+                setSpinner(false);
+                btnStart.disabled       = false;
+                btnCancel.style.display = 'none';
+                post('jb3_delete_cancel', {}, function(){});
+                divRes.style.display = 'block';
+                divRes.innerHTML = '<div class="notice notice-warning inline" style="padding:10px 14px;"><p style="margin:0;">'
+                    + <?php echo wp_json_encode( __( 'Borrado cancelado.', 'jb3-members' ) ); ?>
+                    + (state ? ' ' + escHtml(state.deleted) + ' <?php echo esc_js( __( 'borrados hasta el momento.', 'jb3-members' ) ); ?>' : '')
+                    + '</p></div>';
+            });
+
+            <?php if ( $state && 'running' === $state['phase'] ) : ?>
+            if (confirm(<?php echo wp_json_encode( __( 'Hay un borrado en curso. ¿Querés reanudarlo?', 'jb3-members' ) ); ?>
+                + ' (' + state.deleted + '/' + state.total + ')')) {
+                running = true;
+                btnStart.disabled       = true;
+                btnCancel.style.display = 'inline-block';
+                divProg.style.display   = 'block';
+                setSpinner(true);
+                updateBar(state);
+                processChunk();
+            }
+            <?php endif; ?>
+        })();
+        </script>
         <?php
     }
 }

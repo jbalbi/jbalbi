@@ -104,8 +104,11 @@ class JB3_Registration {
         }
 
         // — Create user ——————————————————————————————————————————————
+        // Use email as user_login (≤60 chars); fall back to a temp ID for rare long emails.
+        $user_login = strlen( $email ) <= 60 ? $email : 'jb3_tmp_' . wp_generate_password( 8, false );
+
         $user_id = wp_insert_user( [
-            'user_login'   => 'jb3_tmp_' . wp_generate_password( 8, false ),
+            'user_login'   => $user_login,
             'user_email'   => $email,
             'user_pass'    => wp_generate_password( 24 ),
             'first_name'   => $first_name,
@@ -119,11 +122,12 @@ class JB3_Registration {
             return [ $errors, false ];
         }
 
-        // Use the WordPress-assigned ID as the username.
-        global $wpdb;
-        $wpdb->update( $wpdb->users, [ 'user_login' => (string) $user_id ], [ 'ID' => $user_id ] );
-        clean_user_cache( $user_id );
-        update_user_meta( $user_id, 'nickname', (string) $user_id );
+        // Fallback: replace temp login with numeric ID for long-email edge case.
+        if ( strlen( $email ) > 60 ) {
+            global $wpdb;
+            $wpdb->update( $wpdb->users, [ 'user_login' => (string) $user_id ], [ 'ID' => $user_id ] );
+            clean_user_cache( $user_id );
+        }
 
         // — Save meta ——————————————————————————————————————————————
         update_user_meta( $user_id, 'jb3_company',       $company );

@@ -138,21 +138,22 @@ class JB3_Sync {
 
         // --- Still have jb3_members to iterate ---
         if ( $state['wp_offset'] < $state['wp_total'] ) {
-            $user_ids = get_users( [
+            // Fetch full user objects so WP caches wp_users rows (avoids N get_userdata queries).
+            $users    = get_users( [
                 'role'    => 'jb3_member',
                 'number'  => self::WP_CHUNK,
                 'offset'  => $state['wp_offset'],
-                'fields'  => 'ID',
                 'orderby' => 'ID',
                 'order'   => 'ASC',
             ] );
+            $user_ids = array_map( fn( $u ) => $u->ID, $users );
 
             // One SQL query preloads all meta for these users (vs N×7 queries)
             update_meta_cache( 'user', $user_ids );
 
             $operations = [];
-            foreach ( $user_ids as $uid ) {
-                $op = self::build_member_op( (int) $uid, $list_id );
+            foreach ( $users as $user ) {
+                $op = self::build_op( $user, $list_id );
                 if ( $op ) {
                     $operations[] = $op;
                 }
@@ -167,29 +168,21 @@ class JB3_Sync {
                 }
             }
 
-            $state['wp_offset'] += count( $user_ids );
+            $state['wp_offset'] += count( $users );
             return $state;
         }
 
         // --- Sync admin users (once, after all members) ---
+        // Uses direct PUT (not Batch API) so archived contacts are resubscribed
+        // immediately and errors are visible in the WP error log.
         if ( ! $state['admin_done'] ) {
-            $operations = [];
             foreach ( $state['admins'] as $admin_id ) {
-                $op = self::build_admin_op( $admin_id, $list_id );
-                if ( $op ) {
-                    $operations[] = $op;
+                $newsletter = (bool) get_user_meta( $admin_id, 'jb3_newsletter', true );
+                if ( $newsletter ) {
+                    JB3_Mailchimp::sync_user( $admin_id );
+                    $state['upserted']++;
                 }
             }
-
-            if ( ! empty( $operations ) ) {
-                $err = self::submit_batch( $operations, $api_key, $server );
-                if ( $err ) {
-                    $state['errors'][] = 'Lote admins: ' . $err;
-                } else {
-                    $state['upserted'] += count( $operations );
-                }
-            }
-
             $state['admin_done'] = true;
             return $state;
         }
@@ -280,28 +273,27 @@ class JB3_Sync {
     // Operation builders
     // =========================================================================
 
-    private static function build_member_op( int $user_id, string $list_id ): ?array {
-        $user = get_userdata( $user_id );
-        if ( ! $user ) {
-            return null;
-        }
-        if ( 'approved' !== jb3_get_status( $user_id ) ) {
+    private static function build_op( WP_User $user, string $list_id ): ?array {
+        $uid      = $user->ID;
+        $is_admin = user_can( $uid, 'manage_options' );
+
+        if ( ! $is_admin && 'approved' !== jb3_get_status( $uid ) ) {
             return null;
         }
 
         $email = strtolower( trim( $user->user_email ) );
         $hash  = md5( $email );
 
-        if ( ! (bool) get_user_meta( $user_id, 'jb3_newsletter', true ) ) {
+        if ( ! (bool) get_user_meta( $uid, 'jb3_newsletter', true ) ) {
             return [ 'method' => 'DELETE', 'path' => '/lists/' . $list_id . '/members/' . $hash ];
         }
 
-        $interests_raw = (array) get_user_meta( $user_id, 'jb3_interests', true );
+        $interests_raw = (array) get_user_meta( $uid, 'jb3_interests', true );
         $interests     = [];
         foreach ( array_keys( JB3_Mailchimp::get_cached_interests() ) as $id ) {
             $interests[ $id ] = in_array( $id, $interests_raw, true );
         }
-        $nl_ids = (array) get_user_meta( $user_id, 'jb3_newsletter_countries', true );
+        $nl_ids = (array) get_user_meta( $uid, 'jb3_newsletter_countries', true );
         foreach ( array_keys( JB3_Mailchimp::get_newsletter_interests() ) as $id ) {
             $interests[ $id ] = in_array( $id, $nl_ids, true );
         }
@@ -316,57 +308,12 @@ class JB3_Sync {
                 'merge_fields'  => [
                     'FNAME'   => $user->first_name,
                     'LNAME'   => $user->last_name,
-                    'PHONE'   => get_user_meta( $user_id, 'jb3_phone',     true ),
-                    'COMPANY' => get_user_meta( $user_id, 'jb3_company',   true ),
-                    'MMERGE5' => get_user_meta( $user_id, 'jb3_sector',    true ),
-                    'MMERGE6' => get_user_meta( $user_id, 'jb3_job_title', true ),
-                    'COUNTRY' => get_user_meta( $user_id, 'jb3_country',   true ),
-                    'ESTADO'  => 'Aprobado',
-                ],
-                'interests' => $interests,
-            ] ),
-        ];
-    }
-
-    private static function build_admin_op( int $user_id, string $list_id ): ?array {
-        $user = get_userdata( $user_id );
-        if ( ! $user ) {
-            return null;
-        }
-
-        $email = strtolower( trim( $user->user_email ) );
-        $hash  = md5( $email );
-
-        if ( ! (bool) get_user_meta( $user_id, 'jb3_newsletter', true ) ) {
-            return [ 'method' => 'DELETE', 'path' => '/lists/' . $list_id . '/members/' . $hash ];
-        }
-
-        $interests_raw = (array) get_user_meta( $user_id, 'jb3_interests', true );
-        $interests     = [];
-        foreach ( array_keys( JB3_Mailchimp::get_cached_interests() ) as $id ) {
-            $interests[ $id ] = in_array( $id, $interests_raw, true );
-        }
-        $nl_ids = (array) get_user_meta( $user_id, 'jb3_newsletter_countries', true );
-        foreach ( array_keys( JB3_Mailchimp::get_newsletter_interests() ) as $id ) {
-            $interests[ $id ] = in_array( $id, $nl_ids, true );
-        }
-
-        return [
-            'method' => 'PUT',
-            'path'   => '/lists/' . $list_id . '/members/' . $hash,
-            'body'   => wp_json_encode( [
-                'email_address' => $user->user_email,
-                'status_if_new' => 'subscribed',
-                'status'        => 'subscribed',
-                'merge_fields'  => [
-                    'FNAME'   => $user->first_name,
-                    'LNAME'   => $user->last_name,
-                    'PHONE'   => get_user_meta( $user_id, 'jb3_phone',     true ) ?: '',
-                    'COMPANY' => get_user_meta( $user_id, 'jb3_company',   true ) ?: '',
-                    'MMERGE5' => get_user_meta( $user_id, 'jb3_sector',    true ) ?: '',
-                    'MMERGE6' => get_user_meta( $user_id, 'jb3_job_title', true ) ?: '',
-                    'COUNTRY' => get_user_meta( $user_id, 'jb3_country',   true ) ?: '',
-                    'ESTADO'  => 'Admin',
+                    'PHONE'   => get_user_meta( $uid, 'jb3_phone',     true ) ?: '',
+                    'COMPANY' => get_user_meta( $uid, 'jb3_company',   true ) ?: '',
+                    'MMERGE5' => get_user_meta( $uid, 'jb3_sector',    true ) ?: '',
+                    'MMERGE6' => get_user_meta( $uid, 'jb3_job_title', true ) ?: '',
+                    'COUNTRY' => get_user_meta( $uid, 'jb3_country',   true ) ?: '',
+                    'ESTADO'  => $is_admin ? 'Admin' : 'Aprobado',
                 ],
                 'interests' => $interests,
             ] ),
