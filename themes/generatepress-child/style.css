@@ -5,8 +5,1035 @@ Description: Child theme for GeneratePress
 Author:      jbalbi
 Author URI:
 Template:    generatepress
-Version:     1.0.0
+Version:     1.2.1
 License:     GNU General Public License v2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: generatepress-child
 */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VARIABLES
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+    /* Cambiar la tipografía del sitio = cambiar esta línea nomás. */
+    --tipografia-1:     'Montserrat', sans-serif;
+
+    /* Paleta base */
+    --color-primary:    #730687;
+    --color-secondary:  #e770bd;
+
+    /* Botón por defecto del sitio — mismos valores en TODOS lados (CTA del
+       nav, botones nativos de WordPress/Gutenberg, componentes propios como
+       el slider). Cambiar el estilo de los botones de todo el sitio = editar
+       estas variables acá, no hace falta tocar nada más. */
+    --btn-bg:         var(--color-primary);
+    --btn-bg-hover:   var(--color-secondary);
+    --btn-text:       #ffffff;
+    --btn-text-hover: var(--color-primary);
+    --btn-radius:     0;
+
+    /* Cuerpo (fondo/texto/links del sitio en general) */
+    --body-bg:            rgb(44, 44, 44);
+    --body-text:          #f6f6f6;
+    --link-color:         var(--color-primary);
+    --link-hover-color:   var(--color-secondary);
+
+    /* Barra superior (preheader) */
+    --topbar-bg:          #0a0a0a;
+    --topbar-text:        #ffaaaa;
+    --topbar-link:        #ffffff;
+    --topbar-link-hover:  var(--color-primary);
+
+    /* Cabecera */
+    --header-bg:          #000000cc;
+    --site-title-color:   #ffffff;
+    --site-tagline-color: #ffffff;
+
+    /* Navegación principal */
+    --nav-bg:             transparent;
+    --nav-bg-hover:       transparent;
+    --nav-bg-current:     transparent;
+    --nav-text:           #ffffff;
+    --nav-hover:          var(--color-secondary);
+    --nav-current:        var(--color-secondary);
+    --nav-cta-bg:         var(--btn-bg);
+    --nav-cta-hover:      var(--btn-bg-hover);
+    --nav-cta-text:       var(--btn-text);
+    --nav-cta-text-hover: var(--btn-text-hover);
+    --nav-cta-margin-left: 20px;
+    --nav-font-size:        11px;
+    --nav-font-size-mobile: 16px;
+    --nav-font-weight:      700;
+    /* line-height normal (no un px fijo) para que las líneas de un ítem que
+       hace wrap (ej. "Conéctate con nosotros" en dos líneas) no queden
+       separadas por un espacio enorme; la altura del botón la da el padding
+       vertical, no el line-height. */
+    --nav-item-line-height: 1.3;
+    --nav-item-padding-y:   12px;
+    --nav-item-padding-x:   12px;
+    --header-padding-y:   10px;
+    --header-padding-x:   20px;
+    --nav-gap-from-logo:  20px;
+    --icon-gap:           12px;
+
+    /* Submenú (dropdown) */
+    --dropdown-bg:         #333333;
+    --dropdown-bg-hover:   #3f3f3f;
+    --dropdown-text:       #ffffff;
+    --dropdown-text-hover: var(--color-secondary);
+    --dropdown-current-bg: #f0f0f01a;
+
+    /* Íconos del header (LinkedIn, perfil, buscador) — mismo fondo para que
+       se vean como un set de botones consistente. */
+    --icon-color:      var(--nav-text);
+    --icon-hover:      var(--color-primary);
+    --icon-bg:         transparent;
+    --icon-radius:     6px;
+
+    /* Footer */
+    --footer-bg:            #000000;
+    --footer-text:          #f6f6f6;
+    --footer-heading-color: var(--color-secondary);
+    --footer-link-color:    #cccccc;
+    --footer-link-hover:    var(--color-secondary);
+    --footer-gap:           40px;
+    --footer-padding-y:     48px;
+    --footer-padding-x:     20px;
+    --footer-bar-bg:        var(--color-primary);
+    --footer-bar-text:      #ffffff;
+    --footer-bar-cta:       var(--color-secondary);
+    --footer-bar-height:    48px;
+
+    /* Slider Home — caja del logo del canal. Mismo ancho/alto para
+       cualquier logo (ver .jb3-home-slider__canal-logo) — tocar estos dos
+       valores para probar tamaños sin tener que buscar la regla. */
+    --slider-logo-width:  300px;
+    --slider-logo-height: 108px;
+}
+
+/* En mobile (breakpoint del hamburguesa) usamos --nav-font-size-mobile en
+   vez de --nav-font-size. Como todas las reglas del nav ya usan
+   var(--nav-font-size), redefiniendo la variable acá alcanza — no hace
+   falta duplicar selectores. */
+@media (max-width: 1279px) {
+    :root {
+        --nav-font-size: var(--nav-font-size-mobile);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COLORES GLOBALES DEL SITIO
+   Todo acá, no en Personalizar. Mismo criterio que la navegación: !important
+   porque GeneratePress genera sus propios colores dinámicos por Customizer
+   (Personalizar > Colores) y si no lo forzamos, esas reglas ganan. Para
+   cambiar un color: solo hay que editar la variable correspondiente en
+   :root arriba, no hace falta tocar nada más.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Cuerpo */
+body {
+    background-color: var(--body-bg) !important;
+    color: var(--body-text) !important;
+}
+
+/* #page (con clase "container") envuelve todo el contenido entre el header y
+   el footer, y GP le pone su propio fondo (Personalizar > Colores >
+   Contenido) por encima del de <body> — sin esto, --body-bg solo se ve
+   asomando en los bordes/huecos fuera de #page. */
+#page {
+    background-color: var(--body-bg) !important;
+}
+
+a {
+    color: var(--link-color) !important;
+}
+
+a:hover,
+a:focus {
+    color: var(--link-hover-color) !important;
+}
+
+/* Botones nativos de WordPress/Gutenberg (botón "Enviar" de formularios,
+   bloque Botón del editor, etc.) — GeneratePress les pone su propio gris
+   oscuro dinámico por Customizer; se fuerza acá la marca del sitio con el
+   mismo !important que usa el resto de esta sección, para que un botón
+   "de fábrica" se vea igual que el CTA del nav o cualquier botón propio. */
+.button,
+a.button,
+.wp-block-button__link,
+button,
+html input[type="button"],
+input[type="reset"],
+input[type="submit"] {
+    background-color: var(--btn-bg) !important;
+    color: var(--btn-text) !important;
+    border-radius: var(--btn-radius) !important;
+}
+
+.button:hover,
+a.button:hover,
+.wp-block-button__link:hover,
+button:hover,
+html input[type="button"]:hover,
+input[type="reset"]:hover,
+input[type="submit"]:hover,
+.button:focus,
+a.button:focus,
+.wp-block-button__link:focus,
+button:focus,
+html input[type="button"]:focus,
+input[type="reset"]:focus,
+input[type="submit"]:focus {
+    background-color: var(--btn-bg-hover) !important;
+    color: var(--btn-text-hover) !important;
+}
+
+/* Barra superior */
+.top-bar a {
+    color: var(--topbar-link) !important;
+}
+
+.top-bar a:hover {
+    color: var(--topbar-link-hover) !important;
+}
+
+/* Cabecera */
+.site-header {
+    background-color: var(--header-bg) !important;
+}
+
+/* Preheader + header pegados arriba de la pantalla al hacer scroll. El
+   preheader ahora se renderiza DENTRO de <header> (ver _init_header.php),
+   así que basta con un solo position:sticky acá para que ambos suban y
+   bajen juntos, sin calcular la altura del preheader a mano. El offset con
+   la admin bar de WP replica el breakpoint que usa el core (782px). */
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+}
+
+body.admin-bar .site-header {
+    top: 32px;
+}
+
+@media screen and (max-width: 782px) {
+    body.admin-bar .site-header {
+        top: 46px;
+    }
+}
+
+.main-title a {
+    color: var(--site-title-color) !important;
+}
+
+.site-description {
+    color: var(--site-tagline-color) !important;
+}
+
+/* Navegación principal */
+.main-navigation {
+    background-color: var(--nav-bg) !important;
+}
+
+/* Usamos "> ul > li" (hijo directo) en vez de "ul li" (descendiente, sin
+   acotar) en toda esta sección — ".main-nav ul li" matchea <li> de
+   CUALQUIER profundidad, incluidos los de los submenús, pisando ahí las
+   reglas del dropdown por especificidad. Con "> ul > li" queda acotado al
+   primer nivel nomás.
+
+   Tamaño/alto: se aplica a TODOS los ítems por igual, incluido el CTA
+   (el CTA solo cambia de color/fondo, no de tamaño de fuente). */
+.main-navigation .main-nav > ul > li > a,
+.main-navigation .menu-toggle,
+.main-navigation .menu-bar-items {
+    font-size: var(--nav-font-size) !important;
+    font-weight: var(--nav-font-weight) !important;
+    line-height: var(--nav-item-line-height) !important;
+    padding-top: var(--nav-item-padding-y) !important;
+    padding-bottom: var(--nav-item-padding-y) !important;
+    /* GP le saca el padding-right a los ítems con submenú
+       (.menu-item-has-children), porque antes lo ocupaba la flechita que ya
+       sacamos — sin esto, esos ítems quedan con menos aire que el resto. */
+    padding-left: var(--nav-item-padding-x) !important;
+    padding-right: var(--nav-item-padding-x) !important;
+}
+
+/* Color: acá SÍ excluimos .nav-cta con :not() — sin esto, esta regla termina
+   siendo más específica que ".nav-cta:hover > a" (por tener más elementos
+   tipo "ul li a" en el selector) y le pisa el color/fondo en hover, aunque
+   ambas tengan !important. */
+.main-navigation .main-nav > ul > li:not(.nav-cta) > a,
+.main-navigation .menu-toggle,
+.main-navigation .menu-bar-items {
+    color: var(--nav-text) !important;
+}
+
+/* Padding del header completo (logo + nav + íconos en desktop). */
+.inside-header {
+    padding-top: var(--header-padding-y) !important;
+    padding-bottom: var(--header-padding-y) !important;
+    padding-left: var(--header-padding-x) !important;
+    padding-right: var(--header-padding-x) !important;
+}
+
+.main-navigation .main-nav > ul > li:not([class*="current-menu-"]):not(.nav-cta):hover > a,
+.main-navigation .main-nav > ul > li:not([class*="current-menu-"]):not(.nav-cta):focus > a,
+.main-navigation .main-nav > ul > li.sfHover:not([class*="current-menu-"]):not(.nav-cta) > a,
+.main-navigation .menu-bar-item:hover > a,
+.main-navigation .menu-bar-item.sfHover > a {
+    color: var(--nav-hover) !important;
+    background-color: var(--nav-bg-hover) !important;
+}
+
+.main-navigation .main-nav > ul > li[class*="current-menu-"]:not(.nav-cta) > a {
+    color: var(--nav-current) !important;
+    background-color: var(--nav-bg-current) !important;
+}
+
+/* Ítem de menú destacado (ej. "Conéctate con nosotros"): agregarle la clase
+   CSS "nav-cta" desde el editor de menús de WordPress (Apariencia > Menús >
+   el ítem > Clases CSS (adicionales), activando "Opciones de pantalla" si
+   no se ve ese campo). La separación del resto de ítems solo tiene sentido
+   en desktop (fila horizontal) — en mobile el menú es vertical. */
+@media (min-width: 1280px) {
+    .main-navigation .nav-cta {
+        margin-left: var(--nav-cta-margin-left);
+    }
+}
+
+.main-navigation .nav-cta > a {
+    background-color: var(--nav-cta-bg) !important;
+    color: var(--nav-cta-text) !important;
+    border-radius: var(--btn-radius) !important;
+}
+
+.main-navigation .nav-cta:hover > a {
+    background-color: var(--nav-cta-hover) !important;
+    color: var(--nav-cta-text-hover) !important;
+}
+
+/* Submenú (dropdown). El menú de cuenta (.site-header-account__menu) vive
+   fuera de .main-navigation (está en .site-header-icons), así que no puede
+   heredar por CSS normal — en cambio comparte estos mismos selectores/
+   declaraciones para no tener reglas duplicadas que se puedan desincronizar. */
+.main-navigation .main-nav ul ul,
+.site-header-account__menu {
+    background-color: var(--dropdown-bg) !important;
+}
+
+.main-navigation .main-nav ul ul li a,
+.site-header-account__menu li a {
+    color: var(--dropdown-text) !important;
+    font-family: var(--tipografia-1) !important;
+    font-size: var(--nav-font-size) !important;
+    font-weight: var(--nav-font-weight) !important;
+}
+
+.main-navigation .main-nav ul ul li:hover > a,
+.main-navigation .main-nav ul ul li.sfHover > a,
+.site-header-account__menu li:hover > a {
+    background-color: var(--dropdown-bg-hover) !important;
+    color: var(--dropdown-text-hover) !important;
+}
+
+.main-navigation .main-nav ul ul li[class*="current-menu-"] > a {
+    background-color: var(--dropdown-current-bg) !important;
+}
+
+/* Los submenús se abren con "Dirección del desplegable: Izquierda"
+   (Personalizar > Navegación principal), que los posiciona con right:0
+   (se expanden hacia la izquierda del botón, quedando desalineados).
+   Forzamos que abran siempre pegados debajo, hacia la derecha. */
+.main-navigation:not(.toggled) ul li:hover > ul,
+.main-navigation:not(.toggled) ul li.sfHover > ul {
+    left: 0 !important;
+    right: auto !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TIPOGRAFÍA GLOBAL
+   --tipografia-1 (encolada en functions.php) en todo el sitio. !important
+   porque GeneratePress define su propia font-family dinámica por Customizer
+   (Personalizar > Tipografía) con selectores que si no la pisamos, ganan.
+   ═══════════════════════════════════════════════════════════════════════════ */
+body,
+h1, h2, h3, h4, h5, h6,
+button, input, select, textarea,
+.main-navigation a,
+.menu-toggle {
+    font-family: var(--tipografia-1) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NAVEGACIÓN MOBILE (menú hamburguesa)
+   El breakpoint (1279px) se controla en PHP vía el filtro
+   generate_mobile_menu_media_query — ver _init_menu.php.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1279px) {
+    /* ─── Alineación de texto ────────────────────────────────────────────
+       GP mete su propio padding-left en los <a> de cada nivel (ítems,
+       submenú), y esos valores no siempre coinciden entre sí ni con el
+       logo. En vez de perseguir el ancho real de cada caja (que GP arma
+       con floats/anchos que varían por nivel), le pisamos a TODO el texto
+       del menú el mismo padding-left que separa al logo del borde
+       (--header-padding-x). El fondo de color de cada ítem puede ser tan
+       ancho como quiera — lo único que importa es que el texto arranque
+       siempre en la misma X. */
+    .main-navigation.toggled .main-nav > ul > li > a,
+    .main-navigation.toggled .main-nav ul ul li a {
+        padding-left: var(--header-padding-x) !important;
+        padding-right: var(--header-padding-x) !important;
+    }
+
+    /* El submenú lleva un poco más de indent que el nivel principal, para
+       marcar que es un nivel anidado (ver también "sin fondo" más abajo). */
+    .main-navigation.toggled .main-nav ul ul li a {
+        padding-left: calc(var(--header-padding-x) + 20px) !important;
+    }
+
+    /* ─── Submenú sin fondo ───────────────────────────────────────────────
+       En mobile el submenú se integra visualmente al resto del panel en
+       vez de mostrarse como una caja aparte (eso solo queda en desktop). */
+    .main-navigation.toggled .main-nav ul ul {
+        background-color: transparent !important;
+    }
+
+    /* ─── Bloque de íconos (LinkedIn / cuenta / registro) ────────────────
+       Oculto por default; el buscador de esta franja no se muestra porque
+       el hamburguesa ya trae el suyo propio (.mobile-menu-control-wrapper).
+       Se muestra en fila (no apilado) solo cuando el menú está desplegado,
+       con el mismo padding-left que el resto del texto del menú. */
+    .site-header-icons {
+        display: none;
+    }
+
+    .main-navigation.toggled ~ .site-header-icons,
+    .main-navigation.toggled .site-header-icons {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 15px;
+        margin-left: 0;
+        padding-top: 15px;
+        padding-bottom: 15px;
+        /* -6px: el ícono de LinkedIn (primer hijo) ya trae 6px de padding
+           propio (el "botón" de .site-header-icons .header-widget a) — se
+           lo restamos acá para que el SVG quede en la misma X que el resto
+           del texto del menú, no 6px más adentro. */
+        padding-left: calc(var(--header-padding-x) - 6px) !important;
+        padding-right: 0;
+    }
+
+    .site-header-icons__search {
+        display: none;
+    }
+
+    /* ─── Dropdown de cuenta ──────────────────────────────────────────────
+       Usa right:0 pensado para desktop (botón pegado al borde derecho). En
+       mobile el botón queda más a la izquierda, así que right:0 lo manda
+       fuera de pantalla — lo anclamos a la izquierda en vez de a la derecha. */
+    .site-header-account__menu {
+        left: 0;
+        right: auto;
+    }
+}
+
+/* El "Nav Drop Point" de GeneratePress (1279px, en Personalizar > Diseño de
+   pantalla > Navegación principal — hay que mantenerlo igual al filtro de
+   _init_menu.php) coincide con nuestro breakpoint del hamburguesa. Entre
+   769-1279px GP pone .inside-header en columna y le
+   agrega margin-bottom/margin-top al logo y al header-widget para
+   separarlos en ese layout apilado. Pero como el toggle inline del
+   hamburguesa fuerza a .inside-header de vuelta a flex-direction:row,
+   esos márgenes quedan sueltos y empujan el logo fuera del centro
+   respecto al botón de búsqueda/hamburguesa. Los anulamos acá. */
+@media (min-width: 769px) and (max-width: 1279px) {
+    .has-inline-mobile-toggle .site-logo,
+    .has-inline-mobile-toggle .site-branding,
+    .has-inline-mobile-toggle .header-widget {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   OVERLAY DEL MENÚ MÓVIL
+   GeneratePress agrega la clase "mobile-menu-open" al <html> cuando el
+   hamburguesa está activo (ver menu.js).
+   ═══════════════════════════════════════════════════════════════════════════ */
+html.mobile-menu-open {
+    overflow: hidden;
+}
+
+html.mobile-menu-open body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+/* .main-navigation y el control-wrapper del hamburguesa son position:static
+   por defecto en GeneratePress, así que cualquier z-index que traigan no
+   tiene efecto: quedan por debajo del overlay (position:fixed) sin importar
+   el orden del DOM. Forzamos position + z-index (con !important porque el
+   CSS dinámico del customizer de GP puede pisar reglas sin !important) para
+   que queden por encima. .site-header ya es position:sticky (más abajo), así
+   que ahí solo hace falta subir el z-index — forzarlo a relative rompería el
+   sticky mientras el menú está abierto. */
+html.mobile-menu-open .site-header {
+    z-index: 100 !important;
+}
+
+html.mobile-menu-open .main-navigation,
+html.mobile-menu-open .mobile-menu-control-wrapper {
+    position: relative !important;
+    z-index: 100 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PREHEADER
+   ═══════════════════════════════════════════════════════════════════════════ */
+.top-bar {
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+}
+
+/* GP trae "10px 40px" de padding para .inside-top-bar por default, pero
+   solo lo carga (vía components/widget-areas.css) cuando detecta el área
+   de widgets "Top Bar" activa. Como nuestro preheader la bypasea (imágenes
+   hardcodeadas en PHP, no dynamic_sidebar), ese CSS nunca se encola — lo
+   replicamos acá a mano, igual en todos los anchos (el header mantiene el
+   mismo padding lateral en desktop y en mobile, así que el preheader
+   también). */
+.inside-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    /* Mismo padding lateral que .inside-header (--header-padding-x) para que
+       los logos del preheader queden alineados con el logo/nav de abajo. */
+    padding-left: var(--header-padding-x);
+    padding-right: var(--header-padding-x);
+    /* Por si GP le agrega la clase "grid-container" (Personalizar > Barra
+       superior > Ancho = "Contenido"), que trae max-width:1200px — la
+       anulamos para que los logos siempre queden pegados a los bordes,
+       sin límite de ancho ni en monitores 4K+. */
+    max-width: none !important;
+}
+
+.jb3-preheader__logo {
+    display: block;
+    line-height: 0;
+}
+
+.jb3-preheader__logo img {
+    display: block;
+    height: 10px;
+    width: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HEADER: logo + nav pegados a la izquierda, íconos a la derecha
+   (ver _init_header.php — reemplaza el header nativo de GeneratePress)
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* Solo en desktop: en mobile el nav togglead usa el mismo padding-left que
+   el resto del menú (ver bloque mobile más abajo) — sumarle además este
+   margin-left duplicaba el corrimiento y desalineaba todo del logo. */
+@media (min-width: 1280px) {
+    #site-navigation {
+        margin-left: var(--nav-gap-from-logo) !important;
+    }
+}
+
+/* display:flex acá adentro de min-width:1280px a propósito: si quedara
+   suelto (sin media query), al tener la misma especificidad que la regla
+   ".site-header-icons{display:none}" de mobile pero aparecer después en
+   el archivo, la pisaría y el bloque de íconos quedaría visible incluso
+   con el menú cerrado. */
+@media (min-width: 1280px) {
+    .site-header-icons {
+        display: flex;
+        align-items: center;
+        gap: var(--icon-gap);
+        margin-left: auto;
+    }
+}
+
+/* Forzamos flex + align-items:center en todo el árbol del widget (aside,
+   .widget, el div del bloque) para que el ícono de LinkedIn quede centrado
+   verticalmente igual que el buscador y el de perfil, en vez de heredar el
+   margin/padding propio del widget que lo corría hacia arriba. */
+.site-header-icons .header-widget,
+.site-header-icons .header-widget > *,
+.site-header-icons .header-widget .header-icons {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+}
+
+/* Sin display:block los SVG quedan inline y suman unos px de espacio
+   fantasma abajo (por el baseline), desalineándolos entre sí. */
+.site-header-icons svg {
+    display: block;
+}
+
+/* Estilo "botón" para los 3 íconos (LinkedIn, perfil, buscador) — fondo,
+   radius, padding y color en un solo lugar, controlado por las variables
+   --icon-* de :root. El !important en color es necesario para el de
+   LinkedIn: viene de un bloque de Gutenberg en Apariencia > Widgets >
+   Header que trae su propio color inline (más específico que una regla
+   externa sin !important). */
+.site-header-icons .header-widget a,
+.site-header-icons__search,
+.site-header-account__toggle {
+    background-color: var(--icon-bg) !important;
+    border-radius: var(--icon-radius);
+    padding: 6px !important;
+    color: var(--icon-color) !important;
+}
+
+.site-header-icons .header-widget a:hover,
+.site-header-icons__search:hover,
+.site-header-account__toggle:hover {
+    color: var(--icon-hover) !important;
+}
+
+/* Flechita de "abrir submenú": el texto del ítem también dispara el
+   toggle (confirmado en mobile y desktop), así que no hace falta el
+   espacio/target de click propio de .dropdown-menu-toggle — lo colapsamos
+   del todo, en vez de solo ocultar el ícono de adentro. */
+.main-navigation .dropdown-menu-toggle {
+    display: none !important;
+}
+
+/* El widget "Header" traía LinkedIn + un link viejo a /mi-cuenta ("Perfil").
+   Ese segundo link quedó redundante ahora que .site-header-account maneja
+   el estado de sesión, así que lo ocultamos. Ideal: borrarlo directamente
+   del widget en Apariencia > Widgets > Header. */
+.site-header-icons .header-widget a[aria-label="Perfil"] {
+    display: none;
+}
+
+.site-header-icons__auth-link {
+    color: var(--nav-text) !important;
+    text-transform: uppercase;
+    font-weight: var(--nav-font-weight) !important;
+    font-size: 14px;
+    text-decoration: none;
+}
+
+.site-header-icons__auth-link:hover {
+    color: var(--nav-hover) !important;
+}
+
+/* Ya tenemos nuestro propio buscador en .site-header-icons; ocultamos el que
+   GeneratePress agrega automáticamente al final del menú de escritorio para
+   no duplicarlo. El de .mobile-menu-control-wrapper (hamburguesa) no se toca. */
+@media (min-width: 1280px) {
+    #site-navigation .menu-bar-items {
+        display: none;
+    }
+}
+
+/* ─── Dropdown de cuenta (usuario logueado) ─────────────────────────────── */
+.site-header-account {
+    position: relative;
+}
+
+.site-header-account__toggle {
+    display: flex;
+    align-items: center;
+    background: none;
+    border: 0;
+    /* padding lo pone la regla de "botón" de íconos más arriba (!important) */
+    margin: 0;
+    line-height: 0;
+    color: inherit;
+    cursor: pointer;
+}
+
+/* Sin esto el SVG queda inline y le suma unos px de espacio fantasma abajo
+   (por el baseline), corriéndolo un poco más abajo que el buscador/LinkedIn. */
+.site-header-account__toggle svg {
+    display: block;
+}
+
+/* Estructura/posición acá; colores, tipografía y hover viven en la sección
+   "Submenú (dropdown)" de arriba, compartidos con los submenús del nav. */
+.site-header-account__menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin: 8px 0 0;
+    padding: 8px 0;
+    min-width: 160px;
+    list-style: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+}
+
+.site-header-account.is-open .site-header-account__menu {
+    display: block;
+}
+
+.site-header-account__menu a {
+    display: block;
+    padding: 8px 16px;
+    text-decoration: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.jb3-footer {
+    background: var(--footer-bg);
+    color: var(--footer-text);
+}
+
+/* Grid 8/2/2 en desktop; en mobile las 3 columnas se apilan (mismo orden
+   que el HTML, sin necesidad de "order"). El breakpoint es propio de esta
+   sección, no el del hamburguesa (1279px) — acá no depende del nav. */
+.jb3-footer-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--footer-gap);
+    //max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--footer-padding-y) var(--footer-padding-x);
+}
+
+@media (min-width: 768px) {
+    .jb3-footer-grid {
+        grid-template-columns: 8fr 2fr 2fr;
+    }
+}
+
+.jb3-footer-title {
+    color: var(--footer-text);
+    margin-top: 0;
+}
+
+.jb3-footer-heading {
+    color: var(--footer-heading-color);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    margin: 0 0 12px;
+}
+
+.jb3-footer-col--secondary .jb3-footer-heading:not(:first-child) {
+    margin-top: 24px;
+}
+
+.jb3-footer-legal {
+    font-size: 13px;
+    opacity: .7;
+}
+
+.jb3-footer-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.jb3-footer-list a {
+    display: block;
+    padding: 4px 0;
+    color: var(--footer-link-color);
+    text-decoration: none;
+}
+
+.jb3-footer-list a:hover {
+    color: var(--footer-link-hover);
+}
+
+/* ─── Barra inferior (CTA + volver arriba) ──────────────────────────────── */
+/* Fixed al viewport, siempre visible mientras se scrollea (no solo al
+   llegar al final de la página). Como sale del flujo normal, le sumamos
+   --footer-bar-height como padding-bottom al body para que no tape ni el
+   resto del footer ni el final del contenido. */
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    padding-bottom: var(--footer-bar-height);
+}
+
+/* position:fixed también sirve de contenedor de posicionamiento para
+   .jb3-footer-bar__totop (position:absolute) más abajo — así el botón queda
+   anclado a la derecha sin afectar el centrado del texto, que sigue siendo
+   el único elemento en el flujo flex normal. */
+.jb3-footer-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 150;
+    box-sizing: border-box;
+    min-height: var(--footer-bar-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--footer-bar-bg);
+    padding: 10px 20px;
+    text-align: center;
+}
+
+/* !important porque la regla global "a { color: var(--link-color) !important }"
+   (sección COLORES GLOBALES) le gana por !important a cualquier color sin
+   !important acá, sin importar la especificidad de la clase — por eso el
+   texto quedaba invisible (mismo violeta que el fondo de la barra). */
+.jb3-footer-bar__cta {
+    color: var(--footer-bar-text) !important;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.jb3-footer-bar__cta strong {
+    color: var(--footer-bar-cta) !important;
+}
+
+/* En hover/focus el texto sin <strong> pasa al mismo color que "aquí" tiene
+   en reposo, y "aquí" hace el camino inverso (pasa a blanco) — se cruzan. */
+.jb3-footer-bar__cta:hover,
+.jb3-footer-bar__cta:focus-visible {
+    color: var(--footer-bar-cta) !important;
+}
+
+.jb3-footer-bar__cta:hover strong,
+.jb3-footer-bar__cta:focus-visible strong {
+    color: var(--footer-bar-text) !important;
+}
+
+/* Botón circular con el ícono; el texto "Ir arriba" vive en un tooltip
+   propio (span), oculto hasta el hover/focus — no es un title="" nativo
+   porque esos no se pueden animar ni estilar. Anclado a la derecha de la
+   barra con position:absolute, así no compite con el centrado del texto. */
+.jb3-footer-bar__totop {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .15);
+    color: var(--footer-bar-text) !important;
+    text-decoration: none;
+    transition: background-color .2s ease, transform .2s ease;
+}
+
+.jb3-footer-bar__totop:hover,
+.jb3-footer-bar__totop:focus-visible {
+    background: rgba(255, 255, 255, .3);
+    transform: translateY(calc(-50% - 2px));
+}
+
+.jb3-footer-bar__totop-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    margin-bottom: 8px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: #000000;
+    color: #ffffff;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 4px);
+    transition: opacity .2s ease, transform .2s ease;
+}
+
+.jb3-footer-bar__totop:hover .jb3-footer-bar__totop-tooltip,
+.jb3-footer-bar__totop:focus-visible .jb3-footer-bar__totop-tooltip {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+/* En mobile no hay hover para mostrar el tooltip, y el CTA de texto ya
+   ocupa todo el ancho de la barra — se oculta el botón en vez de dejarlo
+   sin la pista visual de qué hace. Mismo breakpoint que el grid del footer. */
+@media (max-width: 767px) {
+    .jb3-footer-bar__totop {
+        display: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SLIDER HOME — V1: solo imagen + flechas ([home_slider], en construcción)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Proporción exacta de las imágenes reales (1920×1080 desktop, 1000×1333
+   mobile) con la técnica del "padding-top trick" — NO con la propiedad CSS
+   aspect-ratio: confirmado con DevTools que aspect-ratio en el contenedor
+   de Swiper (combinado con overflow:hidden + el wrapper flex interno de
+   Swiper) hace que el motor de layout de Chrome calcule un ancho "infinito"
+   en algún punto de la cadena y lo sature en su límite interno
+   (~33.554.432px, LayoutUnit::Max) — Swiper lee ese valor saturado como si
+   fuera el ancho real del slide.
+   El padding-top trick da el mismo resultado (alto proporcional al ancho)
+   pero por un mecanismo de layout completamente distinto y mucho más
+   viejo/estable (padding en % resuelve contra el ancho del contenedor,
+   nada que ver con el algoritmo de aspect-ratio) — .jb3-home-slider queda
+   con position:absolute + inset:0 llenando la caja que arma el ::before,
+   así que Swiper mide un elemento con ancho/alto ya resueltos y definidos,
+   sin ningún cálculo circular de por medio. */
+.jb3-home-slider-wrap {
+    position: relative;
+    width: 100%;
+}
+
+.jb3-home-slider-wrap::before {
+    content: "";
+    display: block;
+    padding-top: 56.25%; /* 1080 / 1920 */
+}
+
+@media (max-width: 767px) {
+    .jb3-home-slider-wrap::before {
+        padding-top: 133.3%; /* 1333 / 1000 */
+    }
+}
+
+.jb3-home-slider.swiper {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+/* Las proporciones de arriba ya coinciden exactamente con las imágenes
+   reales, así que "cover" no debería recortar nada — solo ajusta
+   diferencias de redondeo mínimas entre el cálculo en % y el píxel real. */
+.jb3-home-slider__picture,
+.jb3-home-slider__picture img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Flechas de Swiper con la paleta del sitio en vez del negro default, y más
+   chicas que el tamaño default (44px) para que no interfieran con el
+   texto — --swiper-navigation-size es la variable oficial de Swiper para
+   esto (controla el tamaño del ícono ::after). */
+.jb3-home-slider {
+    --swiper-navigation-size: 22px;
+}
+
+.jb3-home-slider .swiper-button-prev,
+.jb3-home-slider .swiper-button-next {
+    color: #ffffff;
+}
+
+.jb3-home-slider .swiper-button-prev:hover,
+.jb3-home-slider .swiper-button-next:hover {
+    color: var(--color-secondary);
+}
+
+/* En mobile/tablet se navega deslizando con el dedo — las flechas no hacen
+   falta. Mismo breakpoint que ya usa el nav para pasar a modo hamburguesa
+   (touch), para no sumar un tercer punto de corte distinto en el sitio. */
+@media (max-width: 1279px) {
+    .jb3-home-slider .swiper-button-prev,
+    .jb3-home-slider .swiper-button-next {
+        display: none;
+    }
+}
+
+/* ─── Texto, botón y copyright sobre la imagen ──────────────────────────── */
+.jb3-home-slider .swiper-slide {
+    position: relative;
+}
+
+/* Degradé para que el texto sea legible arriba de cualquier imagen. */
+.jb3-home-slider__overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 24px 60px 24px 24px;
+    background: linear-gradient(to top, rgba(0, 0, 0, .85) 0%, rgba(0, 0, 0, 0) 60%);
+    color: #ffffff;
+}
+
+/* Caja de tamaño fijo e igual para cualquier logo, sea vertical, horizontal
+   o cuadrado — la imagen se alinea a la izquierda (mismo borde que el
+   texto/botón de abajo) y se escala para entrar completa, sin recortar ni
+   estirar, sin necesidad de conocer la proporción de cada logo de
+   antemano. justify-content:flex-start (no "center"): con "center" un
+   logo angosto queda con aire a los dos lados y su borde izquierdo no
+   pega con el del texto — con flex-start siempre arranca en el mismo
+   punto, sea cual sea el ancho real del logo ya escalado.
+   Mismo patrón a reusar en cualquier "muro de marcas" (ej. sección
+   "Nuestras Marcas"/"Oportunidades Comerciales"). */
+.jb3-home-slider__canal-logo {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: var(--slider-logo-width);
+    height: var(--slider-logo-height);
+    margin-bottom: 12px;
+}
+
+.jb3-home-slider__canal-logo img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+}
+
+.jb3-home-slider__texto {
+    max-width: 640px;
+    margin-bottom: 12px;
+}
+
+.jb3-home-slider__texto p:last-child {
+    margin-bottom: 0;
+}
+
+/* Color del botón: lo pone _shortcode_home_slider.php inline por slide vía
+   --jb3-slide-btn-bg/--jb3-slide-btn-bg-hover (ya resuelto con el fallback
+   a --color-primary/--color-secondary en PHP si el campo ACF vino vacío).
+   !important porque la regla global "a { color: var(--link-color) !important }"
+   le gana a cualquier color sin !important acá, sin importar la
+   especificidad de la clase (mismo criterio que ya usan en el footer). */
+.jb3-home-slider__btn {
+    display: inline-block;
+    padding: 10px 24px;
+    background: var(--jb3-slide-btn-bg);
+    color: var(--btn-text) !important;
+    text-decoration: none !important;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    border-radius: var(--btn-radius);
+    transition: background-color .2s ease, color .2s ease;
+}
+
+.jb3-home-slider__btn:hover,
+.jb3-home-slider__btn:focus-visible {
+    background: var(--jb3-slide-btn-bg-hover);
+    color: var(--btn-text-hover) !important;
+}
+
+.jb3-home-slider__copyright {
+    display: block;
+    margin-top: 10px;
+    font-size: 11px;
+    opacity: .6;
+}
