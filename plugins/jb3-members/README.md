@@ -572,21 +572,28 @@ Página dedicada para eliminar grandes volúmenes de usuarios sin timeouts del s
 
 ### Opciones de filtro
 
-Antes de iniciar se puede filtrar qué usuarios borrar:
-- **País**: borrar solo miembros de un país específico (o todos)
-- **Estado**: solo pendientes, solo aprobados, o todos
+Antes de iniciar se puede elegir qué usuarios borrar:
+- **Todos / Pendientes / Aprobados**: filtro por rol y estado
+- **Lista CSV**: subir un archivo con una columna `Email` y borrar puntualmente esos usuarios
 
 ### Funcionamiento técnico
 
 - El estado del borrado persiste en `wp_options` bajo la clave `jb3_delete_state_{user_id}` (una por admin activo)
-- Cada chunk: consulta siempre los **primeros 50 usuarios** del filtro actual (sin offset). Al borrarlos en cada iteración, la consulta siguiente automáticamente encuentra los siguientes. Este patrón es más robusto que usar offset con filas que se están eliminando.
-- Durante el borrado se suprime el hook `delete_user → JB3_Mailchimp::handle_user_delete` via `remove_action()` para evitar 50 llamadas HTTP fire-and-forget por chunk (mejora de rendimiento significativa en Windows donde cada conexión HTTP tiene overhead)
+- Para los filtros por rol/estado, cada chunk consulta siempre los **primeros 50 usuarios** del filtro actual (sin offset). Al borrarlos en cada iteración, la consulta siguiente automáticamente encuentra los siguientes. Este patrón es más robusto que usar offset con filas que se están eliminando.
+- El borrado usa `DELETE` SQL directo sobre `wp_users`/`wp_usermeta` (no `wp_delete_user()`), así que **no dispara el hook `delete_user`** (ese hook solo lo dispara `wp_delete_user()`) — no hace falta suprimir nada.
 - **Los administradores nunca se borran**: `if ( user_can( $uid, 'manage_options' ) ) continue;`
 - Soporta **cancelar** y **reanudar** — si se cierra la ventana o se cancela, el estado queda guardado y se puede retomar
 
+### Lista CSV: subida, previsualización y archivado inmediato
+
+1. Se sube un CSV (mismo detector de delimiter `;`/`,` y de BOM que "Importar Usuarios") con columna `Email` obligatoria, vía `jb3_delete_list_upload`.
+2. El backend matchea los emails contra `wp_users`, excluye administradores y guarda el resultado (`list_ids`) en el estado con `phase: 'ready'`. Responde con: cuántos se van a borrar, cuántos admins se excluyeron y qué emails no se encontraron.
+3. El admin ve esa previsualización y recién ahí puede presionar "Iniciar borrado" (`jb3_delete_start` pasa el estado a `phase: 'running'`).
+4. A diferencia de los filtros por rol/estado, en este modo cada chunk **archiva en Mailchimp de inmediato** (`JB3_Mailchimp::archive_contact()` por cada email borrado) antes de continuar — no se difiere a la sincronización. El volumen esperado de una lista puntual es acotado, por lo que las llamadas fire-and-forget adicionales no son un problema de rendimiento.
+
 ### Limitaciones
 
-El borrado no sincroniza con Mailchimp (el hook está suprimido). Para archivar en Mailchimp los usuarios borrados, correr la sincronización masiva después — la Fase 2 detectará emails que ya no existen en WP y los archivará en Mailchimp.
+Los filtros por rol/estado (Todos/Pendientes/Aprobados) no sincronizan con Mailchimp en el momento, para evitar 50+ llamadas HTTP fire-and-forget por chunk cuando el volumen es grande. Para archivar esos usuarios en Mailchimp, correr la sincronización masiva después — la Fase 2 detectará emails que ya no existen en WP y los archivará. El modo **Lista CSV** no tiene esta limitación: archiva en el momento.
 
 ---
 
@@ -791,13 +798,11 @@ jb3_interests()    // alias de JB3_Mailchimp::get_cached_interests()
 jb3_sanitize_phone( $phone )  // permite dígitos, +, -, espacios, paréntesis
 ```
 
-### Suppresión del hook Mailchimp durante borrado masivo
+### Por qué el borrado masivo (Todos/Pendientes/Aprobados) no archiva en Mailchimp al momento
 
-El borrado masivo suprime `delete_user → JB3_Mailchimp::handle_user_delete` via:
-```php
-remove_action( 'delete_user', [ 'JB3_Mailchimp', 'handle_user_delete' ] );
-```
-Esto se hace antes del loop de borrado dentro de `ajax_delete_chunk()`. Los usuarios no se archivan en Mailchimp durante el borrado masivo — para limpiar Mailchimp correr la sincronización masiva después.
+`ajax_delete_chunk()` borra usuarios con `DELETE` SQL directo sobre `wp_users`/`wp_usermeta`, no con `wp_delete_user()`. El hook `delete_user` (al que está enganchado `JB3_Mailchimp::handle_user_delete`) solo lo dispara `wp_delete_user()`, así que con SQL directo simplemente nunca se ejecuta — no hace falta `remove_action()`. Es una decisión de performance: evita 50+ llamadas HTTP fire-and-forget por chunk cuando el volumen es de miles de usuarios. Para archivar en Mailchimp esos usuarios borrados, correr la sincronización masiva después.
+
+El modo **Lista CSV** de la misma página (`jb3_delete_list_upload` + filtro `list` en `ajax_delete_chunk()`) es la excepción: ahí sí se llama `JB3_Mailchimp::archive_contact()` explícitamente por cada usuario borrado, porque el volumen esperado de una lista puntual es acotado y el archivado inmediato es el objetivo de ese flujo.
 
 ---
 

@@ -6,6 +6,30 @@ class JB3_Auth_Guard {
     public static function init() {
         add_action( 'template_redirect', [ __CLASS__, 'check_session' ], 1 );
         add_action( 'template_redirect', [ __CLASS__, 'enforce_complete_profile' ], 5 );
+        add_action( 'admin_init',        [ __CLASS__, 'block_admin_access' ] );
+    }
+
+    // ─── Block wp-admin for non-administrators ────────────────────────────────
+
+    /**
+     * Redirect any non-admin user who reaches wp-admin back to the frontend.
+     * AJAX requests (admin-ajax.php) are exempted — many frontend features use them.
+     */
+    public static function block_admin_access() {
+        if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+            return;
+        }
+        $user_id = get_current_user_id();
+        if ( ! $user_id ) {
+            return;
+        }
+        // Block only jb3_members — editors, authors, and other WP roles pass through normally.
+        if ( jb3_is_member( $user_id ) && ! current_user_can( 'manage_options' ) ) {
+            $dashboard = (int) get_option( 'jb3_dashboard_page_id' );
+            $url       = $dashboard ? get_permalink( $dashboard ) : home_url( '/' );
+            wp_redirect( esc_url_raw( $url ) );
+            exit;
+        }
     }
 
     // ─── Session expiry check ─────────────────────────────────────────────────

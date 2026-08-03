@@ -14,10 +14,12 @@ class JB3_Admin {
         add_action( 'admin_init', [ __CLASS__, 'handle_export' ] );
 
         // Users list – custom columns.
-        add_filter( 'manage_users_columns',       [ __CLASS__, 'user_columns' ] );
-        add_filter( 'manage_users_custom_column', [ __CLASS__, 'user_column_value' ], 10, 3 );
-        add_filter( 'user_row_actions',           [ __CLASS__, 'user_row_actions' ], 10, 2 );
-        add_filter( 'list_table_primary_column',  [ __CLASS__, 'users_primary_column' ], 10, 2 );
+        add_filter( 'manage_users_columns',          [ __CLASS__, 'user_columns' ] );
+        add_filter( 'manage_users_custom_column',    [ __CLASS__, 'user_column_value' ], 10, 3 );
+        add_filter( 'manage_users_sortable_columns', [ __CLASS__, 'sortable_columns' ] );
+        add_action( 'pre_get_users',                 [ __CLASS__, 'sort_by_jb3_meta' ] );
+        add_filter( 'user_row_actions',              [ __CLASS__, 'user_row_actions' ], 10, 2 );
+        add_filter( 'list_table_primary_column',     [ __CLASS__, 'users_primary_column' ], 10, 2 );
 
         // AJAX handlers for user actions (run via admin-ajax.php — headers not yet sent).
         add_action( 'wp_ajax_jb3_approve_user',       [ __CLASS__, 'ajax_approve_user' ] );
@@ -30,9 +32,10 @@ class JB3_Admin {
         add_action( 'wp_ajax_jb3_import_cancel', [ __CLASS__, 'ajax_import_cancel' ] );
 
         // Bulk delete — browser-driven chunk loop.
-        add_action( 'wp_ajax_jb3_delete_start',  [ __CLASS__, 'ajax_delete_start' ] );
-        add_action( 'wp_ajax_jb3_delete_chunk',  [ __CLASS__, 'ajax_delete_chunk' ] );
-        add_action( 'wp_ajax_jb3_delete_cancel', [ __CLASS__, 'ajax_delete_cancel' ] );
+        add_action( 'wp_ajax_jb3_delete_start',       [ __CLASS__, 'ajax_delete_start' ] );
+        add_action( 'wp_ajax_jb3_delete_chunk',       [ __CLASS__, 'ajax_delete_chunk' ] );
+        add_action( 'wp_ajax_jb3_delete_cancel',      [ __CLASS__, 'ajax_delete_cancel' ] );
+        add_action( 'wp_ajax_jb3_delete_list_upload', [ __CLASS__, 'ajax_delete_list_upload' ] );
 
 
         // Settings registration.
@@ -661,10 +664,32 @@ class JB3_Admin {
         unset( $columns['email'] );
 
         return array_merge( $cb, $email, $columns, [
-            'jb3_status'  => __( 'Estado JB3', 'jb3-members' ),
-            'jb3_country' => __( 'País', 'jb3-members' ),
-            'jb3_company' => __( 'Empresa', 'jb3-members' ),
+            'jb3_status'     => __( 'Estado JB3', 'jb3-members' ),
+            'jb3_newsletter' => __( 'Newsletter', 'jb3-members' ),
+            'jb3_country'    => __( 'País', 'jb3-members' ),
+            'jb3_company'    => __( 'Empresa', 'jb3-members' ),
         ] );
+    }
+
+    public static function sortable_columns( $columns ) {
+        foreach ( [ 'jb3_status', 'jb3_newsletter', 'jb3_country', 'jb3_company' ] as $col ) {
+            $columns[ $col ] = $col;
+        }
+        return $columns;
+    }
+
+    public static function sort_by_jb3_meta( $query ) {
+        if ( ! is_admin() ) {
+            return;
+        }
+        $orderby = $query->get( 'orderby' );
+        if ( ! in_array( $orderby, [ 'jb3_status', 'jb3_newsletter', 'jb3_country', 'jb3_company' ], true ) ) {
+            return;
+        }
+        $query->set( 'meta_query', [
+            'jb3_sort' => [ 'key' => $orderby, 'compare' => 'EXISTS' ],
+        ] );
+        $query->set( 'orderby', 'jb3_sort' );
     }
 
     public static function user_column_value( $value, $column, $user_id ) {
@@ -694,6 +719,12 @@ class JB3_Admin {
                 }
                 $all = jb3_countries();
                 return esc_html( $all[ $code ] ?? $code );
+
+            case 'jb3_newsletter':
+                $nl = (bool) get_user_meta( $user_id, 'jb3_newsletter', true );
+                return $nl
+                    ? '<span style="color:#2e7d32;font-weight:600;">' . esc_html__( 'Sí', 'jb3-members' ) . '</span>'
+                    : '<span style="color:#999;">—</span>';
 
             case 'jb3_company':
                 $company = get_user_meta( $user_id, 'jb3_company', true );
@@ -1145,20 +1176,21 @@ class JB3_Admin {
     }
 
     private static function import_col_map(): array {
+        // All keys are lowercase — headers are normalized to lowercase on read.
         return [
-            'Nombre'                   => 'first_name',
-            'Apellido'                 => 'last_name',
-            'Estado'                   => 'jb3_status',
-            'País'                     => 'jb3_country',
-            'Empresa'                  => 'jb3_company',
-            'Cargo'                    => 'jb3_job_title',
-            'Teléfono'                 => 'jb3_phone',
-            'Sector'                   => 'jb3_sector',
-            'Newsletter'               => 'jb3_newsletter',
-            'Newsletters'              => 'jb3_newsletter_countries',
-            'Intereses'                => 'jb3_interests',
-            'Fecha Registro JB3'       => 'jb3_registered_at',
-            'Fecha Aprobación'         => 'jb3_approved_at',
+            'nombre'                   => 'first_name',
+            'apellido'                 => 'last_name',
+            'estado'                   => 'jb3_status',
+            'país'                     => 'jb3_country',
+            'empresa'                  => 'jb3_company',
+            'cargo'                    => 'jb3_job_title',
+            'teléfono'                 => 'jb3_phone',
+            'sector'                   => 'jb3_sector',
+            'newsletter'               => 'jb3_newsletter',
+            'newsletters'              => 'jb3_newsletter_countries',
+            'intereses'                => 'jb3_interests',
+            'fecha registro jb3'       => 'jb3_registered_at',
+            'fecha aprobación'         => 'jb3_approved_at',
             'first_name'               => 'first_name',
             'last_name'                => 'last_name',
             'jb3_status'               => 'jb3_status',
@@ -1211,9 +1243,9 @@ class JB3_Admin {
 
         $first_line = ltrim( $first_line, "\xEF\xBB\xBF" ); // Strip UTF-8 BOM.
         $delimiter  = substr_count( $first_line, ';' ) >= substr_count( $first_line, ',' ) ? ';' : ',';
-        $headers    = array_map( 'trim', str_getcsv( $first_line, $delimiter ) );
+        $headers    = array_map( fn( $h ) => strtolower( trim( $h ) ), str_getcsv( $first_line, $delimiter ) );
 
-        if ( ! in_array( 'Email', $headers, true ) ) {
+        if ( ! in_array( 'email', $headers, true ) ) {
             fclose( $handle );
             @unlink( $tmp_file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
             wp_send_json_error( __( 'El CSV debe tener una columna "Email".', 'jb3-members' ) );
@@ -1296,11 +1328,11 @@ class JB3_Admin {
         $handle = null;
 
         // ── Bulk email + ID lookup: 1 SQL instead of N get_user_by() calls ───
-        $id_col_idx    = array_search( 'ID', $headers, true );
+        $id_col_idx    = array_search( 'id', $headers, true );
         $lookup_emails = [];
         $lookup_ids    = [];
         foreach ( $chunk_rows as $raw ) {
-            $email = sanitize_email( trim( $raw[ array_search( 'Email', $headers, true ) ] ?? '' ) );
+            $email = sanitize_email( trim( $raw[ array_search( 'email', $headers, true ) ] ?? '' ) );
             if ( is_email( $email ) ) {
                 $lookup_emails[] = strtolower( $email );
             }
@@ -1335,6 +1367,9 @@ class JB3_Admin {
         }
 
         // ── Process rows ─────────────────────────────────────────────────────
+        // Collects meta rows for new users; flushed in a single INSERT after the loop.
+        $new_user_metas = [];
+
         foreach ( $chunk_rows as $raw ) {
             $row_num++;
             $processed++;
@@ -1344,12 +1379,12 @@ class JB3_Admin {
                 $data[ $col ] = isset( $raw[ $i ] ) ? trim( $raw[ $i ] ) : '';
             }
 
-            $email = sanitize_email( $data['Email'] ?? '' );
+            $email = sanitize_email( $data['email'] ?? '' );
             if ( ! is_email( $email ) ) {
                 if ( count( $errors ) < 200 ) {
                     $errors[] = sprintf(
                         __( 'Fila %1$d: email inválido «%2$s».', 'jb3-members' ),
-                        $row_num, esc_html( $data['Email'] ?? '' )
+                        $row_num, esc_html( $data['email'] ?? '' )
                     );
                 }
                 continue;
@@ -1387,7 +1422,7 @@ class JB3_Admin {
                         break;
 
                     case 'jb3_newsletter':
-                        $meta_fields[ $field ] = in_array( strtolower( $val ), [ 'sí', 'si', '1', 'yes' ], true ) ? 1 : 0;
+                        $meta_fields[ $field ] = in_array( strtolower( $val ), [ 'sí', 'si', '1', 'yes', 'true' ], true ) ? 1 : 0;
                         break;
 
                     case 'jb3_newsletter_countries':
@@ -1466,13 +1501,6 @@ class JB3_Admin {
                     $errors[] = sprintf( __( 'Fila %1$d: %2$s', 'jb3-members' ), $row_num, $result->get_error_message() );
                 }
 
-                // Newsletter: si el CSV intenta re-suscribir a alguien que optó por no recibir, se respeta su elección.
-                if ( isset( $meta_fields['jb3_newsletter'] ) && $meta_fields['jb3_newsletter'] === 1 ) {
-                    if ( (int) get_user_meta( $existing->ID, 'jb3_newsletter', true ) === 0 ) {
-                        unset( $meta_fields['jb3_newsletter'] );
-                    }
-                }
-
                 foreach ( $meta_fields as $key => $val ) {
                     update_user_meta( $existing->ID, $key, $val );
                 }
@@ -1487,48 +1515,87 @@ class JB3_Admin {
                 $updated++;
 
             } else {
-                $user_login = strlen( $email ) <= 60 ? $email : 'jb3_tmp_' . wp_generate_password( 8, false );
-                $user_data  = array_merge( $wp_fields, [
-                    'user_login' => $user_login,
-                    'user_email' => $email,
-                    'user_pass'  => wp_generate_password( 20 ),
-                    'role'       => 'jb3_member',
-                ] );
+                // Insert directly into DB — avoids bcrypt per user and defers meta to batch INSERT.
+                $user_login   = strlen( $email ) <= 60 ? $email : 'jb3_' . wp_generate_password( 8, false );
+                $display_name = trim( ( $wp_fields['first_name'] ?? '' ) . ' ' . ( $wp_fields['last_name'] ?? '' ) ) ?: $email;
 
-                $user_id = wp_insert_user( $user_data );
-                if ( is_wp_error( $user_id ) ) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+                $inserted = $wpdb->insert(
+                    $wpdb->users,
+                    [
+                        'user_login'      => $user_login,
+                        'user_pass'       => '!' . wp_generate_password( 32, false ),
+                        'user_email'      => $email,
+                        'user_registered' => gmdate( 'Y-m-d H:i:s' ),
+                        'display_name'    => $display_name,
+                        'user_nicename'   => sanitize_title( $user_login ),
+                    ],
+                    [ '%s', '%s', '%s', '%s', '%s', '%s' ]
+                );
+
+                if ( ! $inserted ) {
                     if ( count( $errors ) < 200 ) {
-                        $errors[] = sprintf( __( 'Fila %1$d: %2$s', 'jb3-members' ), $row_num, $user_id->get_error_message() );
+                        $errors[] = sprintf( __( 'Fila %1$d: no se pudo crear el usuario "%2$s".', 'jb3-members' ), $row_num, $email );
                     }
                     continue;
                 }
 
-                // Fallback: replace temp login with numeric ID for long-email edge case.
+                $user_id = (int) $wpdb->insert_id;
+
+                // Long-email fallback.
                 if ( strlen( $email ) > 60 ) {
-                    global $wpdb;
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery
                     $wpdb->update( $wpdb->users, [ 'user_login' => (string) $user_id ], [ 'ID' => $user_id ] );
-                    clean_user_cache( $user_id );
                 }
+
+                // Queue meta for batch INSERT (avoids 10+ individual queries per user).
+                if ( ! empty( $wp_fields['first_name'] ) ) {
+                    $new_user_metas[] = [ $user_id, 'first_name', $wp_fields['first_name'] ];
+                }
+                if ( ! empty( $wp_fields['last_name'] ) ) {
+                    $new_user_metas[] = [ $user_id, 'last_name', $wp_fields['last_name'] ];
+                }
+                // Role stored as usermeta capability.
+                $new_user_metas[] = [ $user_id, $wpdb->prefix . 'capabilities', serialize( [ 'jb3_member' => true ] ) ];
+                $new_user_metas[] = [ $user_id, $wpdb->prefix . 'user_level', '0' ];
 
                 foreach ( $meta_fields as $key => $val ) {
-                    update_user_meta( $user_id, $key, $val );
+                    $new_user_metas[] = [ $user_id, $key, $val ];
                 }
-
                 if ( ! isset( $meta_fields['jb3_status'] ) ) {
-                    update_user_meta( $user_id, 'jb3_status', 'approved' );
+                    $new_user_metas[] = [ $user_id, 'jb3_status', 'approved' ];
                 }
                 if ( ! isset( $meta_fields['jb3_approved_at'] ) ) {
-                    update_user_meta( $user_id, 'jb3_approved_at', current_time( 'mysql' ) );
+                    $new_user_metas[] = [ $user_id, 'jb3_approved_at', current_time( 'mysql' ) ];
                 }
                 if ( ! isset( $meta_fields['jb3_newsletter'] ) ) {
-                    update_user_meta( $user_id, 'jb3_newsletter', 1 );
+                    $new_user_metas[] = [ $user_id, 'jb3_newsletter', '0' ];
                 }
                 if ( ! isset( $meta_fields['jb3_registered_at'] ) ) {
-                    update_user_meta( $user_id, 'jb3_registered_at', current_time( 'mysql' ) );
+                    $new_user_metas[] = [ $user_id, 'jb3_registered_at', current_time( 'mysql' ) ];
                 }
 
                 $created++;
             }
+        }
+
+        // Flush all queued meta for new users in a single INSERT query.
+        if ( ! empty( $new_user_metas ) ) {
+            $rows  = [];
+            $binds = [];
+            foreach ( $new_user_metas as [ $uid, $key, $raw_val ] ) {
+                $rows[]  = '(%d, %s, %s)';
+                $binds[] = $uid;
+                $binds[] = $key;
+                $binds[] = is_array( $raw_val ) || is_object( $raw_val ) ? serialize( $raw_val ) : (string) $raw_val;
+            }
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.NotPrepared
+            $wpdb->query(
+                $wpdb->prepare(
+                    "INSERT INTO {$wpdb->usermeta} (user_id, meta_key, meta_value) VALUES " . implode( ', ', $rows ),
+                    ...$binds
+                )
+            );
         }
 
         $state['offset']    = $new_offset;
@@ -1717,8 +1784,9 @@ class JB3_Admin {
                             var html = '<div class="notice notice-success inline" style="padding:12px 16px;">'
                                 + '<p style="margin:0;"><strong><?php echo esc_js( __( 'Sincronización completada.', 'jb3-members' ) ); ?></strong></p>'
                                 + '<p style="margin:6px 0 0;">'
-                                + escHtml(state.upserted) + ' <?php echo esc_js( __( 'usuario(s) enviados a Mailchimp', 'jb3-members' ) ); ?>.<br>'
-                                + escHtml(state.archived) + ' <?php echo esc_js( __( 'contacto(s) archivados en Mailchimp', 'jb3-members' ) ); ?>.<br>'
+                                + escHtml(state.subscribed) + ' <?php echo esc_js( __( 'suscripto(s) en Mailchimp', 'jb3-members' ) ); ?>.<br>'
+                                + escHtml(state.unsubscribed) + ' <?php echo esc_js( __( 'sin suscripción', 'jb3-members' ) ); ?>.<br>'
+                                + (state.archived > 0 ? escHtml(state.archived) + ' <?php echo esc_js( __( 'contacto(s) sin cuenta WP archivados en Mailchimp', 'jb3-members' ) ); ?>.<br>' : '')
                                 + '<span style="color:#888;font-size:12px;"><?php echo esc_js( __( 'Iniciada:', 'jb3-members' ) ); ?> '
                                 + escHtml(state.started_at) + ' · <?php echo esc_js( __( 'Completada:', 'jb3-members' ) ); ?> ' + escHtml(state.updated_at) + '</span>'
                                 + '</p></div>';
@@ -1744,7 +1812,8 @@ class JB3_Admin {
                             labelWp.textContent = (p1done
                                 ? '<?php echo esc_js( __( 'Completa', 'jb3-members' ) ); ?> — '
                                 : (state.wp_offset + ' / ' + state.wp_total + ' — '))
-                                + escHtml(state.upserted) + ' <?php echo esc_js( __( 'operaciones enviadas', 'jb3-members' ) ); ?>';
+                                + escHtml(state.subscribed) + ' <?php echo esc_js( __( 'suscriptos', 'jb3-members' ) ); ?>'
+                                + (state.unsubscribed > 0 ? ', ' + escHtml(state.unsubscribed) + ' <?php echo esc_js( __( 'sin suscripción', 'jb3-members' ) ); ?>' : '');
 
                             // Phase 2 bar
                             if (phase === 'mc_to_wp') {
@@ -2151,8 +2220,18 @@ class JB3_Admin {
         }
 
         $filter = sanitize_text_field( wp_unslash( $_POST['filter'] ?? 'all' ) );
-        if ( ! in_array( $filter, [ 'all', 'pending', 'approved' ], true ) ) {
+        if ( ! in_array( $filter, [ 'all', 'pending', 'approved', 'list' ], true ) ) {
             $filter = 'all';
+        }
+
+        if ( 'list' === $filter ) {
+            $state = get_option( self::delete_state_key() );
+            if ( ! is_array( $state ) || 'ready' !== ( $state['phase'] ?? '' ) || 'list' !== ( $state['filter'] ?? '' ) ) {
+                wp_send_json_error( __( 'Subí y previsualizá un CSV antes de iniciar el borrado.', 'jb3-members' ) );
+            }
+            $state['phase'] = 'running';
+            update_option( self::delete_state_key(), $state, false );
+            wp_send_json_success( $state );
         }
 
         $query = [ 'role' => 'jb3_member', 'number' => -1, 'fields' => 'ID' ];
@@ -2184,22 +2263,28 @@ class JB3_Admin {
             wp_send_json_error( 'No autorizado.' );
         }
 
+        global $wpdb;
+
         $state = get_option( self::delete_state_key() );
         if ( ! is_array( $state ) || 'running' !== $state['phase'] ) {
             wp_send_json_error( 'No hay borrado en curso.' );
         }
 
         $filter = $state['filter'];
-        $query  = [ 'role' => 'jb3_member', 'number' => 50, 'fields' => 'ID', 'orderby' => 'ID', 'order' => 'ASC' ];
-        if ( 'pending' === $filter ) {
-            $query['meta_key']   = 'jb3_status';
-            $query['meta_value'] = 'pending';
-        } elseif ( 'approved' === $filter ) {
-            $query['meta_key']   = 'jb3_status';
-            $query['meta_value'] = 'approved';
-        }
 
-        $user_ids = get_users( $query );
+        if ( 'list' === $filter ) {
+            $user_ids = array_splice( $state['list_ids'], 0, 50 );
+        } else {
+            $query = [ 'role' => 'jb3_member', 'number' => 500, 'fields' => 'ID', 'orderby' => 'ID', 'order' => 'ASC' ];
+            if ( 'pending' === $filter ) {
+                $query['meta_key']   = 'jb3_status';
+                $query['meta_value'] = 'pending';
+            } elseif ( 'approved' === $filter ) {
+                $query['meta_key']   = 'jb3_status';
+                $query['meta_value'] = 'approved';
+            }
+            $user_ids = get_users( $query );
+        }
 
         if ( empty( $user_ids ) ) {
             $state['phase'] = 'done';
@@ -2207,24 +2292,37 @@ class JB3_Admin {
             wp_send_json_success( $state );
         }
 
-        require_once ABSPATH . 'wp-admin/includes/user.php';
+        // Never delete administrators (safety guard).
+        $safe_ids = array_values( array_filter(
+            array_map( 'intval', $user_ids ),
+            fn( $id ) => ! user_can( $id, 'manage_options' )
+        ) );
 
-        // Suppress per-user Mailchimp archive during bulk delete — the sync
-        // page handles cleanup of contacts that no longer exist in WordPress.
-        remove_action( 'delete_user', [ 'JB3_Mailchimp', 'handle_user_delete' ] );
+        if ( ! empty( $safe_ids ) ) {
+            // Modo lista: a diferencia del borrado por rol/estado, acá se archiva en
+            // Mailchimp de inmediato (no se difiere a la sincronización masiva) — es
+            // el requisito principal de este flujo y el volumen esperado es acotado.
+            $emails_to_archive = [];
+            if ( 'list' === $filter ) {
+                foreach ( get_users( [ 'include' => $safe_ids, 'fields' => [ 'ID', 'user_email' ] ] ) as $u ) {
+                    $emails_to_archive[] = $u->user_email;
+                }
+            }
 
-        foreach ( $user_ids as $uid ) {
-            $uid = (int) $uid;
-            // Never delete administrators.
-            if ( user_can( $uid, 'manage_options' ) ) {
-                continue;
+            $ph = implode( ',', array_fill( 0, count( $safe_ids ), '%d' ) );
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+            $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->usermeta} WHERE user_id IN ($ph)", ...$safe_ids ) );
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+            $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->users} WHERE ID IN ($ph)", ...$safe_ids ) );
+            foreach ( $safe_ids as $id ) {
+                clean_user_cache( $id );
             }
-            $result = wp_delete_user( $uid );
-            if ( $result ) {
-                $state['deleted']++;
-            } elseif ( count( $state['errors'] ) < 100 ) {
-                $state['errors'][] = sprintf( __( 'No se pudo borrar el usuario ID %d.', 'jb3-members' ), $uid );
+
+            foreach ( $emails_to_archive as $email ) {
+                JB3_Mailchimp::archive_contact( $email );
             }
+
+            $state['deleted'] += count( $safe_ids );
         }
 
         update_option( self::delete_state_key(), $state, false );
@@ -2240,6 +2338,107 @@ class JB3_Admin {
         wp_send_json_success();
     }
 
+    public static function ajax_delete_list_upload() {
+        check_ajax_referer( 'jb3_delete_ajax', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( __( 'Sin permiso.', 'jb3-members' ) );
+        }
+
+        $upload = $_FILES['jb3_delete_csv'] ?? null;
+        if ( ! $upload || $upload['error'] !== UPLOAD_ERR_OK ) {
+            wp_send_json_error( __( 'Error al subir el archivo.', 'jb3-members' ) );
+        }
+        if ( strtolower( pathinfo( $upload['name'], PATHINFO_EXTENSION ) ) !== 'csv' ) {
+            wp_send_json_error( __( 'El archivo debe tener extensión .csv', 'jb3-members' ) );
+        }
+
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
+        $handle = fopen( $upload['tmp_name'], 'r' );
+        if ( ! $handle ) {
+            wp_send_json_error( __( 'No se pudo leer el archivo.', 'jb3-members' ) );
+        }
+
+        $first_line = fgets( $handle );
+        if ( $first_line === false || trim( $first_line ) === '' ) {
+            fclose( $handle );
+            wp_send_json_error( __( 'El archivo está vacío.', 'jb3-members' ) );
+        }
+
+        $first_line = ltrim( $first_line, "\xEF\xBB\xBF" ); // Strip UTF-8 BOM.
+        $delimiter  = substr_count( $first_line, ';' ) >= substr_count( $first_line, ',' ) ? ';' : ',';
+        $headers    = array_map( fn( $h ) => strtolower( trim( $h ) ), str_getcsv( $first_line, $delimiter ) );
+        $email_idx  = array_search( 'email', $headers, true );
+
+        if ( false === $email_idx ) {
+            fclose( $handle );
+            wp_send_json_error( __( 'El CSV debe tener una columna "Email".', 'jb3-members' ) );
+        }
+
+        // Sanitized + deduplicated emails found in the file.
+        $emails = [];
+        while ( ( $raw = fgetcsv( $handle, 0, $delimiter ) ) !== false ) {
+            $email = sanitize_email( trim( $raw[ $email_idx ] ?? '' ) );
+            if ( is_email( $email ) ) {
+                $emails[ strtolower( $email ) ] = true;
+            }
+        }
+        fclose( $handle );
+        $emails = array_keys( $emails );
+
+        if ( empty( $emails ) ) {
+            wp_send_json_error( __( 'No se encontraron emails válidos en el archivo.', 'jb3-members' ) );
+        }
+
+        global $wpdb;
+        $placeholders = implode( ',', array_fill( 0, count( $emails ), '%s' ) );
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery
+        $found_rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT ID, LOWER(user_email) AS lc_email FROM {$wpdb->users} WHERE LOWER(user_email) IN ($placeholders)",
+                ...$emails
+            )
+        );
+
+        $found_by_email = [];
+        foreach ( $found_rows as $row ) {
+            $found_by_email[ $row->lc_email ] = (int) $row->ID;
+        }
+
+        $to_delete_ids  = [];
+        $skipped_admins = 0;
+        $not_found      = [];
+
+        foreach ( $emails as $email ) {
+            if ( ! isset( $found_by_email[ $email ] ) ) {
+                $not_found[] = $email;
+                continue;
+            }
+            $uid = $found_by_email[ $email ];
+            if ( user_can( $uid, 'manage_options' ) ) {
+                $skipped_admins++;
+                continue;
+            }
+            $to_delete_ids[] = $uid;
+        }
+
+        $state = [
+            'filter'   => 'list',
+            'total'    => count( $to_delete_ids ),
+            'list_ids' => $to_delete_ids,
+            'deleted'  => 0,
+            'errors'   => [],
+            'phase'    => 'ready',
+        ];
+        update_option( self::delete_state_key(), $state, false );
+
+        wp_send_json_success( [
+            'total'           => count( $to_delete_ids ),
+            'skipped_admins'  => $skipped_admins,
+            'not_found'       => array_slice( $not_found, 0, 200 ),
+            'not_found_total' => count( $not_found ),
+        ] );
+    }
+
     public static function page_delete() {
         if ( ! current_user_can( 'manage_options' ) ) {
             wp_die( esc_html__( 'Sin permiso.', 'jb3-members' ) );
@@ -2249,14 +2448,17 @@ class JB3_Admin {
         $state         = get_option( self::delete_state_key() );
         $total_members = count( get_users( [ 'role' => 'jb3_member', 'number' => -1, 'fields' => 'ID' ] ) );
         $total_pending = count( get_users( [ 'role' => 'jb3_member', 'number' => -1, 'fields' => 'ID', 'meta_key' => 'jb3_status', 'meta_value' => 'pending' ] ) );
-        $total_approved = $total_members - $total_pending;
+        $total_approved  = $total_members - $total_pending;
+        $current_filter  = $state['filter'] ?? 'all';
+        $list_ready       = $state && 'ready' === ( $state['phase'] ?? '' ) && 'list' === $current_filter;
+        $list_ready_total = $list_ready ? (int) $state['total'] : 0;
         ?>
         <div class="wrap" id="jb3-delete-wrap">
             <h1><?php esc_html_e( 'Borrar Miembros en Lote', 'jb3-members' ); ?></h1>
 
             <div class="notice notice-warning inline" style="margin:16px 0;padding:12px 16px;">
                 <p style="margin:0;"><strong><?php esc_html_e( '⚠ Esta acción es irreversible.', 'jb3-members' ); ?></strong>
-                <?php esc_html_e( 'Los miembros borrados son archivados en Mailchimp. Los administradores nunca se borran.', 'jb3-members' ); ?></p>
+                <?php esc_html_e( 'Los administradores nunca se borran. Al borrar "Todos/Pendientes/Aprobados" el archivado en Mailchimp se hace luego, corriendo la Sincronización. Al borrar por "Lista CSV" el archivado en Mailchimp es inmediato.', 'jb3-members' ); ?></p>
             </div>
 
             <table class="form-table" style="max-width:480px;">
@@ -2264,20 +2466,40 @@ class JB3_Admin {
                     <th><?php esc_html_e( 'Qué borrar', 'jb3-members' ); ?></th>
                     <td>
                         <label style="display:block;margin-bottom:6px;">
-                            <input type="radio" name="jb3_delete_filter" value="all" checked>
+                            <input type="radio" name="jb3_delete_filter" value="all" <?php checked( $current_filter, 'all' ); ?>>
                             <?php printf( esc_html__( 'Todos los miembros (%d)', 'jb3-members' ), $total_members ); ?>
                         </label>
                         <label style="display:block;margin-bottom:6px;">
-                            <input type="radio" name="jb3_delete_filter" value="pending">
+                            <input type="radio" name="jb3_delete_filter" value="pending" <?php checked( $current_filter, 'pending' ); ?>>
                             <?php printf( esc_html__( 'Solo pendientes (%d)', 'jb3-members' ), $total_pending ); ?>
                         </label>
-                        <label style="display:block;">
-                            <input type="radio" name="jb3_delete_filter" value="approved">
+                        <label style="display:block;margin-bottom:6px;">
+                            <input type="radio" name="jb3_delete_filter" value="approved" <?php checked( $current_filter, 'approved' ); ?>>
                             <?php printf( esc_html__( 'Solo aprobados (%d)', 'jb3-members' ), $total_approved ); ?>
+                        </label>
+                        <label style="display:block;">
+                            <input type="radio" name="jb3_delete_filter" value="list" <?php checked( $current_filter, 'list' ); ?>>
+                            <?php esc_html_e( 'Lista CSV (subir archivo)', 'jb3-members' ); ?>
                         </label>
                     </td>
                 </tr>
             </table>
+
+            <div id="jb3-delete-list-block" style="display:none;max-width:520px;margin:0 0 20px;padding:12px 16px;background:#f6f7f7;border:1px solid #dcdcde;">
+                <p style="margin-top:0;"><?php esc_html_e( 'CSV con una columna "Email". Los usuarios encontrados se borrarán y se archivarán en Mailchimp de inmediato (no se difiere a la sincronización).', 'jb3-members' ); ?></p>
+                <p>
+                    <input type="file" id="jb3-delete-list-file" accept=".csv,text/csv">
+                    <button type="button" id="jb3-delete-list-btn-preview" class="button">
+                        <?php esc_html_e( 'Cargar y previsualizar', 'jb3-members' ); ?>
+                    </button>
+                    <span id="jb3-delete-list-spinner" class="spinner" style="display:none;float:none;vertical-align:middle;margin-left:8px;"></span>
+                </p>
+                <div id="jb3-delete-list-preview"<?php echo $list_ready ? '' : ' style="display:none;"'; ?>>
+                    <?php if ( $list_ready ) : ?>
+                        <p style="margin:8px 0;"><strong><?php printf( esc_html( _n( '%d usuario listo para borrar.', '%d usuarios listos para borrar.', $list_ready_total, 'jb3-members' ) ), $list_ready_total ); ?></strong> <?php esc_html_e( 'Presioná "Iniciar borrado" para confirmar.', 'jb3-members' ); ?></p>
+                    <?php endif; ?>
+                </div>
+            </div>
 
             <div id="jb3-delete-progress" style="display:none;margin:20px 0;">
                 <div style="background:#e0e0e0;height:22px;width:100%;max-width:520px;overflow:hidden;">
@@ -2315,6 +2537,14 @@ class JB3_Admin {
             var label     = document.getElementById('jb3-delete-label');
             var divRes    = document.getElementById('jb3-delete-result');
             var divErr    = document.getElementById('jb3-delete-errors');
+
+            var listBlock    = document.getElementById('jb3-delete-list-block');
+            var listFile     = document.getElementById('jb3-delete-list-file');
+            var btnPreview   = document.getElementById('jb3-delete-list-btn-preview');
+            var listSpinner  = document.getElementById('jb3-delete-list-spinner');
+            var divListPrev  = document.getElementById('jb3-delete-list-preview');
+            var listTotal    = <?php echo (int) $list_ready_total; ?>;
+            var listReady    = <?php echo $list_ready ? 'true' : 'false'; ?>;
 
             function escHtml(s) {
                 return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -2376,13 +2606,92 @@ class JB3_Admin {
                 });
             }
 
+            function updateFilterUI() {
+                var filter = document.querySelector('input[name="jb3_delete_filter"]:checked').value;
+                listBlock.style.display = (filter === 'list') ? 'block' : 'none';
+            }
+            Array.prototype.forEach.call(document.querySelectorAll('input[name="jb3_delete_filter"]'), function(r) {
+                r.addEventListener('change', updateFilterUI);
+            });
+            updateFilterUI();
+
+            listFile.addEventListener('change', function() {
+                listReady = false;
+                listTotal = 0;
+                divListPrev.style.display = 'none';
+            });
+
+            btnPreview.addEventListener('click', function() {
+                if (!listFile.files.length) {
+                    alert(<?php echo wp_json_encode( __( 'Elegí un archivo CSV primero.', 'jb3-members' ) ); ?>);
+                    return;
+                }
+                var fd = new FormData();
+                fd.append('action', 'jb3_delete_list_upload');
+                fd.append('nonce', nonce);
+                fd.append('jb3_delete_csv', listFile.files[0]);
+
+                listReady = false;
+                btnPreview.disabled = true;
+                listSpinner.style.display = 'inline-block';
+                listSpinner.className = 'spinner is-active';
+                divListPrev.style.display = 'none';
+
+                fetch(ajaxurl, { method: 'POST', body: fd })
+                    .then(function(r) { return r.json(); })
+                    .then(function(resp) {
+                        btnPreview.disabled = false;
+                        listSpinner.style.display = 'none';
+                        listSpinner.className = 'spinner';
+                        if (!resp.success) {
+                            divListPrev.style.display = 'block';
+                            divListPrev.innerHTML = '<div class="notice notice-error inline" style="padding:8px 12px;"><p style="margin:0;">'
+                                + escHtml(resp.data || <?php echo wp_json_encode( __( 'Error desconocido.', 'jb3-members' ) ); ?>) + '</p></div>';
+                            return;
+                        }
+                        var d = resp.data;
+                        listTotal = d.total;
+                        listReady = d.total > 0;
+                        var html = '<p style="margin:8px 0;"><strong>' + d.total
+                            + ' <?php echo esc_js( __( 'usuario(s) serán borrados y archivados en Mailchimp.', 'jb3-members' ) ); ?></strong></p>';
+                        if (d.skipped_admins > 0) {
+                            html += '<p style="margin:4px 0;">' + d.skipped_admins
+                                + ' <?php echo esc_js( __( 'administrador(es) excluido(s) (nunca se borran).', 'jb3-members' ) ); ?></p>';
+                        }
+                        if (d.not_found_total > 0) {
+                            html += '<details><summary style="cursor:pointer;">' + d.not_found_total
+                                + ' <?php echo esc_js( __( 'email(s) no encontrados en el sitio', 'jb3-members' ) ); ?></summary><ul style="margin:.5rem 0 0 1.2rem;">'
+                                + d.not_found.map(function(e){ return '<li>' + escHtml(e) + '</li>'; }).join('')
+                                + (d.not_found_total > d.not_found.length ? '<li>... y ' + (d.not_found_total - d.not_found.length) + ' <?php echo esc_js( __( 'más.', 'jb3-members' ) ); ?></li>' : '')
+                                + '</ul></details>';
+                        }
+                        if (d.total === 0) {
+                            html += '<p style="margin:4px 0;color:#b32d2e;"><?php echo esc_js( __( 'No hay usuarios para borrar con este archivo.', 'jb3-members' ) ); ?></p>';
+                        }
+                        divListPrev.style.display = 'block';
+                        divListPrev.innerHTML = html;
+                    })
+                    .catch(function(e) {
+                        btnPreview.disabled = false;
+                        listSpinner.style.display = 'none';
+                        listSpinner.className = 'spinner';
+                        divListPrev.style.display = 'block';
+                        divListPrev.innerHTML = '<div class="notice notice-error inline" style="padding:8px 12px;"><p style="margin:0;"><?php echo esc_js( __( 'Error de red:', 'jb3-members' ) ); ?> ' + escHtml(e.message) + '</p></div>';
+                    });
+            });
+
             btnStart.addEventListener('click', function() {
                 if (running) return;
                 var filter = document.querySelector('input[name="jb3_delete_filter"]:checked').value;
+                if (filter === 'list' && !listReady) {
+                    alert(<?php echo wp_json_encode( __( 'Subí y previsualizá un CSV antes de iniciar el borrado.', 'jb3-members' ) ); ?>);
+                    return;
+                }
                 var label_text = {
                     all:      <?php echo wp_json_encode( __( 'todos los miembros', 'jb3-members' ) ); ?>,
                     pending:  <?php echo wp_json_encode( __( 'los miembros pendientes', 'jb3-members' ) ); ?>,
-                    approved: <?php echo wp_json_encode( __( 'los miembros aprobados', 'jb3-members' ) ); ?>
+                    approved: <?php echo wp_json_encode( __( 'los miembros aprobados', 'jb3-members' ) ); ?>,
+                    list:     listTotal + ' <?php echo esc_js( __( 'usuario(s) de la lista subida (se archivan en Mailchimp)', 'jb3-members' ) ); ?>'
                 }[filter];
                 if (!confirm(<?php echo wp_json_encode( __( '¿Estás seguro? Vas a borrar ', 'jb3-members' ) ); ?> + label_text + <?php echo wp_json_encode( __( '. Esta acción no se puede deshacer.', 'jb3-members' ) ); ?>)) return;
 

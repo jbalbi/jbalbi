@@ -9,6 +9,23 @@ class JB3_Login {
         add_action( 'wp_logout',         [ __CLASS__, 'on_wp_logout' ] );
         // Priority 1 — runs before enforce_complete_profile (priority 5).
         add_action( 'template_redirect', [ __CLASS__, 'handle_logout_page' ], 1 );
+        // Block password-based login for jb3_members — magic link is the only allowed method.
+        add_filter( 'authenticate', [ __CLASS__, 'block_password_login' ], 30, 3 );
+    }
+
+    // ─── Block native WP password login for jb3_members ─────────────────────
+
+    public static function block_password_login( $user, $username, $password ) {
+        if ( ! is_a( $user, 'WP_User' ) ) {
+            return $user;
+        }
+        if ( jb3_is_member( $user->ID ) && ! user_can( $user->ID, 'manage_options' ) ) {
+            return new WP_Error(
+                'jb3_magic_link_only',
+                __( 'Para acceder a tu cuenta usá el enlace de acceso enviado a tu email.', 'jb3-members' )
+            );
+        }
+        return $user;
     }
 
     // ─── Shortcode ────────────────────────────────────────────────────────────
@@ -19,10 +36,10 @@ class JB3_Login {
             return '';
         }
 
-        // Only redirect actual JB3 members — admins can visit this page freely.
-        if ( is_user_logged_in() && jb3_is_member( get_current_user_id() ) ) {
+        if ( is_user_logged_in() ) {
+            $user_id   = get_current_user_id();
             $dashboard = (int) get_option( 'jb3_dashboard_page_id' );
-            if ( $dashboard ) {
+            if ( $dashboard && jb3_is_member( $user_id ) ) {
                 wp_redirect( esc_url_raw( get_permalink( $dashboard ) ) );
                 exit;
             }

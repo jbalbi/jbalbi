@@ -74,8 +74,9 @@ class JB3_Sync {
             'admin_done' => false,
             'mc_offset'  => 0,
             'mc_total'   => -1,
-            'upserted'   => 0,
-            'archived'   => 0,
+            'subscribed'   => 0,
+            'unsubscribed' => 0,
+            'archived'     => 0,
             'errors'     => [],
             'started_at' => current_time( 'mysql' ),
             'updated_at' => current_time( 'mysql' ),
@@ -164,7 +165,13 @@ class JB3_Sync {
                 if ( $err ) {
                     $state['errors'][] = 'Lote miembros (offset ' . $state['wp_offset'] . '): ' . $err;
                 } else {
-                    $state['upserted'] += count( $operations );
+                    foreach ( $operations as $op ) {
+                        if ( 'PUT' === $op['method'] ) {
+                            $state['subscribed']++;
+                        } else {
+                            $state['unsubscribed']++;
+                        }
+                    }
                 }
             }
 
@@ -180,7 +187,7 @@ class JB3_Sync {
                 $newsletter = (bool) get_user_meta( $admin_id, 'jb3_newsletter', true );
                 if ( $newsletter ) {
                     JB3_Mailchimp::sync_user( $admin_id );
-                    $state['upserted']++;
+                    $state['subscribed']++;
                 }
             }
             $state['admin_done'] = true;
@@ -369,7 +376,8 @@ class JB3_Sync {
         }
         $code = wp_remote_retrieve_response_code( $resp );
         if ( $code < 200 || $code >= 300 ) {
-            return 'API error ' . $code;
+            $body = json_decode( wp_remote_retrieve_body( $resp ), true );
+            return 'API error ' . $code . ' — ' . ( $body['detail'] ?? '' );
         }
         return null;
     }
