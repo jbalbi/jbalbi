@@ -45,7 +45,7 @@ Text Domain: generatepress-child
     --topbar-link-hover:  var(--color-primary);
 
     /* Cabecera */
-    --header-bg:          #000000cc;
+    --header-bg:          #00000033;
     --site-title-color:   #ffffff;
     --site-tagline-color: #ffffff;
 
@@ -878,20 +878,21 @@ body {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Proporción exacta de las imágenes reales (1920×1080 desktop, 1000×1333
-   mobile) con la técnica del "padding-top trick" — NO con la propiedad CSS
-   aspect-ratio: confirmado con DevTools que aspect-ratio en el contenedor
-   de Swiper (combinado con overflow:hidden + el wrapper flex interno de
-   Swiper) hace que el motor de layout de Chrome calcule un ancho "infinito"
-   en algún punto de la cadena y lo sature en su límite interno
-   (~33.554.432px, LayoutUnit::Max) — Swiper lee ese valor saturado como si
-   fuera el ancho real del slide.
-   El padding-top trick da el mismo resultado (alto proporcional al ancho)
-   pero por un mecanismo de layout completamente distinto y mucho más
-   viejo/estable (padding en % resuelve contra el ancho del contenedor,
-   nada que ver con el algoritmo de aspect-ratio) — .jb3-home-slider queda
-   con position:absolute + inset:0 llenando la caja que arma el ::before,
-   así que Swiper mide un elemento con ancho/alto ya resueltos y definidos,
-   sin ningún cálculo circular de por medio. */
+   mobile) con la técnica del "padding-top trick". Ya se probaron TRES
+   formas de que el alto salga solo de la imagen — aspect-ratio en CSS,
+   height:auto puesto a mano, y autoHeight:true de Swiper (que mide por
+   JS) — y las tres rompen apenas hay 2+ slides: Chrome calcula un ancho
+   "infinito" en algún punto de la cadena y lo satura en su límite interno
+   (~33.554.432px, LayoutUnit::Max). El padding-top trick da el mismo
+   resultado visual (alto proporcional al ancho) por un mecanismo de
+   layout completamente distinto — padding en % resuelve contra el ancho
+   del contenedor, nada que ver con flex/aspect-ratio/JS — así que no
+   dispara nada de esto. .jb3-home-slider queda con position:absolute +
+   inset:0 llenando la caja que arma el ::before, así que Swiper mide un
+   elemento con ancho/alto ya resueltos de entrada, sin cálculo circular.
+   Trade-off aceptado: cambiar el alto real requiere editar estos dos
+   porcentajes (no solo subir otra imagen), a cambio de que sea estable
+   sin importar cuántos slides tenga el repeater. */
 .jb3-home-slider-wrap {
     position: relative;
     width: 100%;
@@ -959,12 +960,19 @@ body {
     position: relative;
 }
 
-/* Degradé para que el texto sea legible arriba de cualquier imagen. */
+/* Degradé para que el texto sea legible arriba de cualquier imagen.
+   max-height + overflow:hidden: como ahora el alto de la imagen ya no es
+   una caja fija, si el texto de un slide es más largo de lo que entra,
+   se corta en vez de desbordar por afuera de la imagen. box-sizing:border-box
+   para que el padding cuente adentro de ese max-height, no se sume aparte. */
 .jb3-home-slider__overlay {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
+    max-height: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
     padding: 24px 60px 24px 24px;
     background: linear-gradient(to top, rgba(0, 0, 0, .85) 0%, rgba(0, 0, 0, 0) 60%);
     color: #ffffff;
@@ -1002,8 +1010,31 @@ body {
     margin-bottom: 12px;
 }
 
-.jb3-home-slider__texto p:last-child {
-    margin-bottom: 0;
+/* El editor WYSIWYG puede traer cualquier combinación de h1-h6/p (según lo
+   que pegue el que carga el slide, como el h1+h3 de este campo). Por
+   default h1-h6/p son "block" — SIEMPRE arrancan en un renglón nuevo, sin
+   importar cuánto se achique el margen o el line-height (eso solo reduce
+   el aire, no saca el salto de línea en sí). Para que el texto corra
+   seguido como un solo bloque, display:inline saca ese salto forzado —
+   el wrap pasa a depender nomás del ancho disponible, como un párrafo
+   normal. margin-right en vez de margin-bottom: separa un elemento del
+   siguiente con un espacio (en el HTML de origen no hay ninguno entre
+   </h1> y <h3>), no de abajo (ya no aplica con inline). Scopeado a este
+   contenedor nomás, sin tocar los títulos del resto del sitio. */
+.jb3-home-slider__texto h1,
+.jb3-home-slider__texto h2,
+.jb3-home-slider__texto h3,
+.jb3-home-slider__texto h4,
+.jb3-home-slider__texto h5,
+.jb3-home-slider__texto h6,
+.jb3-home-slider__texto p {
+    display: inline;
+    margin: 0;
+    line-height: 1.15;
+}
+
+.jb3-home-slider__texto > *:not(:last-child) {
+    margin-right: .35em;
 }
 
 /* Color del botón: lo pone _shortcode_home_slider.php inline por slide vía
@@ -1036,4 +1067,24 @@ body {
     margin-top: 10px;
     font-size: 11px;
     opacity: .6;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FONDO POR PÁGINA (Páginas normales, videos, op_comerciales)
+   Variables puestas por _init_backgrounds.php (hook wp_head) según la
+   página actual: propio si lo cargó el editor, si no el genérico de la
+   Options Page "Ajustes del sitio". series/peliculas/prod_originales y la
+   Home quedan afuera (tienen su propio hero, no este fondo).
+   ═══════════════════════════════════════════════════════════════════════════ */
+body {
+    background-image: var(--jb3-bg-desktop, none);
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+}
+
+@media (max-width: 767px) {
+    body {
+        background-image: var(--jb3-bg-mobile, var(--jb3-bg-desktop, none));
+    }
 }

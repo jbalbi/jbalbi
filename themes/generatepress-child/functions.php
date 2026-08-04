@@ -110,3 +110,4 @@ require_once __DIR__ . '/_init_header.php';             // Header custom: prehea
 require_once __DIR__ . '/_init_layout.php';             // Layout forzado: sin sidebar, sin footer widgets, full-width
 require_once __DIR__ . '/_init_sliders.php';             // jb3_enqueue_swiper(): loader reutilizable para cualquier slider
 require_once __DIR__ . '/_shortcode_home_slider.php';   // [home_slider]: repeater ACF "HOME HEADER SLIDER"
+require_once __DIR__ . '/_init_backgrounds.php';        // Fondo por página (ACF) + Options Page "Ajustes del sitio"
