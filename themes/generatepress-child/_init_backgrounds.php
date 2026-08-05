@@ -25,42 +25,73 @@ add_action( 'acf/init', function () {
 	] );
 } );
 
-// ─── FONDO POR DEFECTO: genérico + por tipo de contenido ───────────────────
-// Se imprimen SIEMPRE, en toda página (no dependen de cuál se está viendo)
-// como variables CSS en <body>. El CSS (style.css, sección "FONDO POR
-// PÁGINA") es quien decide cuál usar en cada caso, según la clase que
-// WordPress ya le agrega solo al <body> (.single-videos,
-// .single-op_comerciales, etc. — no hace falta agregar nada a mano en los
-// templates), con cascada hacia el genérico si ese tipo de contenido no
-// tiene uno propio cargado. Los valores salen del grupo de campos "Fondos
-// del sitio" en la Options Page "Ajustes del sitio" de arriba.
+// ─── FONDO POR PÁGINA: cascada resuelta acá, no en el CSS ──────────────────
+// Toda la cascada (override del post → default del tipo de contenido →
+// genérico del sitio) se resuelve en PHP y se imprime como UN solo par de
+// variables (--jb3-bg-desktop / --jb3-bg-mobile) en <body>. style.css ya no
+// decide nada por clase de body — solo consume ese par. Se resuelve acá
+// (y no con fallback de var() anidados en CSS) porque "sin fondo" a nivel
+// de post necesita poder cortar la cascada, algo que var(--a, var(--b)) no
+// puede expresar (siempre hay un fallback).
 //
-// El fondo PERSONALIZADO por contenido individual (heredado/personalizado/
-// sin fondo, campo a nivel de cada post/página) es un paso aparte, todavía
-// no armado — cuando se sume, agrega su propia variable acá con prioridad
-// más alta en la cascada de style.css.
+// Grupo de campos "Fondo de página" (Location: Post Type == Page/videos/
+// op_comerciales/series/peliculas/prod_originales), campos sueltos:
+// - fondo_modo: Select — por_defecto / personalizado / sin_fondo
+// - fondo_desktop, fondo_mobile: Image (URL) — visibles solo si
+//   fondo_modo == personalizado (conditional logic en ACF)
 add_action( 'wp_head', function () {
 	if ( ! function_exists( 'get_field' ) ) {
 		return;
 	}
 
-	$vars = [
-		'--jb3-bg-generico-desktop'       => get_field( 'fondo_generico_desktop', 'option' ),
-		'--jb3-bg-generico-mobile'        => get_field( 'fondo_generico_mobile', 'option' ),
-		'--jb3-bg-videos-desktop'         => get_field( 'fondo_videos_desktop', 'option' ),
-		'--jb3-bg-videos-mobile'          => get_field( 'fondo_videos_mobile', 'option' ),
-		'--jb3-bg-op_comerciales-desktop' => get_field( 'fondo_op_comerciales_desktop', 'option' ),
-		'--jb3-bg-op_comerciales-mobile'  => get_field( 'fondo_op_comerciales_mobile', 'option' ),
-	];
+	$desktop = '';
+	$mobile  = '';
 
-	$css = '';
-	foreach ( $vars as $name => $url ) {
-		if ( $url ) {
-			$css .= $name . ':url(' . esc_url( $url ) . ');';
+	if ( is_singular() ) {
+		$modo = get_field( 'fondo_modo' );
+
+		if ( 'sin_fondo' === $modo ) {
+			return;
+		}
+
+		if ( 'personalizado' === $modo ) {
+			$desktop = get_field( 'fondo_desktop' );
+			$mobile  = get_field( 'fondo_mobile' );
 		}
 	}
 
-	if ( $css ) {
-		printf( '<style>body{%s}</style>', $css );
+	// Default por tipo de contenido — solo existe para videos y op_comerciales.
+	if ( ! $desktop && ! $mobile ) {
+		$defaults_por_cpt = [
+			'videos'         => 'fondo_videos',
+			'op_comerciales' => 'fondo_op_comerciales',
+		];
+		$post_type = is_singular() ? get_post_type() : '';
+
+		if ( isset( $defaults_por_cpt[ $post_type ] ) ) {
+			$desktop = get_field( $defaults_por_cpt[ $post_type ] . '_desktop', 'option' );
+			$mobile  = get_field( $defaults_por_cpt[ $post_type ] . '_mobile', 'option' );
+		}
 	}
+
+	// Genérico del sitio — última red, aplica a todo lo que no matcheó arriba
+	// (incluidas páginas de archivo, búsqueda, etc.).
+	if ( ! $desktop && ! $mobile ) {
+		$desktop = get_field( 'fondo_generico_desktop', 'option' );
+		$mobile  = get_field( 'fondo_generico_mobile', 'option' );
+	}
+
+	if ( ! $desktop && ! $mobile ) {
+		return;
+	}
+
+	$css = '';
+	if ( $desktop ) {
+		$css .= '--jb3-bg-desktop:url(' . esc_url( $desktop ) . ');';
+	}
+	if ( $mobile ) {
+		$css .= '--jb3-bg-mobile:url(' . esc_url( $mobile ) . ');';
+	}
+
+	printf( '<style>body{%s}</style>', $css );
 } );

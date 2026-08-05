@@ -33,7 +33,7 @@ Text Domain: generatepress-child
     --btn-radius:     0;
 
     /* Cuerpo (fondo/texto/links del sitio en general) */
-    --body-bg:            rgb(44, 44, 44);
+    --body-bg:            rgb(0, 0, 0);
     --body-text:          #f6f6f6;
     --link-color:         var(--color-primary);
     --link-hover-color:   var(--color-secondary);
@@ -45,7 +45,7 @@ Text Domain: generatepress-child
     --topbar-link-hover:  var(--color-primary);
 
     /* Cabecera */
-    --header-bg:          #00000033;
+    --header-bg:          #000000aa;
     --site-title-color:   #ffffff;
     --site-tagline-color: #ffffff;
 
@@ -91,7 +91,7 @@ Text Domain: generatepress-child
     --icon-radius:     6px;
 
     /* Footer */
-    --footer-bg:            #000000;
+    --footer-bg:            #333;
     --footer-text:          #f6f6f6;
     --footer-heading-color: var(--color-secondary);
     --footer-link-color:    #cccccc;
@@ -131,17 +131,30 @@ Text Domain: generatepress-child
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Cuerpo */
+/* display:flex + min-height:100vh acá (y flex:1 en #page más abajo) son el
+   truco clásico de "sticky footer": si el contenido es corto, #page se
+   estira para ocupar el espacio libre del viewport, empujando el footer
+   (<footer class="jb3-footer">, hermano de #page — se cierra en footer.php)
+   a pegarse justo arriba de la barra fija en vez de dejar un hueco de fondo
+   entre el contenido y la barra. header.php de GP no envuelve header+page+
+   footer en ningún contenedor común, así que el flex column tiene que ir
+   directo en <body>. */
 body {
     background-color: var(--body-bg) !important;
     color: var(--body-text) !important;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 /* #page (con clase "container") envuelve todo el contenido entre el header y
    el footer, y GP le pone su propio fondo (Personalizar > Colores >
-   Contenido) por encima del de <body> — sin esto, --body-bg solo se ve
-   asomando en los bordes/huecos fuera de #page. */
+   Contenido) por encima del de <body> — se fuerza a transparent (no al
+   color) para que el fondo de <body> (color general + imagen por página)
+   se vea a través, en vez de quedar tapado por un panel opaco. */
 #page {
-    background-color: var(--body-bg) !important;
+    background-color: transparent !important;
+    flex: 1 0 auto;
 }
 
 a {
@@ -1070,39 +1083,28 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   FONDO POR PÁGINA (genérico + por tipo de contenido)
-   Variables puestas por _init_backgrounds.php (hook wp_head, siempre
-   disponibles) — acá se decide CUÁL usar según la clase que WordPress ya
-   agrega solo al <body> (.single-videos, .single-op_comerciales), con
-   cascada al genérico si ese tipo no tiene fondo propio cargado. Series/
-   peliculas/prod_originales y la Home quedan afuera (tienen su propio
-   hero, no este fondo).
+   FONDO POR PÁGINA
+   Variables puestas por _init_backgrounds.php (hook wp_head) — la cascada
+   completa (override del post → default del tipo de contenido → genérico
+   del sitio → sin fondo) ya se resuelve ahí en PHP; acá solo se consume el
+   par final --jb3-bg-desktop/--jb3-bg-mobile, sin lógica por clase de body.
    ═══════════════════════════════════════════════════════════════════════════ */
 body {
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
-    background-image: var(--jb3-bg-generico-desktop, none);
-}
-
-body.single-videos {
-    background-image: var(--jb3-bg-videos-desktop, var(--jb3-bg-generico-desktop, none));
-}
-
-body.single-op_comerciales {
-    background-image: var(--jb3-bg-op_comerciales-desktop, var(--jb3-bg-generico-desktop, none));
+    /* fixed (no scroll): "cover" se calcula contra el viewport, no contra el
+       alto total de la página — con contenido largo, sin esto el body se
+       vuelve mucho más alto que ancho y "cover" termina agrandando la
+       imagen para tapar ese alto, recortando casi todo el ancho. Como
+       beneficio extra, da el efecto de fondo fijo/detrás del nav que ya
+       estaba pensado para este tipo de páginas. */
+    background-attachment: fixed;
+    background-image: var(--jb3-bg-desktop, none);
 }
 
 @media (max-width: 767px) {
     body {
-        background-image: var(--jb3-bg-generico-mobile, none);
-    }
-
-    body.single-videos {
-        background-image: var(--jb3-bg-videos-mobile, var(--jb3-bg-generico-mobile, none));
-    }
-
-    body.single-op_comerciales {
-        background-image: var(--jb3-bg-op_comerciales-mobile, var(--jb3-bg-generico-mobile, none));
+        background-image: var(--jb3-bg-mobile, var(--jb3-bg-desktop, none));
     }
 }
