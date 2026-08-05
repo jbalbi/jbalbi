@@ -25,37 +25,42 @@ add_action( 'acf/init', function () {
 	] );
 } );
 
-// ─── FONDO POR PÁGINA: Páginas, videos, op_comerciales ─────────────────────
-// Los CPT con hero (series/peliculas/prod_originales) y la Home tienen su
-// propio tratamiento (ver .jb3-hero) — a estos se les imprime un fondo
-// detrás del nav vía dos variables CSS (desktop/mobile) en <body>. No hay
-// equivalente de <picture>/<source> para background-image, así que la
-// responsividad la resuelve una media query en style.css, no PHP.
+// ─── FONDO POR DEFECTO: genérico + por tipo de contenido ───────────────────
+// Se imprimen SIEMPRE, en toda página (no dependen de cuál se está viendo)
+// como variables CSS en <body>. El CSS (style.css, sección "FONDO POR
+// PÁGINA") es quien decide cuál usar en cada caso, según la clase que
+// WordPress ya le agrega solo al <body> (.single-videos,
+// .single-op_comerciales, etc. — no hace falta agregar nada a mano en los
+// templates), con cascada hacia el genérico si ese tipo de contenido no
+// tiene uno propio cargado. Los valores salen del grupo de campos "Fondos
+// del sitio" en la Options Page "Ajustes del sitio" de arriba.
 //
-// Fuente del fondo, en orden: el propio de la página (grupo ACF "Fondo de
-// página", campos fondo_desktop/fondo_mobile) → si no hay, el genérico de
-// la Options Page de arriba (fondo_generico_desktop/fondo_generico_mobile).
+// El fondo PERSONALIZADO por contenido individual (heredado/personalizado/
+// sin fondo, campo a nivel de cada post/página) es un paso aparte, todavía
+// no armado — cuando se sume, agrega su propia variable acá con prioridad
+// más alta en la cascada de style.css.
 add_action( 'wp_head', function () {
-	if ( ! is_singular() || is_front_page() ) {
-		return;
-	}
-	if ( in_array( get_post_type(), [ 'series', 'peliculas', 'prod_originales' ], true ) ) {
-		return; // esos CPT tienen su propio hero, no fondo de página.
-	}
 	if ( ! function_exists( 'get_field' ) ) {
 		return;
 	}
 
-	$desktop = get_field( 'fondo_desktop' ) ?: get_field( 'fondo_generico_desktop', 'option' );
-	$mobile  = get_field( 'fondo_mobile' )  ?: get_field( 'fondo_generico_mobile', 'option' );
+	$vars = [
+		'--jb3-bg-generico-desktop'       => get_field( 'fondo_generico_desktop', 'option' ),
+		'--jb3-bg-generico-mobile'        => get_field( 'fondo_generico_mobile', 'option' ),
+		'--jb3-bg-videos-desktop'         => get_field( 'fondo_videos_desktop', 'option' ),
+		'--jb3-bg-videos-mobile'          => get_field( 'fondo_videos_mobile', 'option' ),
+		'--jb3-bg-op_comerciales-desktop' => get_field( 'fondo_op_comerciales_desktop', 'option' ),
+		'--jb3-bg-op_comerciales-mobile'  => get_field( 'fondo_op_comerciales_mobile', 'option' ),
+	];
 
-	if ( ! $desktop && ! $mobile ) {
-		return;
+	$css = '';
+	foreach ( $vars as $name => $url ) {
+		if ( $url ) {
+			$css .= $name . ':url(' . esc_url( $url ) . ');';
+		}
 	}
 
-	printf(
-		'<style>body{%s%s}</style>',
-		$desktop ? '--jb3-bg-desktop:url(' . esc_url( $desktop ) . ');' : '',
-		$mobile  ? '--jb3-bg-mobile:url(' . esc_url( $mobile ) . ');'  : ''
-	);
+	if ( $css ) {
+		printf( '<style>body{%s}</style>', $css );
+	}
 } );

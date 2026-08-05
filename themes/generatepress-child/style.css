@@ -1070,21 +1070,39 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   FONDO POR PÁGINA (Páginas normales, videos, op_comerciales)
-   Variables puestas por _init_backgrounds.php (hook wp_head) según la
-   página actual: propio si lo cargó el editor, si no el genérico de la
-   Options Page "Ajustes del sitio". series/peliculas/prod_originales y la
-   Home quedan afuera (tienen su propio hero, no este fondo).
+   FONDO POR PÁGINA (genérico + por tipo de contenido)
+   Variables puestas por _init_backgrounds.php (hook wp_head, siempre
+   disponibles) — acá se decide CUÁL usar según la clase que WordPress ya
+   agrega solo al <body> (.single-videos, .single-op_comerciales), con
+   cascada al genérico si ese tipo no tiene fondo propio cargado. Series/
+   peliculas/prod_originales y la Home quedan afuera (tienen su propio
+   hero, no este fondo).
    ═══════════════════════════════════════════════════════════════════════════ */
 body {
-    background-image: var(--jb3-bg-desktop, none);
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
+    background-image: var(--jb3-bg-generico-desktop, none);
+}
+
+body.single-videos {
+    background-image: var(--jb3-bg-videos-desktop, var(--jb3-bg-generico-desktop, none));
+}
+
+body.single-op_comerciales {
+    background-image: var(--jb3-bg-op_comerciales-desktop, var(--jb3-bg-generico-desktop, none));
 }
 
 @media (max-width: 767px) {
     body {
-        background-image: var(--jb3-bg-mobile, var(--jb3-bg-desktop, none));
+        background-image: var(--jb3-bg-generico-mobile, none);
+    }
+
+    body.single-videos {
+        background-image: var(--jb3-bg-videos-mobile, var(--jb3-bg-generico-mobile, none));
+    }
+
+    body.single-op_comerciales {
+        background-image: var(--jb3-bg-op_comerciales-mobile, var(--jb3-bg-generico-mobile, none));
     }
 }
