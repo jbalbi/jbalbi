@@ -111,3 +111,5 @@ require_once __DIR__ . '/_init_layout.php';             // Layout forzado: sin s
 require_once __DIR__ . '/_init_sliders.php';             // jb3_enqueue_swiper(): loader reutilizable para cualquier slider
 require_once __DIR__ . '/_shortcode_home_slider.php';   // [home_slider]: repeater ACF "HOME HEADER SLIDER"
 require_once __DIR__ . '/_init_backgrounds.php';        // Fondo por página (ACF) + Options Page "Ajustes del sitio"
+require_once __DIR__ . '/_init_hero.php';               // jb3_hero_image(): hero de Series/Películas/Prod. Originales
+require_once __DIR__ . '/_init_admin_columns.php';      // Columna de miniatura en los listados de admin

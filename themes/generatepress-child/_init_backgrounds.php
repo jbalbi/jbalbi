@@ -35,12 +35,22 @@ add_action( 'acf/init', function () {
 // puede expresar (siempre hay un fallback).
 //
 // Grupo de campos "Fondo de página" (Location: Post Type == Page/videos/
-// op_comerciales/series/peliculas/prod_originales), campos sueltos:
+// op_comerciales), campos sueltos:
 // - fondo_modo: Select — por_defecto / personalizado / sin_fondo
 // - fondo_desktop, fondo_mobile: Image (URL) — visibles solo si
 //   fondo_modo == personalizado (conditional logic en ACF)
+//
+// Series/Películas/Prod. Originales quedan afuera de esta cascada por
+// completo: usan el hero (ver _init_hero.php) en vez de fondo de página, y
+// ni siquiera tienen el grupo "Fondo de página" disponible — sin este
+// corte temprano, caerían igual en el fondo genérico del sitio como
+// última red de la cascada de abajo.
 add_action( 'wp_head', function () {
 	if ( ! function_exists( 'get_field' ) ) {
+		return;
+	}
+
+	if ( is_singular( [ 'series', 'peliculas', 'prod_originales' ] ) ) {
 		return;
 	}
 

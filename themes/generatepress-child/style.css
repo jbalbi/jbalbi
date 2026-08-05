@@ -1103,6 +1103,23 @@ body {
     margin-right: .35em;
 }
 
+/* En mobile, h1-h6 heredan el tamaño nativo de cada nivel (pensado para
+   texto de página, no para un slide de alto fijo) — con contenido largo
+   eso desborda el overlay (que corta con overflow:hidden) y llega a tapar
+   el botón/copyright. Mismo breakpoint que el resto del sitio usa para
+   mobile. */
+@media (max-width: 767px) {
+    .jb3-home-slider__texto h1,
+    .jb3-home-slider__texto h2,
+    .jb3-home-slider__texto h3,
+    .jb3-home-slider__texto h4,
+    .jb3-home-slider__texto h5,
+    .jb3-home-slider__texto h6,
+    .jb3-home-slider__texto p {
+        font-size: 18px;
+    }
+}
+
 /* Color del botón: lo pone _shortcode_home_slider.php inline por slide vía
    --jb3-slide-btn-bg/--jb3-slide-btn-bg-hover (ya resuelto con el fallback
    a --color-primary/--color-secondary en PHP si el campo ACF vino vacío).
