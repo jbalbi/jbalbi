@@ -47,6 +47,9 @@
 }
 
 /* Inputs & selects */
+/* Fondo blanco + texto negro fijos (no heredados): estos formularios
+   aparecen sobre fondos oscuros o con imagen de fondo, y con color:inherit
+   el texto quedaba invisible ahí. */
 .jb3-form input[type="text"],
 .jb3-form input[type="email"],
 .jb3-form input[type="tel"],
@@ -56,8 +59,8 @@
     border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
     font-size: 0.95rem;
     line-height: 1.4;
-    color: inherit;
-    background-color: transparent;
+    color: #222222;
+    background-color: #ffffff;
     transition: border-color .15s, box-shadow .15s;
     box-sizing: border-box;
     font-family: inherit;

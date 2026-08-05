@@ -3,7 +3,7 @@
  * Plugin Name: JB3 Members
  * Plugin URI:  https://jb3.tv
  * Description: Registro, aprobación y acceso de miembros con magic link para JB3.
- * Version:     1.0.0
+ * Version:     1.0.1
  * Author:      JB3
  * Author URI:  https://jb3.tv
  * Text Domain: jb3-members
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'JB3_VERSION',  '1.0.0' );
+define( 'JB3_VERSION',  '1.0.1' );
 define( 'JB3_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'JB3_URL',      plugin_dir_url( __FILE__ ) );
 define( 'JB3_BASENAME', plugin_basename( __FILE__ ) );

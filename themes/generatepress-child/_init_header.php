@@ -120,3 +120,19 @@ function jb3_enqueue_header_account_script() {
         true
     );
 }
+
+// ─── ALTO REAL DEL HEADER (para el hero de Home/Series/Películas/Prod. Originales) ──
+// Mide .site-header.offsetHeight y lo escribe en --header-height — el
+// header cambia de alto entre desktop/mobile (nav en una o dos líneas,
+// admin bar, etc.), así que un valor fijo en CSS no alcanza.
+add_action( 'wp_enqueue_scripts', 'jb3_enqueue_header_height_script' );
+function jb3_enqueue_header_height_script() {
+    $path = get_stylesheet_directory() . '/assets/js/header-height.js';
+    wp_enqueue_script(
+        'jb3-header-height',
+        get_stylesheet_directory_uri() . '/assets/js/header-height.js',
+        [],
+        file_exists( $path ) ? filemtime( $path ) : false,
+        true
+    );
+}

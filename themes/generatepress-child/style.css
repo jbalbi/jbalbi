@@ -48,6 +48,9 @@ Text Domain: generatepress-child
     --header-bg:          #000000aa;
     --site-title-color:   #ffffff;
     --site-tagline-color: #ffffff;
+    /* Fallback mientras carga header-height.js, que la corrige al alto real
+       (ver sección HERO más abajo). */
+    --header-height:      140px;
 
     /* Navegación principal */
     --nav-bg:             transparent;
@@ -97,8 +100,8 @@ Text Domain: generatepress-child
     --footer-link-color:    #cccccc;
     --footer-link-hover:    var(--color-secondary);
     --footer-gap:           40px;
-    --footer-padding-y:     48px;
-    --footer-padding-x:     20px;
+    --footer-padding-y:     20px;
+    --footer-padding-x:     80px;
     --footer-bar-bg:        var(--color-primary);
     --footer-bar-text:      #ffffff;
     --footer-bar-cta:       var(--color-secondary);
@@ -109,12 +112,34 @@ Text Domain: generatepress-child
        valores para probar tamaños sin tener que buscar la regla. */
     --slider-logo-width:  300px;
     --slider-logo-height: 108px;
+
+    /* Padding lateral del texto sobre el slide — mismos 3 valores que
+       --footer-padding-x (ver breakpoints acá abajo), para que el
+       contenido de la Home respire igual en el footer y en el slider. */
+    --slider-text-padding-x: 80px;
 }
 
-/* En mobile (breakpoint del hamburguesa) usamos --nav-font-size-mobile en
-   vez de --nav-font-size. Como todas las reglas del nav ya usan
-   var(--nav-font-size), redefiniendo la variable acá alcanza — no hace
-   falta duplicar selectores. */
+/* Breakpoints propios de "tablet" (768-1023) y "mobile" (≤767, mismo corte
+   que ya usa el resto del sitio para mobile) — footer y slider comparten
+   estos 3 pasos (80/40/20 lateral) para que el contenido respire igual en
+   todo el sitio. En mobile (breakpoint del hamburguesa) --nav-font-size
+   también pasa a usar --nav-font-size-mobile. Como todas las reglas ya usan
+   var(...), redefinir las variables acá alcanza — no hace falta duplicar
+   selectores. */
+@media (max-width: 1023px) {
+    :root {
+        --footer-padding-x:      40px;
+        --slider-text-padding-x: 40px;
+    }
+}
+
+@media (max-width: 767px) {
+    :root {
+        --footer-padding-x:      20px;
+        --slider-text-padding-x: 20px;
+    }
+}
+
 @media (max-width: 1279px) {
     :root {
         --nav-font-size: var(--nav-font-size-mobile);
@@ -181,6 +206,7 @@ input[type="submit"] {
     background-color: var(--btn-bg) !important;
     color: var(--btn-text) !important;
     border-radius: var(--btn-radius) !important;
+    text-transform: uppercase !important;
 }
 
 .button:hover,
@@ -234,6 +260,33 @@ body.admin-bar .site-header {
     body.admin-bar .site-header {
         top: 46px;
     }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HERO — Home, Series, Películas, Prod. Originales
+   El contenido de estas páginas arranca en el tope real del navegador y pasa
+   por DETRÁS del header (sticky, semitransparente vía --header-bg) antes de
+   seguir con el resto normal. --header-height la corrige header-height.js
+   (mide .site-header.offsetHeight real) — el valor en :root es solo el
+   fallback mientras carga ese script.
+   .jb3-hero tiene que ir como PRIMER HIJO de <main>, nunca como hermano de
+   <main> antes de él: .site-content (de GP) es flex-row para poder poner un
+   sidebar al lado del contenido, y agregarle un segundo hijo ahí (el hero,
+   como hermano de main) rompe ese layout — main deja de ocupar el 100% del
+   ancho. Metiendo el hero DENTRO de <main>, .site-content sigue con un solo
+   hijo y ese problema no aparece.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-hero {
+    position: relative;
+    z-index: 1;
+    margin-top: calc(-1 * var(--header-height));
+    overflow: hidden;
+}
+
+.jb3-hero img {
+    display: block;
+    width: 100%;
+    height: auto;
 }
 
 .main-title a {
@@ -986,7 +1039,7 @@ body {
     max-height: 100%;
     overflow: hidden;
     box-sizing: border-box;
-    padding: 24px 60px 24px 24px;
+    padding: 24px var(--slider-text-padding-x);
     background: linear-gradient(to top, rgba(0, 0, 0, .85) 0%, rgba(0, 0, 0, 0) 60%);
     color: #ffffff;
 }
