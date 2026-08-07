@@ -117,19 +117,25 @@ Text Domain: generatepress-child
        --footer-padding-x (ver breakpoints acá abajo), para que el
        contenido de la Home respire igual en el footer y en el slider. */
     --slider-text-padding-x: 80px;
+
+    /* Subnav + módulos de contenido ([jb3_subnav]/[jb3_modulo]) — mismos 3
+       valores que --footer-padding-x, para que respiren igual que el resto
+       del sitio a cada tamaño de pantalla. */
+    --jb3-modulo-padding-x: 80px;
 }
 
 /* Breakpoints propios de "tablet" (768-1023) y "mobile" (≤767, mismo corte
-   que ya usa el resto del sitio para mobile) — footer y slider comparten
-   estos 3 pasos (80/40/20 lateral) para que el contenido respire igual en
-   todo el sitio. En mobile (breakpoint del hamburguesa) --nav-font-size
-   también pasa a usar --nav-font-size-mobile. Como todas las reglas ya usan
-   var(...), redefinir las variables acá alcanza — no hace falta duplicar
-   selectores. */
+   que ya usa el resto del sitio para mobile) — footer, slider, subnav y
+   módulos comparten estos 3 pasos (80/40/20 lateral) para que el contenido
+   respire igual en todo el sitio. En mobile (breakpoint del hamburguesa)
+   --nav-font-size también pasa a usar --nav-font-size-mobile. Como todas
+   las reglas ya usan var(...), redefinir las variables acá alcanza — no
+   hace falta duplicar selectores. */
 @media (max-width: 1023px) {
     :root {
         --footer-padding-x:      40px;
         --slider-text-padding-x: 40px;
+        --jb3-modulo-padding-x:  40px;
     }
 }
 
@@ -137,6 +143,7 @@ Text Domain: generatepress-child
     :root {
         --footer-padding-x:      20px;
         --slider-text-padding-x: 20px;
+        --jb3-modulo-padding-x:  20px;
     }
 }
 
@@ -769,7 +776,7 @@ html.mobile-menu-open .mobile-menu-control-wrapper {
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--footer-gap);
-    //max-width: 1400px;
+    /* max-width: 1400px; */
     margin: 0 auto;
     padding: var(--footer-padding-y) var(--footer-padding-x);
 }
@@ -1177,4 +1184,236 @@ body {
     body {
         background-image: var(--jb3-bg-mobile, var(--jb3-bg-desktop, none));
     }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SUBNAV DINÁMICA
+   Armada por _init_subnav.php ([jb3_subnav] + [jb3_subnav_anchor]) — todavía
+   sin sticky/scroll suave (paso siguiente, una vez que haya módulos reales
+   con los que probarla).
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-subnav {
+    background: var(--header-bg);
+    border-bottom: 1px solid rgba(255, 255, 255, .15);
+}
+
+.jb3-subnav__menu {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    margin: 0;
+    padding: 10px var(--jb3-modulo-padding-x);
+}
+
+.jb3-subnav__link {
+    display: inline-block;
+    color: var(--nav-text) !important;
+    text-decoration: none !important;
+    font-size: var(--nav-font-size);
+    font-weight: var(--nav-font-weight);
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+.jb3-subnav__link:hover,
+.jb3-subnav__link:focus {
+    color: var(--nav-hover) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MÓDULO DE CONTENIDO (_init_modulo.php)
+   Mismo padding lateral que la subnav/footer (--jb3-modulo-padding-x).
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-modulo {
+    padding: 40px var(--jb3-modulo-padding-x);
+}
+
+.jb3-modulo__titulo {
+    margin: 0 0 12px;
+}
+
+.jb3-modulo__bajada {
+    margin: 0 0 20px;
+}
+
+.jb3-modulo__ver-mas {
+    margin: 24px 0 0;
+    text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GRILLAS DE CONTENIDO (_init_grids.php)
+   Posters: vertical (2/3, tipo afiche de película), hasta 4 en desktop.
+   Thumbs: horizontal (3/2), hasta 3 en desktop, con ícono de play opcional.
+   Mismas proporciones que ya usa la miniatura del listado de admin
+   (_init_admin_columns.php: 50x75 posters, 60x40 thumbs) para que el
+   recorte se vea consistente en todos lados.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-grid-posters,
+.jb3-grid-thumbs {
+    display: grid;
+    gap: 20px;
+}
+
+.jb3-grid-posters {
+    grid-template-columns: repeat(5, 1fr);
+}
+
+.jb3-grid-thumbs {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 1023px) {
+    .jb3-grid-posters { grid-template-columns: repeat(3, 1fr); }
+    .jb3-grid-thumbs  { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 767px) {
+    .jb3-grid-posters { grid-template-columns: repeat(2, 1fr); }
+    .jb3-grid-thumbs  { grid-template-columns: repeat(1, 1fr); }
+}
+
+.jb3-grid-posters__item,
+.jb3-grid-thumbs__item {
+    display: block;
+    position: relative;
+    color: var(--body-text) !important;
+    text-decoration: none !important;
+}
+
+/* Crecimiento real (no recortado) — la imagen se agranda de verdad, por
+   encima de la celda vecina. */
+.jb3-grid-posters__media,
+.jb3-grid-thumbs__media {
+    display: block;
+    position: relative;
+}
+
+.jb3-grid-posters__item:hover,
+.jb3-grid-thumbs__item:hover {
+    z-index: 2;
+}
+
+.jb3-grid-posters__media img,
+.jb3-grid-thumbs__media img {
+    transition: transform .3s ease;
+}
+
+.jb3-grid-posters__item:hover img,
+.jb3-grid-thumbs__item:hover img {
+    transform: scale(1.03);
+}
+
+.jb3-grid-posters__media img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+}
+
+.jb3-grid-thumbs__media img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+}
+
+.jb3-grid-posters__titulo,
+.jb3-grid-thumbs__titulo {
+    display: block;
+    margin-top: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+}
+
+.jb3-grid-thumbs__play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, .25);
+    pointer-events: none;
+    transition: transform .3s ease;
+}
+
+/* Sin esto, al crecer la imagen (scale) este overlay se queda en el
+   tamaño original — el anillo que la imagen gana de más queda sin el
+   oscurecido semitransparente, y ESO es el "borde más claro" que se veía.
+   Con el mismo scale acá, crece exactamente igual que la imagen. */
+.jb3-grid-thumbs__item:hover .jb3-grid-thumbs__play {
+    transform: scale(1.03);
+}
+
+.jb3-grid-thumbs__play svg {
+    width: 64px;
+    height: 64px;
+    padding: 16px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    color: #ffffff;
+    background: rgba(0, 0, 0, .5);
+    transition: transform .3s ease;
+}
+
+.jb3-grid-thumbs__item:hover .jb3-grid-thumbs__play svg {
+    transform: scale(1.15);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODAL DE VIDEO (_init_video_modal.php)
+   Un solo modal reusado por toda la página, para cualquier [data-jb3-video].
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-video-modal[hidden] {
+    display: none;
+}
+
+.jb3-video-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jb3-video-modal__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .9);
+}
+
+.jb3-video-modal__dialog {
+    position: relative;
+    width: min(1100px, 92vw);
+}
+
+.jb3-video-modal__close {
+    position: absolute;
+    top: -44px;
+    right: 0;
+    background: none;
+    border: 0;
+    color: #ffffff;
+    cursor: pointer;
+    padding: 8px;
+}
+
+.jb3-video-modal__frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000000;
+}
+
+.jb3-video-modal__frame iframe,
+.jb3-video-modal__frame video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
 }

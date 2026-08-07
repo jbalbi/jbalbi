@@ -1,0 +1,236 @@
+<?php
+defined( 'ABSPATH' ) || exit;
+
+// ─── MÓDULO DE CONTENIDO ─────────────────────────────────────────────────────
+// Junta lo de _init_grids.php y _init_subnav.php: consulta por canal(es)+
+// país+tipo(s), imprime título/bajada/grilla (+ botón "Ver más" si hay más
+// contenido del que entra en el límite), y se anota solo en la subnav si
+// hubo contenido. jb3_modulo_render() es la función real (la llaman tanto
+// el shortcode de abajo como, más adelante, cualquier plantilla directo
+// por PHP — mismo patrón de "una función, dos entradas" que ya usamos en
+// _init_hero.php). Título/bajada llegan ya resueltos acá — de dónde salen
+// (atributo de shortcode, lo que sea) es responsabilidad de quien llama.
+//
+// El módulo puede usarse SIN canal (una página con "todas las Op.
+// Comerciales de todos los canales"), con UNO, o con VARIOS a la vez — por
+// eso jb3_modulo_query()/render() reciben siempre un array de IDs de
+// término (vacío = sin filtrar por canal), nunca uno solo. Mismo criterio
+// para $tipos: puede ser un solo tipo, varios combinados (ej. Series +
+// Prod. Originales), o TODOS (sin especificar tipo — "todo lo que tenga
+// este canal, sea lo que sea"). Como los distintos tipos no son todos de
+// la misma familia de grilla (posters vs thumbs), jb3_modulo_render()
+// separa el resultado en hasta dos grillas dentro del mismo módulo en vez
+// de forzar todo a un solo layout.
+
+/** Tipos que usan grilla de posters (vertical). */
+function jb3_modulo_tipos_poster(): array {
+	return [ 'peliculas', 'series', 'prod_originales' ];
+}
+
+/** Tipos que usan grilla de thumbs (horizontal). */
+function jb3_modulo_tipos_thumb(): array {
+	return [ 'op_comerciales', 'videos', 'integraciones' ];
+}
+
+/** Todos los tipos de contenido con módulo — usado cuando no se especifica "tipo". */
+function jb3_modulo_tipos_todos(): array {
+	return array_merge( jb3_modulo_tipos_poster(), jb3_modulo_tipos_thumb() );
+}
+
+// $limite > 0: pide una de más ($limite + 1) para saber si hay más
+// contenido del que se va a mostrar, sin traer de más innecesariamente.
+function jb3_modulo_query( array $tipos, array $canal_term_ids = [], int $limite = 0 ): array {
+	$pais = function_exists( 'jb3_geo_visitor_country' ) ? jb3_geo_visitor_country() : '';
+
+	$tax_query = [];
+
+	if ( $canal_term_ids ) {
+		$tax_query[] = [ 'taxonomy' => 'canales', 'field' => 'term_id', 'terms' => $canal_term_ids ];
+	}
+
+	if ( $pais ) {
+		$tax_query[] = [
+			'relation' => 'OR',
+			[ 'taxonomy' => 'pais', 'operator' => 'NOT EXISTS' ],
+			[ 'taxonomy' => 'pais', 'field' => 'slug', 'terms' => [ $pais ] ],
+		];
+	}
+
+	$query = new WP_Query( [
+		'post_type'      => $tipos,
+		'posts_per_page' => $limite > 0 ? $limite + 1 : -1,
+		'tax_query'      => $tax_query,
+		'orderby'        => 'date',
+		'order'          => 'DESC',
+		'no_found_rows'  => true,
+	] );
+
+	return $query->posts;
+}
+
+function jb3_modulo_render(
+	array $tipos,
+	array $canal_term_ids,
+	string $titulo,
+	string $bajada = '',
+	int $limite = 0,
+	string $boton_texto = '',
+	string $boton_link = ''
+): string {
+	// Se separan los tipos pedidos en las dos familias de grilla — si el
+	// módulo mezcla Películas (poster) con Videos (thumb), o directamente
+	// no especifica tipo (jb3_modulo_tipos_todos()), cada familia consulta
+	// y se recorta por separado; el módulo termina con hasta dos grillas
+	// adentro en vez de forzar todo a un solo layout o descartar la mitad.
+	$tipos_poster = array_values( array_intersect( $tipos, jb3_modulo_tipos_poster() ) );
+	$tipos_thumb  = array_values( array_intersect( $tipos, jb3_modulo_tipos_thumb() ) );
+
+	$posts_poster = $tipos_poster ? jb3_modulo_query( $tipos_poster, $canal_term_ids, $limite ) : [];
+	$posts_thumb  = $tipos_thumb ? jb3_modulo_query( $tipos_thumb, $canal_term_ids, $limite ) : [];
+
+	if ( empty( $posts_poster ) && empty( $posts_thumb ) ) {
+		return ''; // Sin contenido = sin módulo y sin entrada en la subnav.
+	}
+
+	$hay_mas = false;
+	if ( $limite > 0 ) {
+		if ( count( $posts_poster ) > $limite ) {
+			$hay_mas      = true;
+			$posts_poster = array_slice( $posts_poster, 0, $limite );
+		}
+		if ( count( $posts_thumb ) > $limite ) {
+			$hay_mas     = true;
+			$posts_thumb = array_slice( $posts_thumb, 0, $limite );
+		}
+	}
+
+	$id = 'modulo-' . implode( '-', $tipos ) . ( $canal_term_ids ? '-' . implode( '-', $canal_term_ids ) : '' );
+	jb3_subnav_register( $titulo, $id );
+
+	// El ícono de play (si corresponde) lo decide jb3_grid_thumbs() solo,
+	// mirando el campo ACF "video_url" de cada post — no hace falta
+	// pasárselo desde acá.
+	ob_start();
+	?>
+	<section class="jb3-modulo" id="<?php echo esc_attr( $id ); ?>">
+		<h2 class="jb3-modulo__titulo"><?php echo esc_html( $titulo ); ?></h2>
+		<?php if ( $bajada ) : ?>
+			<div class="jb3-modulo__bajada"><?php echo wp_kses_post( $bajada ); ?></div>
+		<?php endif; ?>
+		<?php if ( $posts_poster ) : ?>
+			<?php echo jb3_grid_posters( $posts_poster ); ?>
+		<?php endif; ?>
+		<?php if ( $posts_thumb ) : ?>
+			<?php echo jb3_grid_thumbs( $posts_thumb ); ?>
+		<?php endif; ?>
+		<?php if ( $hay_mas && $boton_texto && $boton_link ) : ?>
+			<p class="jb3-modulo__ver-mas">
+				<a class="button" href="<?php echo esc_url( $boton_link ); ?>"><?php echo esc_html( $boton_texto ); ?></a>
+			</p>
+		<?php endif; ?>
+	</section>
+	<?php
+	return ob_get_clean();
+}
+
+// ─── OVERRIDE POR PAÍS ───────────────────────────────────────────────────────
+// [jb3_modulo_override] no imprime nada donde está — se anota en un buffer
+// que [jb3_modulo] lee justo después de procesar su propio contenido (el
+// do_shortcode() de más abajo ya ejecutó este shortcode como efecto
+// secundario, así que el buffer está listo para leerse). Así un editor
+// puede escribir, dentro de un mismo [jb3_modulo], tanto el título/bajada
+// genérico como uno o más overrides por país, cada uno con su propio HTML:
+//
+// [jb3_modulo tipo="peliculas" titulo="Películas"]
+//     <p>Bajada genérica.</p>
+//     [jb3_modulo_override pais="ar" titulo="Películas Argentinas"]<p>Bajada bien argentinizada.</p>[/jb3_modulo_override]
+// [/jb3_modulo]
+$GLOBALS['jb3_modulo_overrides'] = [];
+
+add_shortcode( 'jb3_modulo_override', function ( $atts, $content = null ) {
+	$atts = shortcode_atts( [
+		'pais'   => '',
+		'titulo' => '',
+	], $atts );
+
+	if ( ! $atts['pais'] ) {
+		return '';
+	}
+
+	$GLOBALS['jb3_modulo_overrides'][ strtolower( $atts['pais'] ) ] = [
+		'titulo' => $atts['titulo'],
+		'bajada' => $content ? do_shortcode( $content ) : '',
+	];
+
+	return '';
+} );
+
+// ─── SHORTCODE ───────────────────────────────────────────────────────────────
+// [jb3_modulo tipo="peliculas" canal="axn" titulo="Películas" limite="5" boton_texto="Ver todas" boton_link="/peliculas/"]
+// tipo es opcional — sin especificarlo trae TODOS los tipos de contenido
+// (todo lo que tenga el canal, sin importar cuál sea). También admite
+// varios separados por coma: tipo="series,prod_originales".
+// canal es opcional (vacío = todos los canales) y también admite varios:
+// canal="axn,sony-channel".
+// limite/boton_texto/boton_link son opcionales — sin límite, muestra todo
+// sin botón. El botón el link lo escribe quien arma el módulo (no hay
+// forma de calcularlo solo cuando se combinan varios tipos/canales).
+// La bajada (opcional, con HTML) va como contenido encerrado, no como
+// atributo — así se puede escribir HTML normal entre las etiquetas:
+// [jb3_modulo tipo="videos" titulo="Videos"]<p>Bajada con <strong>HTML</strong></p>[/jb3_modulo]
+add_shortcode( 'jb3_modulo', function ( $atts, $content = null ) {
+	$atts = shortcode_atts( [
+		'tipo'        => '',
+		'canal'       => '',
+		'titulo'      => '',
+		'limite'      => '0',
+		'boton_texto' => '',
+		'boton_link'  => '',
+	], $atts );
+
+	if ( ! $atts['titulo'] ) {
+		return '';
+	}
+
+	$tipos = $atts['tipo']
+		? array_filter( array_map( 'trim', explode( ',', $atts['tipo'] ) ) )
+		: jb3_modulo_tipos_todos();
+
+	$canal_term_ids = [];
+	if ( $atts['canal'] ) {
+		$slugs = array_filter( array_map( 'trim', explode( ',', $atts['canal'] ) ) );
+		foreach ( $slugs as $slug ) {
+			$term = get_term_by( 'slug', $slug, 'canales' );
+			if ( $term ) {
+				$canal_term_ids[] = $term->term_id;
+			}
+		}
+		if ( empty( $canal_term_ids ) ) {
+			return ''; // Se pidieron canales puntuales pero ninguno existe.
+		}
+	}
+
+	$GLOBALS['jb3_modulo_overrides'] = [];
+	$bajada = $content ? do_shortcode( $content ) : ''; // Dispara [jb3_modulo_override] como efecto secundario.
+
+	$titulo = $atts['titulo'];
+	$pais   = function_exists( 'jb3_geo_visitor_country' ) ? jb3_geo_visitor_country() : '';
+
+	if ( $pais && isset( $GLOBALS['jb3_modulo_overrides'][ $pais ] ) ) {
+		$override = $GLOBALS['jb3_modulo_overrides'][ $pais ];
+		if ( $override['titulo'] ) {
+			$titulo = $override['titulo'];
+		}
+		$bajada = $override['bajada'];
+	}
+
+	return jb3_modulo_render(
+		$tipos,
+		$canal_term_ids,
+		$titulo,
+		$bajada,
+		(int) $atts['limite'],
+		$atts['boton_texto'],
+		$atts['boton_link']
+	);
+} );

@@ -60,7 +60,7 @@ function crear_taxonomia_paises() {
 
     register_taxonomy(
         'pais',
-        array( 'peliculas', 'series', 'prod_originales', 'op_comerciales', 'videos', 'post', 'page' ),
+        array( 'peliculas', 'series', 'prod_originales', 'op_comerciales', 'videos', 'integraciones', 'post', 'page' ),
         $args
     );
 }
