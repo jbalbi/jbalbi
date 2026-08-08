@@ -54,6 +54,14 @@ function jb3_modulo_query( array $tipos, array $canal_term_ids = [], int $limite
 			[ 'taxonomy' => 'pais', 'operator' => 'NOT EXISTS' ],
 			[ 'taxonomy' => 'pais', 'field' => 'slug', 'terms' => [ $pais ] ],
 		];
+
+		if ( function_exists( 'jb3_geo_canales_visibles' ) ) {
+			$tax_query[] = [
+				'relation' => 'OR',
+				[ 'taxonomy' => 'canales', 'operator' => 'NOT EXISTS' ],
+				[ 'taxonomy' => 'canales', 'field' => 'term_id', 'terms' => jb3_geo_canales_visibles( $pais ) ],
+			];
+		}
 	}
 
 	$query = new WP_Query( [

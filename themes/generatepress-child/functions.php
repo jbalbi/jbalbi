@@ -5,11 +5,18 @@
 add_action( 'wp_enqueue_scripts', 'generatepress_child_enqueue_styles' );
 function generatepress_child_enqueue_styles() {
     wp_enqueue_style( 'generatepress-style', get_template_directory_uri() . '/style.css' );
+    // filemtime() en vez de wp_get_theme()->get('Version'): la versión del
+    // theme es un string fijo (nunca se toca en cada cambio de CSS), así
+    // que el navegador podía quedarse sirviendo una copia vieja cacheada
+    // después de cualquier edición — con filemtime() el query string
+    // cambia solo cada vez que se guarda el archivo, sin depender de
+    // acordarse de bumpear nada a mano (mismo criterio que ya usan
+    // header-account.js/header-height.js más abajo).
     wp_enqueue_style(
         'generatepress-child-style',
         get_stylesheet_uri(),
         [ 'generatepress-style' ],
-        wp_get_theme()->get( 'Version' )
+        filemtime( get_stylesheet_directory() . '/style.css' )
     );
 }
 
@@ -109,11 +116,14 @@ require_once __DIR__ . '/_init_menu.php';               // Breakpoint del menú 
 require_once __DIR__ . '/_init_header.php';             // Header custom: preheader, logo+nav, buscador/cuenta/LinkedIn
 require_once __DIR__ . '/_init_layout.php';             // Layout forzado: sin sidebar, sin footer widgets, full-width
 require_once __DIR__ . '/_init_sliders.php';             // jb3_enqueue_swiper(): loader reutilizable para cualquier slider
-require_once __DIR__ . '/_shortcode_home_slider.php';   // [home_slider]: repeater ACF "HOME HEADER SLIDER"
+require_once __DIR__ . '/_init_home_slider.php';        // [home_slider]: repeater ACF "HOME HEADER SLIDER"
 require_once __DIR__ . '/_init_backgrounds.php';        // Fondo por página (ACF) + Options Page "Ajustes del sitio"
 require_once __DIR__ . '/_init_hero.php';               // jb3_hero_image(): hero de Series/Películas/Prod. Originales
 require_once __DIR__ . '/_init_admin_columns.php';      // Columna de miniatura en los listados de admin
 require_once __DIR__ . '/_init_subnav.php';             // [jb3_subnav] / [jb3_subnav_anchor]: motor de navegación dinámica
 require_once __DIR__ . '/_init_grids.php';              // jb3_grid_posters() / jb3_grid_thumbs(): grillas reutilizables
 require_once __DIR__ . '/_init_modulo.php';             // [jb3_modulo]: consulta canal+país+tipo, título/bajada/grilla + subnav
+require_once __DIR__ . '/_init_canales_slider.php';     // [jb3_canales_slider]: "Nuestras Marcas", slider de canales del país
+require_once __DIR__ . '/_init_relacionados.php';       // [jb3_relacionados]: contenido cruzado vía ACF Relationship (bidireccional)
+require_once __DIR__ . '/_init_genero.php';             // jb3_genero_auto(): "Más películas de este género" — mismo tipo+canal, taxonomía "genero"
 require_once __DIR__ . '/_init_video_modal.php';        // Modal de video (YouTube/Vimeo/archivo propio) para [data-jb3-video]

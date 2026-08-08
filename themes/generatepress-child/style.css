@@ -39,13 +39,13 @@ Text Domain: generatepress-child
     --link-hover-color:   var(--color-secondary);
 
     /* Barra superior (preheader) */
-    --topbar-bg:          #0a0a0a;
+    --topbar-bg:          transparent;
     --topbar-text:        #ffaaaa;
     --topbar-link:        #ffffff;
     --topbar-link-hover:  var(--color-primary);
 
     /* Cabecera */
-    --header-bg:          #000000aa;
+    --header-bg:          #00000000; // si le pones aa al final, queda semitransparente
     --site-title-color:   #ffffff;
     --site-tagline-color: #ffffff;
     /* Fallback mientras carga header-height.js, que la corrige al alto real
@@ -74,8 +74,8 @@ Text Domain: generatepress-child
     --nav-item-line-height: 1.3;
     --nav-item-padding-y:   12px;
     --nav-item-padding-x:   12px;
-    --header-padding-y:   10px;
-    --header-padding-x:   20px;
+    --header-padding-y:   5px;
+    --header-padding-x:   80px;
     --nav-gap-from-logo:  20px;
     --icon-gap:           12px;
 
@@ -133,6 +133,7 @@ Text Domain: generatepress-child
    hace falta duplicar selectores. */
 @media (max-width: 1023px) {
     :root {
+        --header-padding-x:      40px;
         --footer-padding-x:      40px;
         --slider-text-padding-x: 40px;
         --jb3-modulo-padding-x:  40px;
@@ -141,15 +142,21 @@ Text Domain: generatepress-child
 
 @media (max-width: 767px) {
     :root {
+        --header-padding-x:      20px;
         --footer-padding-x:      20px;
         --slider-text-padding-x: 20px;
         --jb3-modulo-padding-x:  20px;
+        --slider-logo-width:     180px;
+        --slider-logo-height:    65px;
     }
 }
 
 @media (max-width: 1279px) {
     :root {
         --nav-font-size: var(--nav-font-size-mobile);
+        /* Padding vertical del header (logo + buscador + hamburguesa) lo más
+           chico posible en mobile. */
+        --header-padding-y: 5px;
     }
 }
 
@@ -472,6 +479,27 @@ button, input, select, textarea,
         background-color: transparent !important;
     }
 
+    /* ─── Barra hamburguesa/buscador ──────────────────────────────────────
+       .mobile-menu-control-wrapper (botón de búsqueda + hamburguesa, franja
+       de arriba) es un botón fijo en pantalla todo el tiempo, no hace
+       falta que sea tan alto. GP le pone line-height:60px propio en su
+       CSS (wp-content/themes/generatepress/assets/css/main.css) — eso
+       manda más que el padding, así que se pisa explícito acá, junto con
+       cualquier alto mínimo y el tamaño del ícono (que por defecto es
+       1em, ligado al font-size heredado). */
+    #mobile-menu-control-wrapper .menu-toggle,
+    #mobile-menu-control-wrapper .menu-bar-item > a {
+        padding: 8px !important;
+        line-height: 1 !important;
+        min-height: 0 !important;
+        height: auto !important;
+    }
+
+    #mobile-menu-control-wrapper .gp-icon svg {
+        width: 18px !important;
+        height: 18px !important;
+    }
+
     /* ─── Bloque de íconos (LinkedIn / cuenta / registro) ────────────────
        Oculto por default; el buscador de esta franja no se muestra porque
        el hamburguesa ya trae el suyo propio (.mobile-menu-control-wrapper).
@@ -585,7 +613,7 @@ html.mobile-menu-open .mobile-menu-control-wrapper {
     align-items: center;
     justify-content: space-between;
     padding-top: 10px;
-    padding-bottom: 10px;
+    padding-bottom: 0px;
     /* Mismo padding lateral que .inside-header (--header-padding-x) para que
        los logos del preheader queden alineados con el logo/nav de abajo. */
     padding-left: var(--header-padding-x);
@@ -966,9 +994,37 @@ body {
    Trade-off aceptado: cambiar el alto real requiere editar estos dos
    porcentajes (no solo subir otra imagen), a cambio de que sea estable
    sin importar cuántos slides tenga el repeater. */
+/* max-height + overflow acá (no cambia el mecanismo de arriba, solo le
+   pone un techo): en ventanas anchas pero bajas (pestañas + barra de
+   favoritos + poco alto real de navegador), el 56.25% del ANCHO puede dar
+   más alto del que realmente se ve en pantalla, empujando el bloque de
+   texto/botón del slider fuera de la vista sin hacer scroll. dvh (no vh)
+   porque es la unidad que refleja el alto real visible, más confiable en
+   mobile que vh cuando la barra de direcciones aparece/desaparece.
+   100dvh (no 85dvh): con el hero pasando detrás del nav, un techo más
+   chico que la pantalla completa dejaba asomar el próximo módulo sin
+   scroll — con 100dvh el hero llena toda la pantalla visible al entrar. */
 .jb3-home-slider-wrap {
     position: relative;
     width: 100%;
+    max-height: 100dvh;
+    overflow: hidden;
+}
+
+/* Con la barra de admin de WordPress arriba (32px desktop, 46px en su
+   propio breakpoint ≤782px), 100dvh sigue midiendo la ventana completa,
+   pero la página queda corrida hacia abajo esos px — mismo ajuste que ya
+   se usa para el header sticky (body.admin-bar .site-header más abajo),
+   para que el botón/copyright del final del bloque no quede tapado por el
+   borde de la ventana. Sin efecto para un visitante real (sin admin bar). */
+body.admin-bar .jb3-home-slider-wrap {
+    max-height: calc(100dvh - 32px);
+}
+
+@media screen and (max-width: 782px) {
+    body.admin-bar .jb3-home-slider-wrap {
+        max-height: calc(100dvh - 46px);
+    }
 }
 
 .jb3-home-slider-wrap::before {
@@ -977,9 +1033,16 @@ body {
     padding-top: 56.25%; /* 1080 / 1920 */
 }
 
+/* 133.3% (1333/1000) quedaba por debajo del alto real de casi cualquier
+   celular (que suelen andar en 180-230% ancho/alto) — como ese porcentaje
+   es MENOR al 100dvh, terminaba siendo el propio techo (ver max-height más
+   arriba) y el slider quedaba corto, sin llegar a llenar la pantalla. Subido
+   bien por encima de cualquier proporción real de teléfono a propósito:
+   así el que manda siempre es el max-height:100dvh (mismo comportamiento
+   que ya funciona en desktop), sin que dependa de asumir un modelo puntual. */
 @media (max-width: 767px) {
     .jb3-home-slider-wrap::before {
-        padding-top: 133.3%; /* 1333 / 1000 */
+        padding-top: 240%;
     }
 }
 
@@ -1033,6 +1096,25 @@ body {
     position: relative;
 }
 
+/* Título del slider (ej. "SUPER LUNES"): va apenas debajo del header, no
+   dentro de .jb3-home-slider__overlay (que está anclado abajo) — por eso es
+   un elemento aparte, posicionado con su propio top. --header-height ya la
+   mantiene sincronizada al alto real del header (ver header-height.js), así
+   que el título queda pegado debajo del nav y a la misma altura en
+   cualquier slide, sin importar cuánto texto/logo traiga cada uno. */
+.jb3-home-slider__titulo {
+    position: absolute;
+    top: calc(var(--header-height) + 20px);
+    left: var(--slider-text-padding-x);
+    right: var(--slider-text-padding-x);
+    z-index: 1;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
 /* Degradé para que el texto sea legible arriba de cualquier imagen.
    max-height + overflow:hidden: como ahora el alto de la imagen ya no es
    una caja fija, si el texto de un slide es más largo de lo que entra,
@@ -1047,6 +1129,10 @@ body {
     overflow: hidden;
     box-sizing: border-box;
     padding: 24px var(--slider-text-padding-x);
+    /* Separación extra respecto a la barra fija del pie de pantalla
+       (.jb3-footer-bar, ver más abajo) para que el copyright/botón no
+       queden pegados ni tapados por ella. */
+    padding-bottom: calc(var(--footer-bar-height) + 24px);
     background: linear-gradient(to top, rgba(0, 0, 0, .85) 0%, rgba(0, 0, 0, 0) 60%);
     color: #ffffff;
 }
@@ -1127,7 +1213,7 @@ body {
     }
 }
 
-/* Color del botón: lo pone _shortcode_home_slider.php inline por slide vía
+/* Color del botón: lo pone _init_home_slider.php inline por slide vía
    --jb3-slide-btn-bg/--jb3-slide-btn-bg-hover (ya resuelto con el fallback
    a --color-primary/--color-secondary en PHP si el campo ACF vino vacío).
    !important porque la regla global "a { color: var(--link-color) !important }"
@@ -1220,6 +1306,132 @@ body {
 .jb3-subnav__link:hover,
 .jb3-subnav__link:focus {
     color: var(--nav-hover) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOGO AUTOMÁTICO EN PÁGINAS DE CANAL (page-canal.php)
+   El resto del contenido de la página lo arma el editor de bloques libre —
+   esto es solo el logo, que sale solo del término vinculado (campo ACF
+   "canal") para no tener que volver a subirlo en cada página.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-canal-header {
+    padding: 40px var(--jb3-modulo-padding-x) 0;
+}
+
+.jb3-canal-header__logo {
+    display: block;
+    max-width: 240px;
+    max-height: 120px;
+    width: auto;
+    height: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SLIDER "NUESTRAS MARCAS" (_init_canales_slider.php)
+   Mismo padding lateral (80/40/20) que el resto de los módulos. Caja de
+   tamaño fijo por logo (mismo patrón que .jb3-home-slider__canal-logo): la
+   imagen escala adentro sin recortar ni estirar, sea cual sea su proporción
+   real. slidesPerView:'auto' en el JS + ancho fijo acá = la cantidad de
+   logos visibles se ajusta sola a cualquier tamaño de pantalla.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-canales-slider {
+    padding: 40px var(--jb3-modulo-padding-x);
+}
+
+/* Título de módulo: mismo tratamiento en TODOS los módulos del sitio (acá y
+   en .jb3-modulo__titulo más abajo) — rayita vertical, 600, mayúsculas. Un
+   solo lugar para tocar el estilo si cambia a futuro. */
+.jb3-canales-slider__titulo,
+.jb3-modulo__titulo {
+    padding-left: 16px;
+    border-left: 4px solid var(--color-primary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+}
+
+.jb3-canales-slider__titulo {
+    margin: 0 0 20px;
+}
+
+.jb3-canales-slider__bajada {
+    margin: 0 0 20px;
+}
+
+.jb3-canales-slider__wrap {
+    /* Swiper necesita overflow:hidden propio para no desbordar el ancho del
+       contenedor mientras desliza — sin esto se ve todo el listado suelto.
+       OJO: nunca display:flex acá — Swiper necesita medir el ancho de ESTE
+       elemento (.swiper) tal cual lo da su propio padre para calcular el
+       tamaño de los slides; volverlo flex crea una dependencia circular y
+       el cálculo puede explotar a un tamaño absurdo. */
+    overflow: hidden;
+    --swiper-navigation-size: 22px;
+}
+
+.jb3-canales-slider .swiper-button-prev,
+.jb3-canales-slider .swiper-button-next {
+    color: #ffffff;
+}
+
+.jb3-canales-slider .swiper-button-prev:hover,
+.jb3-canales-slider .swiper-button-next:hover {
+    color: var(--color-secondary);
+}
+
+/* Mismo breakpoint que el header slider para ocultar flechas: en
+   mobile/tablet se navega deslizando con el dedo. */
+@media (max-width: 1279px) {
+    .jb3-canales-slider .swiper-button-prev,
+    .jb3-canales-slider .swiper-button-next {
+        display: none;
+    }
+}
+
+/* .jb3-canales-slider__wrap + .swiper-slide (no ".swiper-slide" solo): la
+   base de Swiper ya trae ".swiper-slide { width: 100% }" con la misma
+   especificidad que una clase sola — según qué hoja de estilo cargue
+   después, esa regla le podía ganar a la nuestra y dejaba cada logo
+   estirado al 100% del slider (se veía "una sola marca" a la vez). Este
+   selector compuesto tiene más especificidad, así que gana siempre. */
+.jb3-canales-slider__wrap .swiper-slide {
+    width: 160px;
+}
+
+.jb3-canales-slider__logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 70px;
+}
+
+.jb3-canales-slider__logo img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+}
+
+@media (max-width: 1023px) {
+    .jb3-canales-slider__wrap .swiper-slide {
+        width: 130px;
+    }
+
+    .jb3-canales-slider__logo {
+        height: 60px;
+    }
+}
+
+@media (max-width: 767px) {
+    .jb3-canales-slider__wrap .swiper-slide {
+        width: 100px;
+    }
+
+    .jb3-canales-slider__logo {
+        height: 50px;
+    }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

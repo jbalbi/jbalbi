@@ -24,6 +24,8 @@ get_header();
 			</div>
 		</article>
 
+		<?php echo jb3_relacionados_auto( get_the_ID() ); ?>
+
 	<?php endwhile; ?>
 </main>
 

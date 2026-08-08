@@ -6,10 +6,13 @@
  */
 defined( 'ABSPATH' ) || exit;
 
-const JB3_GEO_TAXONOMY     = 'pais';
-const JB3_GEO_COOKIE       = 'jb3_country_override';
-const JB3_GEO_CACHE_PREFIX = 'jb3_geo_';
-const JB3_GEO_CACHE_TTL    = DAY_IN_SECONDS;
+const JB3_GEO_TAXONOMY       = 'pais';
+const JB3_GEO_CANAL_TAXONOMY = 'canales';
+const JB3_GEO_CANAL_FIELD    = 'paises'; // Campo ACF (Taxonomy → pais) del término de "canales".
+const JB3_GEO_PAGE_CANAL_FIELD = 'canal'; // Campo ACF (Taxonomy → canales) de la Página con plantilla "Canal".
+const JB3_GEO_COOKIE         = 'jb3_country_override';
+const JB3_GEO_CACHE_PREFIX   = 'jb3_geo_';
+const JB3_GEO_CACHE_TTL      = DAY_IN_SECONDS;
 
 /** Tipos de contenido con restricción por país (misma taxonomía "pais" que registra el theme). */
 function jb3_geo_post_types(): array {
@@ -49,8 +52,60 @@ function jb3_geo_visitor_country(): string {
 	return $codigo;
 }
 
+// ─── PAÍSES PERMITIDOS DE UN CANAL ──────────────────────────────────────────
+// Lee el campo ACF "paises_permitidos" (Taxonomy → pais, checkbox, return
+// format "Term ID") del término de "canales". Vacío = sin restricción, el
+// canal se ve en todos los países — mismo fail-open que ya usa "pais" a
+// nivel de post individual.
+function jb3_geo_canal_paises_permitidos( int $canal_term_id ): array {
+	if ( ! function_exists( 'get_field' ) ) {
+		return [];
+	}
+
+	$ids = get_field( JB3_GEO_CANAL_FIELD, JB3_GEO_CANAL_TAXONOMY . '_' . $canal_term_id );
+	if ( empty( $ids ) ) {
+		return [];
+	}
+
+	$terms = get_terms( [
+		'taxonomy'   => JB3_GEO_TAXONOMY,
+		'include'    => array_map( 'intval', (array) $ids ),
+		'fields'     => 'slugs',
+		'hide_empty' => false,
+	] );
+	return is_wp_error( $terms ) ? [] : $terms;
+}
+
+function jb3_geo_canal_visible_para( int $canal_term_id, string $pais ): bool {
+	$permitidos = jb3_geo_canal_paises_permitidos( $canal_term_id );
+	return empty( $permitidos ) || in_array( $pais, $permitidos, true );
+}
+
+// Term IDs de "canales" visibles para $pais — usado para armar tax_query en
+// listados (resolverlo acá evita chequear canal por canal en cada post).
+// Cacheado en memoria: son pocos canales y se pide varias veces por request.
+function jb3_geo_canales_visibles( string $pais ): array {
+	static $cache = [];
+	if ( isset( $cache[ $pais ] ) ) {
+		return $cache[ $pais ];
+	}
+
+	$canales = get_terms( [
+		'taxonomy'   => JB3_GEO_CANAL_TAXONOMY,
+		'fields'     => 'ids',
+		'hide_empty' => false,
+	] );
+	if ( is_wp_error( $canales ) ) {
+		return $cache[ $pais ] = [];
+	}
+
+	return $cache[ $pais ] = array_values( array_filter( $canales, function ( $id ) use ( $pais ) {
+		return jb3_geo_canal_visible_para( (int) $id, $pais );
+	} ) );
+}
+
 // ─── ¿SE PUEDE MOSTRAR ESTE CONTENIDO? ──────────────────────────────────────
-function jb3_geo_post_visible( int $post_id ): bool {
+function jb3_geo_post_pais_visible( int $post_id ): bool {
 	$terminos = get_the_terms( $post_id, JB3_GEO_TAXONOMY );
 	if ( empty( $terminos ) || is_wp_error( $terminos ) ) {
 		return true; // Sin país asignado = visible para todos.
@@ -69,11 +124,67 @@ function jb3_geo_post_visible( int $post_id ): bool {
 	return false;
 }
 
+// Un post puede tener varios canales a la vez (taxonomía "canales" es
+// multivalor) — alcanza con que UNO de ellos permita el país del visitante
+// (mismo criterio allow-list/OR que ya usa jb3_geo_post_pais_visible()).
+// Sin canal asignado = no aplica, no restringe nada.
+function jb3_geo_post_canal_visible( int $post_id ): bool {
+	$terminos = get_the_terms( $post_id, JB3_GEO_CANAL_TAXONOMY );
+	if ( empty( $terminos ) || is_wp_error( $terminos ) ) {
+		return true;
+	}
+
+	$pais = jb3_geo_visitor_country();
+	if ( '' === $pais ) {
+		return true;
+	}
+
+	foreach ( $terminos as $termino ) {
+		if ( jb3_geo_canal_visible_para( $termino->term_id, $pais ) ) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// Las Páginas de canal (plantilla "Canal", ver page-canal.php) no tienen la
+// taxonomía "canales" asignada directamente — se vinculan a un término vía
+// el campo ACF "canal" (Taxonomy → canales, un solo valor). Si esa Página
+// no tiene el campo cargado, no aplica ninguna restricción por esta vía
+// (podría ser una Página normal que no usa esa plantilla).
+function jb3_geo_page_canal_visible( int $post_id ): bool {
+	if ( ! function_exists( 'get_field' ) ) {
+		return true;
+	}
+
+	$canal_id = get_field( JB3_GEO_PAGE_CANAL_FIELD, $post_id );
+	if ( empty( $canal_id ) ) {
+		return true;
+	}
+
+	$pais = jb3_geo_visitor_country();
+	if ( '' === $pais ) {
+		return true;
+	}
+
+	return jb3_geo_canal_visible_para( (int) $canal_id, $pais );
+}
+
+function jb3_geo_post_visible( int $post_id ): bool {
+	return jb3_geo_post_pais_visible( $post_id )
+		&& jb3_geo_post_canal_visible( $post_id )
+		&& jb3_geo_page_canal_visible( $post_id );
+}
+
 // ─── CONTENIDO INDIVIDUAL: 404 si no corresponde a tu país ──────────────────
+// Cubre posts (película, serie...) Y las Páginas de canal (plantilla
+// "Canal") — jb3_geo_post_visible() ya combina el chequeo de "pais" propio,
+// el de "canales" directo, y el del vínculo Página→canal.
 add_action( 'template_redirect', function () {
 	if ( ! is_singular( jb3_geo_post_types() ) ) {
 		return;
 	}
+
 	if ( jb3_geo_post_visible( get_queried_object_id() ) ) {
 		return;
 	}
@@ -110,6 +221,18 @@ add_action( 'pre_get_posts', function ( WP_Query $query ) {
 			'taxonomy' => JB3_GEO_TAXONOMY,
 			'field'    => 'slug',
 			'terms'    => [ $pais ],
+		],
+	];
+	$tax_query[] = [
+		'relation' => 'OR',
+		[
+			'taxonomy' => JB3_GEO_CANAL_TAXONOMY,
+			'operator' => 'NOT EXISTS',
+		],
+		[
+			'taxonomy' => JB3_GEO_CANAL_TAXONOMY,
+			'field'    => 'term_id',
+			'terms'    => jb3_geo_canales_visibles( $pais ),
 		],
 	];
 	$query->set( 'tax_query', $tax_query );

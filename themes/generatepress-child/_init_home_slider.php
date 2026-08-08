@@ -1,6 +1,30 @@
 <?php
 defined( 'ABSPATH' ) || exit;
 
+// ═══════════════════════════════════════════════════════════════════════════
+// ESPECIFICACIÓN DE IMÁGENES PARA DISEÑO (campos "imagen_desktop"/"imagen_mobile"
+// del repeater ACF "HOME HEADER SLIDER")
+//
+// Ambas imágenes se muestran con object-fit:cover dentro de una caja de alto
+// fijo (ver .jb3-home-slider-wrap en style.css) — si no respetan la
+// proporción de abajo, el recorte automático se come costados o cabezas.
+//
+// DESKTOP (imagen_desktop):
+//   - 1920 × 1080 px (16:9).
+//
+// MOBILE (imagen_mobile):
+//   - 1080 × 2400 px (≈ 9:20, alto/ancho ≈ 2.22) — esa proporción cubre el
+//     celular más "alto" real (ej. Samsung Galaxy S22 ≈ 2.22); si es más
+//     baja que eso, el recorte automático empieza a comerse los costados en
+//     vez de arriba/abajo. Si en duda, mejor pasarse de alto: el excedente
+//     se recorta arriba/abajo sin costo, nunca de los costados.
+//   - Zona segura: el foco principal (cara, logo, elemento clave) tiene que
+//     quedar centrado dentro de los ~1900px del medio del archivo — los
+//     ~250px de arriba y los ~250px de abajo pueden perderse según el
+//     celular (proporción más "ancha", ej. iPhone SE ≈ 1.78), así que ahí
+//     solo debería haber fondo/relleno, nunca lo importante de la foto.
+// ═══════════════════════════════════════════════════════════════════════════
+
 // ─── [home_slider]: lee el repeater ACF "HOME HEADER SLIDER" de la Home ────
 //
 // VERSIÓN 1 (en construcción, a propósito acotada para debuggear de a
@@ -88,17 +112,18 @@ function jb3_home_slider_shortcode() {
 		$canal = jb3_slide_canal( get_sub_field( 'canal' ) );
 
 		$slides[] = [
-			'imagen_desktop' => $imagen_desktop,
-			'imagen_mobile'  => get_sub_field( 'imagen_mobile' ),
-			'canal_name'     => $canal['name'],
-			'canal_logo'     => $canal['logo'],
-			'texto'          => get_sub_field( 'texto' ),
-			'texto_boton'    => get_sub_field( 'texto_boton' ),
-			'link_url'       => $link_url,
-			'link_target'    => $link_target,
-			'btn_bg'         => get_sub_field( 'color_del_boton' )       ?: 'var(--color-primary)',
-			'btn_bg_hover'   => get_sub_field( 'color_del_boton_hover' ) ?: 'var(--color-secondary)',
-			'copyright'      => get_sub_field( 'copyright' ),
+			'imagen_desktop'    => $imagen_desktop,
+			'imagen_mobile'     => get_sub_field( 'imagen_mobile' ),
+			'canal_name'        => $canal['name'],
+			'canal_logo'        => $canal['logo'],
+			'titulo_del_slider' => get_sub_field( 'titulo_del_slider' ),
+			'texto'             => get_sub_field( 'texto' ),
+			'texto_boton'       => get_sub_field( 'texto_boton' ),
+			'link_url'          => $link_url,
+			'link_target'       => $link_target,
+			'btn_bg'            => get_sub_field( 'color_del_boton' )       ?: 'var(--color-primary)',
+			'btn_bg_hover'      => get_sub_field( 'color_del_boton_hover' ) ?: 'var(--color-secondary)',
+			'copyright'         => get_sub_field( 'copyright' ),
 		];
 	}
 
@@ -151,6 +176,10 @@ function jb3_home_slider_shortcode() {
 							<img src="<?php echo esc_url( $slide['imagen_desktop'] ); ?>" alt="">
 						</picture>
 
+						<?php if ( $slide['titulo_del_slider'] ) : ?>
+							<span class="jb3-home-slider__titulo"><?php echo esc_html( $slide['titulo_del_slider'] ); ?></span>
+						<?php endif; ?>
+
 						<div class="jb3-home-slider__overlay">
 							<?php if ( $slide['canal_logo'] ) : ?>
 								<span class="jb3-home-slider__canal-logo">
@@ -186,5 +215,15 @@ function jb3_home_slider_shortcode() {
 		</div>
 	</div>
 	<?php
-	return ob_get_clean();
+	$html = ob_get_clean();
+
+	// Envuelto en .jb3-hero automáticamente en la portada (pasa por detrás
+	// del header — ver style.css) — no depende de que quede guardada una
+	// clase a mano en el contenido de la página, que se venía perdiendo
+	// cada vez que se reeditaba la Home en el editor de bloques.
+	if ( is_front_page() ) {
+		$html = '<div class="jb3-hero">' . $html . '</div>';
+	}
+
+	return $html;
 }

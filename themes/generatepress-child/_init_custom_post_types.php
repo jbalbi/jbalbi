@@ -39,7 +39,11 @@ $args_peliculas = array(
 	'menu_icon'				=> 'dashicons-editor-video',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
 	//'taxonomies'			=> array( 'category', 'post_tag' ),
-	'has_archive'			=> true,
+	// Sin archivo nativo: /peliculas/ queda libre para una Página propia
+	// (mismo motivo en los otros 5 CPT de acá abajo). Los permalinks de
+	// cada película individual (/peliculas/nombre-pelicula/) NO se tocan —
+	// esos salen del 'rewrite' de abajo, independiente de has_archive.
+	'has_archive'			=> false,
 	'rewrite'				=> array( 'slug' => 'peliculas' ),
 );
 register_post_type( 'peliculas', $args_peliculas );
@@ -81,7 +85,7 @@ $args_series = array(
 	'menu_icon'				=> 'dashicons-video-alt2',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
 	//'taxonomies'			=> array( 'category', 'post_tag' ),
-	'has_archive'			=> true,
+	'has_archive'			=> false,
 	'rewrite'				=> array( 'slug' => 'series' ),
 );
 register_post_type( 'series', $args_series );
@@ -123,7 +127,7 @@ $args_prod_originales = array(
 	'menu_icon'				=> 'dashicons-star-filled',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
 	//'taxonomies'			=> array( 'category', 'post_tag' ),
-	'has_archive'			=> true,
+	'has_archive'			=> false,
 	'rewrite' 				=> array( 'slug' => 'prod-originales' ),
 );
 register_post_type( 'prod_originales', $args_prod_originales );
@@ -165,7 +169,7 @@ $args_op_comerciales = array(
 	'menu_icon'				=> 'dashicons-chart-bar',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
 	//'taxonomies'			=> array( 'category', 'post_tag' ),
-	'has_archive'			=> true,
+	'has_archive'			=> false,
 	'rewrite'				=> array( 'slug' => 'op-comerciales' ),
 );
 register_post_type( 'op_comerciales', $args_op_comerciales );
@@ -207,7 +211,7 @@ $args_videos = array(
 	'menu_icon'				=> 'dashicons-format-video',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
 	//'taxonomies'			=> array( 'category', 'post_tag' ),
-	'has_archive'			=> true,
+	'has_archive'			=> false,
 	'rewrite'				=> array( 'slug' => 'videos' ),
 );
 register_post_type( 'videos', $args_videos );
@@ -249,7 +253,7 @@ $args_integraciones = array(
 	'menu_icon'				=> 'dashicons-megaphone',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
 	//'taxonomies'			=> array( 'category', 'post_tag' ),
-	'has_archive'			=> true,
+	'has_archive'			=> false,
 	'rewrite'				=> array( 'slug' => 'integraciones' ),
 );
 register_post_type( 'integraciones', $args_integraciones );
