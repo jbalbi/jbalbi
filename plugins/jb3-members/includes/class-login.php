@@ -36,9 +36,19 @@ class JB3_Login {
             return '';
         }
 
+        // Carries the page the user was trying to reach (set by the private-content
+        // gate, or resubmitted via the form's hidden field) through the whole
+        // request-magic-link round trip. Re-validated on every read since it's
+        // attacker-influenced input (query string / POST body).
+        $redirect_to = wp_validate_redirect( wp_unslash( $_REQUEST['redirect_to'] ?? '' ), '' );
+
         if ( is_user_logged_in() ) {
             $user_id   = get_current_user_id();
             $dashboard = (int) get_option( 'jb3_dashboard_page_id' );
+            if ( $redirect_to ) {
+                wp_redirect( esc_url_raw( $redirect_to ) );
+                exit;
+            }
             if ( $dashboard && jb3_is_member( $user_id ) ) {
                 wp_redirect( esc_url_raw( get_permalink( $dashboard ) ) );
                 exit;
@@ -61,7 +71,7 @@ class JB3_Login {
 
         if ( isset( $_POST['jb3_login_nonce'] )
             && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['jb3_login_nonce'] ) ), 'jb3_login' ) ) {
-            [ $errors, $sent ] = self::process();
+            [ $errors, $sent ] = self::process( $redirect_to );
         }
 
         ob_start();
@@ -102,7 +112,7 @@ class JB3_Login {
 
     // ─── Form processing ──────────────────────────────────────────────────────
 
-    private static function process() {
+    private static function process( $redirect_to = '' ) {
         $email = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
 
         if ( ! is_email( $email ) ) {
@@ -135,7 +145,7 @@ class JB3_Login {
         }
 
         // All good: generate and send magic link.
-        JB3_Email::send_magic_link( $user->ID );
+        JB3_Email::send_magic_link( $user->ID, $redirect_to );
 
         return [ [], true ];
     }

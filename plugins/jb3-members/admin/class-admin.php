@@ -132,7 +132,7 @@ class JB3_Admin {
         if ( ! in_array( $hook, $allowed, true ) ) {
             return;
         }
-        wp_enqueue_style( 'jb3-admin', JB3_URL . 'public/css/jb3-forms.css', [], JB3_VERSION );
+        wp_enqueue_style( 'jb3-admin', JB3_URL . 'public/css/jb3-forms.css', [], jb3_asset_ver( 'public/css/jb3-forms.css' ) );
     }
 
     // -------------------------------------------------------------------------
@@ -193,12 +193,18 @@ class JB3_Admin {
             $rep_id = absint( $_POST['rep_id'] ?? 0 );
 
             $data = [
-                'country_code' => strtoupper( sanitize_text_field( wp_unslash( $_POST['country_code'] ?? '' ) ) ),
-                'first_name'   => sanitize_text_field( wp_unslash( $_POST['first_name']  ?? '' ) ),
-                'last_name'    => sanitize_text_field( wp_unslash( $_POST['last_name']   ?? '' ) ),
-                'email'        => sanitize_email(      wp_unslash( $_POST['email']       ?? '' ) ),
-                'phone'        => jb3_sanitize_phone( wp_unslash( $_POST['phone']        ?? '' ) ),
-                'is_default'   => ! empty( $_POST['is_default'] ) ? 1 : 0,
+                'country_codes'    => array_map(
+                    static fn( $c ) => strtoupper( sanitize_text_field( $c ) ),
+                    wp_unslash( (array) ( $_POST['country_codes'] ?? [] ) )
+                ),
+                'first_name'       => sanitize_text_field( wp_unslash( $_POST['first_name'] ?? '' ) ),
+                'last_name'        => sanitize_text_field( wp_unslash( $_POST['last_name']  ?? '' ) ),
+                'email'            => sanitize_email(      wp_unslash( $_POST['email']      ?? '' ) ),
+                'phone'            => jb3_sanitize_phone( wp_unslash( $_POST['phone']       ?? '' ) ),
+                'whatsapp'         => jb3_sanitize_phone( wp_unslash( $_POST['whatsapp']    ?? '' ) ),
+                'is_default'       => ! empty( $_POST['is_default'] )       ? 1 : 0,
+                'visible'          => ! empty( $_POST['visible'] )          ? 1 : 0,
+                'notify_downloads' => ! empty( $_POST['notify_downloads'] ) ? 1 : 0,
             ];
 
             $errors = self::validate_rep( $data );
@@ -309,8 +315,9 @@ class JB3_Admin {
             }
         } elseif ( 'add' === $action && ! empty( $old_data ) ) {
             $rep = (object) array_merge( [
-                'id' => 0, 'country_code' => '', 'first_name' => '', 'last_name' => '',
-                'email' => '', 'phone' => '', 'is_default' => 0,
+                'id' => 0, 'country_codes' => [], 'first_name' => '', 'last_name' => '',
+                'email' => '', 'phone' => '', 'whatsapp' => '', 'is_default' => 0,
+                'visible' => 1, 'notify_downloads' => 1,
             ], $old_data );
         }
 
@@ -356,8 +363,9 @@ class JB3_Admin {
         if ( ! is_email( $data['email'] ) ) {
             $errors[] = __( 'El email no es válido.', 'jb3-members' );
         }
-        if ( empty( $data['is_default'] ) && ! array_key_exists( $data['country_code'], jb3_countries() ) ) {
-            $errors[] = __( 'El país seleccionado no es válido.', 'jb3-members' );
+        $valid_codes = array_intersect( $data['country_codes'] ?? [], array_keys( jb3_countries() ) );
+        if ( empty( $data['is_default'] ) && empty( $valid_codes ) ) {
+            $errors[] = __( 'Seleccioná al menos un país, o marcá este representante como predeterminado.', 'jb3-members' );
         }
         return $errors;
     }
@@ -389,20 +397,6 @@ class JB3_Admin {
 
             <table class="form-table">
                 <tr>
-                    <th><label for="nb_country"><?php esc_html_e( 'País', 'jb3-members' ); ?></label></th>
-                    <td>
-                        <select id="nb_country" name="country_code">
-                            <option value=""><?php esc_html_e( '-- Representante por defecto --', 'jb3-members' ); ?></option>
-                            <?php foreach ( jb3_countries() as $code => $name ) : ?>
-                                <option value="<?php echo esc_attr( $code ); ?>" <?php selected( $rep->country_code ?? '', $code ); ?>>
-                                    <?php echo esc_html( $name ); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <p class="description"><?php esc_html_e( 'Dejá vacío para que sea el representante por defecto.', 'jb3-members' ); ?></p>
-                    </td>
-                </tr>
-                <tr>
                     <th><label for="nb_first_name"><?php esc_html_e( 'Nombre *', 'jb3-members' ); ?></label></th>
                     <td><input type="text" id="nb_first_name" name="first_name" value="<?php echo esc_attr( $rep->first_name ?? '' ); ?>" class="regular-text" required></td>
                 </tr>
@@ -417,6 +411,43 @@ class JB3_Admin {
                 <tr>
                     <th><label for="nb_phone"><?php esc_html_e( 'Teléfono', 'jb3-members' ); ?></label></th>
                     <td><input type="tel" id="nb_phone" name="phone" value="<?php echo esc_attr( $rep->phone ?? '' ); ?>" class="regular-text"></td>
+                </tr>
+                <tr>
+                    <th><label for="nb_whatsapp"><?php esc_html_e( 'WhatsApp', 'jb3-members' ); ?></label></th>
+                    <td><input type="tel" id="nb_whatsapp" name="whatsapp" value="<?php echo esc_attr( $rep->whatsapp ?? '' ); ?>" class="regular-text"></td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e( 'Países', 'jb3-members' ); ?></th>
+                    <td>
+                        <div class="jb3-checkboxes">
+                            <?php $rep_countries = (array) ( $rep->country_codes ?? [] ); ?>
+                            <?php foreach ( jb3_countries() as $code => $name ) : ?>
+                                <label class="jb3-cb-label">
+                                    <input type="checkbox" name="country_codes[]" value="<?php echo esc_attr( $code ); ?>" <?php checked( in_array( $code, $rep_countries, true ) ); ?>>
+                                    <?php echo esc_html( $name ); ?>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                        <p class="description"><?php esc_html_e( 'Países en los que este representante gestiona oportunidades. Podés marcar varios.', 'jb3-members' ); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="nb_visible"><?php esc_html_e( 'Visible en el sitio', 'jb3-members' ); ?></label></th>
+                    <td>
+                        <label>
+                            <input type="checkbox" id="nb_visible" name="visible" value="1" <?php checked( ! isset( $rep->visible ) || ! empty( $rep->visible ) ); ?>>
+                            <?php esc_html_e( 'Mostrar en la página de Contacto', 'jb3-members' ); ?>
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="nb_notify_downloads"><?php esc_html_e( 'Recibe notificaciones', 'jb3-members' ); ?></label></th>
+                    <td>
+                        <label>
+                            <input type="checkbox" id="nb_notify_downloads" name="notify_downloads" value="1" <?php checked( ! isset( $rep->notify_downloads ) || ! empty( $rep->notify_downloads ) ); ?>>
+                            <?php esc_html_e( 'Avisar por email cuando alguien descarga una Op. Comercial de su país', 'jb3-members' ); ?>
+                        </label>
+                    </td>
                 </tr>
                 <?php if ( $is_edit && ! empty( $rep->is_default ) ) : ?>
                 <tr>
@@ -464,32 +495,51 @@ class JB3_Admin {
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
-                    <th><?php esc_html_e( 'País', 'jb3-members' ); ?></th>
+                    <th><?php esc_html_e( 'Países', 'jb3-members' ); ?></th>
                     <th><?php esc_html_e( 'Nombre', 'jb3-members' ); ?></th>
                     <th><?php esc_html_e( 'Apellido', 'jb3-members' ); ?></th>
                     <th><?php esc_html_e( 'Email', 'jb3-members' ); ?></th>
                     <th><?php esc_html_e( 'Teléfono', 'jb3-members' ); ?></th>
-                    <th><?php esc_html_e( 'Tipo', 'jb3-members' ); ?></th>
+                    <th><?php esc_html_e( 'WhatsApp', 'jb3-members' ); ?></th>
+                    <th><?php esc_html_e( 'Visible', 'jb3-members' ); ?></th>
+                    <th><?php esc_html_e( 'Notif.', 'jb3-members' ); ?></th>
                     <th><?php esc_html_e( 'Acciones', 'jb3-members' ); ?></th>
                 </tr>
             </thead>
             <tbody>
                 <?php if ( empty( $reps ) ) : ?>
-                    <tr><td colspan="7"><?php esc_html_e( 'No hay representantes cargados.', 'jb3-members' ); ?></td></tr>
+                    <tr><td colspan="9"><?php esc_html_e( 'No hay representantes cargados.', 'jb3-members' ); ?></td></tr>
                 <?php else : ?>
                     <?php foreach ( $reps as $rep ) : ?>
+                        <?php
+                        $rep_country_names = array_map(
+                            static fn( $code ) => $countries[ $code ] ?? $code,
+                            $rep->country_codes ?? []
+                        );
+                        ?>
                         <tr>
-                            <td><?php echo $rep->is_default
-                                ? '<em>' . esc_html__( 'Por defecto', 'jb3-members' ) . '</em>'
-                                : esc_html( $countries[ $rep->country_code ] ?? $rep->country_code ); ?>
+                            <td>
+                                <?php if ( $rep_country_names ) : ?>
+                                    <?php echo esc_html( implode( ', ', $rep_country_names ) ); ?>
+                                    <?php if ( $rep->is_default ) : ?>
+                                        <br><em>(<?php esc_html_e( 'también por defecto', 'jb3-members' ); ?>)</em>
+                                    <?php endif; ?>
+                                <?php elseif ( $rep->is_default ) : ?>
+                                    <em><?php esc_html_e( 'Por defecto', 'jb3-members' ); ?></em>
+                                <?php endif; ?>
                             </td>
                             <td><?php echo esc_html( $rep->first_name ); ?></td>
                             <td><?php echo esc_html( $rep->last_name ); ?></td>
                             <td><?php echo esc_html( $rep->email ); ?></td>
                             <td><?php echo esc_html( $rep->phone ); ?></td>
-                            <td><?php echo $rep->is_default
-                                ? '<strong>' . esc_html__( 'Default', 'jb3-members' ) . '</strong>'
-                                : esc_html__( 'País', 'jb3-members' ); ?>
+                            <td><?php echo esc_html( $rep->whatsapp ); ?></td>
+                            <td><?php echo $rep->visible
+                                ? '<span class="dashicons dashicons-yes" style="color:#2e7d32;"></span>'
+                                : '<span class="dashicons dashicons-no" style="color:#a00;"></span>'; ?>
+                            </td>
+                            <td><?php echo $rep->notify_downloads
+                                ? '<span class="dashicons dashicons-yes" style="color:#2e7d32;"></span>'
+                                : '<span class="dashicons dashicons-no" style="color:#a00;"></span>'; ?>
                             </td>
                             <td>
                                 <a href="<?php echo esc_url( add_query_arg(

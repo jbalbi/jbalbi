@@ -126,3 +126,15 @@ function jb3_profile_complete( $user_id ) {
 function jb3_sanitize_phone( $phone ) {
     return preg_replace( '/[^0-9+\-\s()]/', '', $phone ?? '' );
 }
+
+/**
+ * Cache-busting query string for a plugin asset, based on the file's own
+ * mtime instead of the static JB3_VERSION constant — JB3_VERSION doesn't
+ * change on every CSS/JS edit during development, so the browser (and any
+ * HTTP cache) kept serving a stale cached copy after edits. Same pattern
+ * the theme already uses for style.css (functions.php).
+ */
+function jb3_asset_ver( $relative_path ) {
+    $file = JB3_DIR . ltrim( $relative_path, '/' );
+    return file_exists( $file ) ? (string) filemtime( $file ) : JB3_VERSION;
+}

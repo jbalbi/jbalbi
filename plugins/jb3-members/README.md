@@ -692,22 +692,36 @@ El plugin crea el rol `jb3_member` con el único permiso `read`. Se asigna a tod
 
 Los administradores de WordPress **no reciben** el rol `jb3_member`. Son reconocidos en el código siempre por `user_can($user_id, 'manage_options')`, no por `jb3_is_member()`.
 
-### Tabla de base de datos
+### Tablas de base de datos (schema v1.1)
 
 `{prefix}jb3_representatives`
 
 | Columna | Tipo | Descripción |
 |---|---|---|
 | `id` | BIGINT UNSIGNED PK | Autoincremental |
-| `country_code` | VARCHAR(2) | Código ISO del país (vacío para el default) |
 | `first_name` | VARCHAR(100) | Nombre |
 | `last_name` | VARCHAR(100) | Apellido |
 | `email` | VARCHAR(150) | Email |
 | `phone` | VARCHAR(50) | Teléfono |
+| `whatsapp` | VARCHAR(50) | Número de WhatsApp (enlace `wa.me` en el directorio público) |
 | `is_default` | TINYINT(1) | `1` = representante default (fallback para países sin asignación) |
+| `visible` | TINYINT(1) | `1` = aparece en el directorio público `[jb3_representantes]` |
+| `notify_downloads` | TINYINT(1) | `1` = recibe el aviso por email cuando alguien de su país descarga una Op. Comercial |
 | `created_at` | DATETIME | Fecha de creación |
 
-Índice: `idx_country (country_code)` para búsquedas por país.
+`{prefix}jb3_representative_countries` — un representante puede cubrir varios países (checkboxes en el admin), de ahí la tabla aparte en vez de una columna.
+
+| Columna | Tipo | Descripción |
+|---|---|---|
+| `id` | BIGINT UNSIGNED PK | Autoincremental |
+| `representative_id` | BIGINT UNSIGNED | FK lógica a `jb3_representatives.id` (sin constraint de DB, se limpia a mano en `JB3_Representatives::delete()`) |
+| `country_code` | VARCHAR(2) | Código ISO del país |
+
+Índices: `idx_rep (representative_id)`, `idx_country (country_code)`.
+
+Migración v1.0 → v1.1: `JB3_Database::maybe_upgrade()` corre en cada `plugins_loaded` (compara `jb3_db_version` contra `JB3_Database::DB_VER`); si difieren, copia los valores de la vieja columna `country_code` a la tabla de join y la elimina. Ver `migrate_country_code_column()`.
+
+`JB3_Representatives::get_by_country()` sigue devolviendo TODOS los representantes de un país (usado por el email de aprobación de registro); `get_notifiable_by_country()` filtra además por `notify_downloads = 1` (usado por el aviso de descarga de Op. Comerciales).
 
 ---
 

@@ -58,7 +58,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</div>
 
 	<div class="jb3-footer-bar">
-		<a href="#" class="jb3-footer-bar__cta">CONECTATE <strong>AQUÍ</strong> CON NUESTRO EQUIPO COMERCIAL</a>
+		<a href="<?php echo esc_url( home_url( '/conectate-con-nosotors/' ) ); ?>" class="jb3-footer-bar__cta">CONECTATE <strong>AQUÍ</strong> CON NUESTRO EQUIPO COMERCIAL</a>
 		<a href="#" class="jb3-footer-bar__totop" aria-label="Volver arriba">
 			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 				<polyline points="18 15 12 9 6 15"></polyline>

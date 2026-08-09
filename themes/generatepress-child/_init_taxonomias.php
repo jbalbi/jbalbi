@@ -71,10 +71,12 @@ function crear_taxonomia_paises() {
 add_action( 'init', 'crear_taxonomia_paises' );
 
 // Tags libres (NO lista cerrada como canales/pais — el editor escribe y
-// crea géneros al vuelo, con autocompletado de lo ya usado) para agrupar
-// Películas/Series/Prod. Originales por género (Terror, Comedia...). Usada
-// por jb3_genero_auto() en _init_genero.php para armar el módulo "Más
-// películas de Terror" (mismo tipo + mismo canal que el contenido actual).
+// crea géneros/etiquetas al vuelo, con autocompletado de lo ya usado) para
+// agrupar contenido por tag (género de película, "Nuevos Formatos" de Op.
+// Comercial, lo que haga falta). Usada por jb3_genero_auto() en
+// _init_genero.php para armar el módulo "Más contenido de {tag}" — el
+// ALCANCE del cruce (si mezcla tipos entre sí o solo el mismo tipo) lo
+// decide esa función según la familia del post actual, no esta lista.
 function crear_taxonomia_genero() {
     $labels = array(
         'name'          => 'Géneros',
@@ -97,7 +99,7 @@ function crear_taxonomia_genero() {
         'rewrite'           => false, // Sin URL propia, solo filtrado interno (mismo criterio que "pais").
     );
 
-    register_taxonomy( 'genero', array( 'peliculas', 'series', 'prod_originales' ), $args );
+    register_taxonomy( 'genero', array( 'peliculas', 'series', 'prod_originales', 'op_comerciales' ), $args );
 }
 
 add_action( 'init', 'crear_taxonomia_genero' );

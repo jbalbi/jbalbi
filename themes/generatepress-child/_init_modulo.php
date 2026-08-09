@@ -39,7 +39,11 @@ function jb3_modulo_tipos_todos(): array {
 
 // $limite > 0: pide una de más ($limite + 1) para saber si hay más
 // contenido del que se va a mostrar, sin traer de más innecesariamente.
-function jb3_modulo_query( array $tipos, array $canal_term_ids = [], int $limite = 0 ): array {
+// $excluir_id: para el caso "más oportunidades como esta" en la propia
+// página de una Op. Comercial — sin esto, el post que se está viendo se
+// listaría a sí mismo entre las "más recientes". 0 = no excluir nada
+// (comportamiento de siempre, el shortcode no lo usa).
+function jb3_modulo_query( array $tipos, array $canal_term_ids = [], int $limite = 0, int $excluir_id = 0 ): array {
 	$pais = function_exists( 'jb3_geo_visitor_country' ) ? jb3_geo_visitor_country() : '';
 
 	$tax_query = [];
@@ -68,6 +72,7 @@ function jb3_modulo_query( array $tipos, array $canal_term_ids = [], int $limite
 		'post_type'      => $tipos,
 		'posts_per_page' => $limite > 0 ? $limite + 1 : -1,
 		'tax_query'      => $tax_query,
+		'post__not_in'   => $excluir_id ? [ $excluir_id ] : [],
 		'orderby'        => 'date',
 		'order'          => 'DESC',
 		'no_found_rows'  => true,
@@ -83,7 +88,8 @@ function jb3_modulo_render(
 	string $bajada = '',
 	int $limite = 0,
 	string $boton_texto = '',
-	string $boton_link = ''
+	string $boton_link = '',
+	int $excluir_id = 0
 ): string {
 	// Se separan los tipos pedidos en las dos familias de grilla — si el
 	// módulo mezcla Películas (poster) con Videos (thumb), o directamente
@@ -93,8 +99,8 @@ function jb3_modulo_render(
 	$tipos_poster = array_values( array_intersect( $tipos, jb3_modulo_tipos_poster() ) );
 	$tipos_thumb  = array_values( array_intersect( $tipos, jb3_modulo_tipos_thumb() ) );
 
-	$posts_poster = $tipos_poster ? jb3_modulo_query( $tipos_poster, $canal_term_ids, $limite ) : [];
-	$posts_thumb  = $tipos_thumb ? jb3_modulo_query( $tipos_thumb, $canal_term_ids, $limite ) : [];
+	$posts_poster = $tipos_poster ? jb3_modulo_query( $tipos_poster, $canal_term_ids, $limite, $excluir_id ) : [];
+	$posts_thumb  = $tipos_thumb ? jb3_modulo_query( $tipos_thumb, $canal_term_ids, $limite, $excluir_id ) : [];
 
 	if ( empty( $posts_poster ) && empty( $posts_thumb ) ) {
 		return ''; // Sin contenido = sin módulo y sin entrada en la subnav.

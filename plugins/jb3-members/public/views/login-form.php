@@ -1,7 +1,7 @@
 <?php
 /**
  * Template: Login form (magic-link request).
- * Available vars: $errors (array), $sent (bool)
+ * Available vars: $errors (array), $sent (bool), $redirect_to (string, already validated)
  */
 defined( 'ABSPATH' ) || exit;
 ?>
@@ -25,6 +25,9 @@ defined( 'ABSPATH' ) || exit;
 
     <form method="post" class="jb3-form jb3-form--login" novalidate>
         <?php wp_nonce_field( 'jb3_login', 'jb3_login_nonce' ); ?>
+        <?php if ( ! empty( $redirect_to ) ) : ?>
+            <input type="hidden" name="redirect_to" value="<?php echo esc_attr( $redirect_to ); ?>">
+        <?php endif; ?>
 
         <div class="jb3-field">
             <label for="nb_login_email"><?php esc_html_e( 'Tu email registrado', 'jb3-members' ); ?></label>

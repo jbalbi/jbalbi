@@ -1,17 +1,19 @@
 <?php
 defined( 'ABSPATH' ) || exit;
 
-// ─── "MÁS CONTENIDO DE ESTE TAG": automático, cruza tipos + mismo canal ─────
+// ─── "MÁS CONTENIDO DE ESTE TAG": automático, mismo canal ───────────────────
 // Distinto de jb3_relacionados_auto() (_init_relacionados.php): ahí la
 // relación la carga un editor a mano vía ACF, acá sale sola de la taxonomía
 // "genero" (tags libres, ver _init_taxonomias.php) + el/los canal(es) del
-// propio contenido — sin curar nada. Única forma de cruzar Películas/Series/
-// Prod. Originales entre sí (esos 3 tipos ya no usan el campo ACF de
-// relacionados) — un tag puede ser un género (Terror) o un tema/franquicia
-// (Spider-Man): "Más contenido de Spider-Man" puede traer película + serie
-// + prod. original juntas, siempre que compartan el tag Y el canal. Si el
-// contenido tiene varios tags, se arma UN MÓDULO POR TAG (no se mezclan).
-// Llamar después de the_content() en single-peliculas/series/prod_originales.php.
+// propio contenido — sin curar nada. Un tag puede ser un género (Terror),
+// un tema/franquicia (Spider-Man), o una categoría de paquete ("Nuevos
+// Formatos") — el ALCANCE del cruce depende de la familia del post actual:
+// Películas/Series/Prod. Originales se cruzan entre sí (esos 3 ya no usan
+// el campo ACF de relacionados para esto); cualquier otro tipo con "genero"
+// (por ahora Op. Comerciales) se agrupa SOLO consigo mismo, no se mezcla
+// con Videos/Integraciones aunque compartan tag. Si el contenido tiene
+// varios tags, se arma UN MÓDULO POR TAG (no se mezclan).
+// Llamar después de the_content() en el single-{cpt}.php que corresponda.
 //
 // post_status explícito en 'publish': la despublicación programada
 // (plugin jb3-content-expiration) pasa el post a Borrador solo cuando
@@ -33,11 +35,12 @@ function jb3_genero_auto( int $post_id ): string {
 
 	$pais = function_exists( 'jb3_geo_visitor_country' ) ? jb3_geo_visitor_country() : '';
 
-	// Los 3 tipos que usan tags — jb3_modulo_tipos_poster() ya es exactamente
-	// esta misma lista, se reutiliza en vez de repetirla a mano.
-	$tipos = function_exists( 'jb3_modulo_tipos_poster' )
+	// Familia "poster" (Películas/Series/Prod.Originales) se cruza entre sí;
+	// cualquier otro tipo (Op. Comerciales, etc.) solo consigo mismo.
+	$tipos_poster = function_exists( 'jb3_modulo_tipos_poster' )
 		? jb3_modulo_tipos_poster()
 		: array( 'peliculas', 'series', 'prod_originales' );
+	$tipos = in_array( $post->post_type, $tipos_poster, true ) ? $tipos_poster : array( $post->post_type );
 
 	$html = '';
 	foreach ( $tags as $tag ) {
@@ -83,9 +86,9 @@ function jb3_genero_auto( int $post_id ): string {
 
 		$titulo = 'Más contenido de ' . $tag->name;
 		// $post->post_type acá solo decide poster-vs-thumb en
-		// jb3_relacionados_modulo() — los 3 tipos que pueden venir mezclados
-		// en $query->posts son TODOS de la familia poster, da lo mismo cuál
-		// de los tres se pase.
+		// jb3_relacionados_modulo() — todo lo que trae $query->posts es
+		// siempre de la misma familia que $tipos de arriba, da lo mismo cuál
+		// tipo puntual se pase.
 		$html .= jb3_relacionados_modulo( $post->post_type, $query->posts, $titulo, 'genero-' . $tag->term_id );
 	}
 

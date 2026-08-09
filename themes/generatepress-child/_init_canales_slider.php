@@ -34,20 +34,30 @@ function jb3_canales_slider_render( string $titulo, string $bajada = '' ): strin
 
 	$slides = [];
 	foreach ( $canales as $canal ) {
-		// logo_byn (blanco y negro) es el que corresponde acá — logo a color
-		// queda para el slider de la cabecera (_init_home_slider.php). Si un
-		// canal todavía no tiene logo_byn cargado, cae al logo a color antes
-		// que dejarlo directamente afuera del slider.
-		$logo_field = get_field( 'logo_byn', 'canales_' . $canal->term_id ) ?: get_field( 'logo', 'canales_' . $canal->term_id );
-		$logo_url   = is_array( $logo_field ) ? ( $logo_field['url'] ?? '' ) : (string) $logo_field;
+		// logo_byn (blanco y negro) es el que corresponde acá por defecto —
+		// logo a color queda para el slider de la cabecera
+		// (_init_home_slider.php). Si un canal todavía no tiene logo_byn
+		// cargado, cae al logo a color antes que dejarlo afuera del slider.
+		$logo_byn_field   = get_field( 'logo_byn', 'canales_' . $canal->term_id );
+		$logo_color_field = get_field( 'logo', 'canales_' . $canal->term_id );
+		$logo_byn_url     = is_array( $logo_byn_field ) ? ( $logo_byn_field['url'] ?? '' ) : (string) $logo_byn_field;
+		$logo_color_url   = is_array( $logo_color_field ) ? ( $logo_color_field['url'] ?? '' ) : (string) $logo_color_field;
+		$logo_url         = $logo_byn_url ?: $logo_color_url;
 		if ( ! $logo_url ) {
 			continue;
 		}
 
+		$link = jb3_canal_pagina_url( $canal->term_id );
+
 		$slides[] = [
 			'nombre' => $canal->name,
 			'logo'   => $logo_url,
-			'link'   => jb3_canal_pagina_url( $canal->term_id ),
+			'link'   => $link,
+			// Hover a color: solo tiene sentido si el canal tiene página a
+			// donde ir (si no, no hay nada que "invite" a pasar el mouse) Y
+			// si el logo mostrado por defecto es el byn (si ya se está
+			// mostrando el color por no tener byn, no hay nada que cambiar).
+			'logo_hover' => ( $link && $logo_byn_url && $logo_color_url ) ? $logo_color_url : '',
 		];
 	}
 
@@ -57,9 +67,14 @@ function jb3_canales_slider_render( string $titulo, string $bajada = '' ): strin
 
 	jb3_enqueue_swiper();
 
+	$id = 'canales-slider';
+	if ( function_exists( 'jb3_subnav_register' ) ) {
+		jb3_subnav_register( $titulo, $id );
+	}
+
 	ob_start();
 	?>
-	<section class="jb3-canales-slider">
+	<section class="jb3-canales-slider" id="<?php echo esc_attr( $id ); ?>">
 		<h2 class="jb3-canales-slider__titulo"><?php echo esc_html( $titulo ); ?></h2>
 		<?php if ( $bajada ) : ?>
 			<div class="jb3-canales-slider__bajada"><?php echo wp_kses_post( $bajada ); ?></div>
@@ -67,15 +82,20 @@ function jb3_canales_slider_render( string $titulo, string $bajada = '' ): strin
 
 		<div class="jb3-canales-slider__wrap swiper">
 			<div class="swiper-wrapper">
-				<?php foreach ( $slides as $slide ) : ?>
+				<?php foreach ( $slides as $slide ) :
+					$logo_class = 'jb3-canales-slider__logo' . ( $slide['logo_hover'] ? ' jb3-canales-slider__logo--hover' : '' );
+					?>
 					<div class="swiper-slide jb3-canales-slider__slide">
 						<?php if ( $slide['link'] ) : ?>
-							<a href="<?php echo esc_url( $slide['link'] ); ?>" class="jb3-canales-slider__logo">
-								<img src="<?php echo esc_url( $slide['logo'] ); ?>" alt="<?php echo esc_attr( $slide['nombre'] ); ?>">
+							<a href="<?php echo esc_url( $slide['link'] ); ?>" class="<?php echo esc_attr( $logo_class ); ?>">
+								<img class="jb3-canales-slider__logo-img jb3-canales-slider__logo-img--default" src="<?php echo esc_url( $slide['logo'] ); ?>" alt="<?php echo esc_attr( $slide['nombre'] ); ?>">
+								<?php if ( $slide['logo_hover'] ) : ?>
+									<img class="jb3-canales-slider__logo-img jb3-canales-slider__logo-img--hover" src="<?php echo esc_url( $slide['logo_hover'] ); ?>" alt="" aria-hidden="true">
+								<?php endif; ?>
 							</a>
 						<?php else : ?>
-							<span class="jb3-canales-slider__logo">
-								<img src="<?php echo esc_url( $slide['logo'] ); ?>" alt="<?php echo esc_attr( $slide['nombre'] ); ?>">
+							<span class="<?php echo esc_attr( $logo_class ); ?>">
+								<img class="jb3-canales-slider__logo-img jb3-canales-slider__logo-img--default" src="<?php echo esc_url( $slide['logo'] ); ?>" alt="<?php echo esc_attr( $slide['nombre'] ); ?>">
 							</span>
 						<?php endif; ?>
 					</div>
@@ -89,23 +109,55 @@ function jb3_canales_slider_render( string $titulo, string $bajada = '' ): strin
 
 	// Mismo motivo que en _init_home_slider.php: "load" (no "DOMContentLoaded")
 	// para que Swiper mida el ancho real del contenedor ya con el layout
-	// resuelto. slidesPerView:'auto' + spaceBetween (no breakpoints a mano):
-	// el ancho de cada logo lo define el CSS (.jb3-canales-slider__wrap
-	// .swiper-slide), así que la cantidad visible se ajusta sola a
-	// cualquier tamaño de pantalla.
+	// resuelto.
+	//
+	// slidesPerView NUMÉRICO (no 'auto'): son logos de marca — por tema
+	// legal no puede verse ninguno cortado a la mitad "espiando" el
+	// siguiente. Con un número entero, Swiper reparte el ancho del
+	// contenedor exacto entre esa cantidad, siempre completos.
+	//
+	// cap(n) achica ese número a la cantidad REAL de canales que haya en
+	// este momento (varía por país — jb3_geo_canales_visibles() ya filtra
+	// eso en PHP) — si un país tiene menos canales que el máximo pensado
+	// para ese breakpoint, se muestran todos fijos, más grandes, sin
+	// deslizar de más. loop también se apaga solo en ese caso: con loop
+	// activo y muy pocos slides de sobra para duplicar, Swiper daba un
+	// cálculo inestable (ver commit anterior) — acá directamente no hace
+	// falta loop si ya entran todos.
 	wp_add_inline_script( 'swiper', "
 		window.addEventListener( 'load', function () {
 			var el = document.querySelector( '.jb3-canales-slider .swiper' );
 			if ( ! el ) {
 				return;
 			}
+			var total = el.querySelectorAll( '.swiper-slide' ).length;
+			function cap( n ) {
+				return Math.min( n, total );
+			}
 			new Swiper( el, {
-				slidesPerView: 'auto',
-				spaceBetween: 40,
-				loop: true,
+				slidesPerView: cap( 3 ),
+				spaceBetween: 24,
+				loop: total > cap( 3 ),
+				autoplay: {
+					delay: 4000,
+					disableOnInteraction: false,
+					pauseOnMouseEnter: true
+				},
 				navigation: {
 					nextEl: '.jb3-canales-slider .swiper-button-next',
 					prevEl: '.jb3-canales-slider .swiper-button-prev'
+				},
+				breakpoints: {
+					768: {
+						slidesPerView: cap( 4 ),
+						spaceBetween: 30,
+						loop: total > cap( 4 )
+					},
+					1024: {
+						slidesPerView: cap( 6 ),
+						spaceBetween: 40,
+						loop: total > cap( 6 )
+					}
 				}
 			} );
 		} );

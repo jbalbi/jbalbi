@@ -172,6 +172,84 @@
     border-color: #1565c0;
 }
 
+/* ─── Directorio de representantes [jb3_representantes] ─────────────────── */
+
+/* Tarjetas de a 2 por fila (~50% de ancho cada una) — una sola columna en
+   mobile, mismo corte de 767px que usa el resto del sitio. */
+.jb3-representantes {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.2rem;
+}
+
+@media (max-width: 767px) {
+    .jb3-representantes {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* El look visual del título (tipografía, tamaño, barrita) lo da
+   jb3-modulo__titulo (tema, style.css) — la misma clase que usan los
+   títulos de [jb3_modulo], para que se vea idéntico. grid-column:1/-1 —
+   ocupa las 2 columnas de arriba, es hijo directo del grid junto con las
+   tarjetas. */
+.jb3-representantes__pais {
+    grid-column: 1 / -1;
+    margin-bottom: .4rem;
+}
+
+/* Tarjeta: nombre a la izquierda, WhatsApp/teléfono/email apilados a la
+   derecha. En mobile se apila todo: nombre arriba, datos abajo. */
+.jb3-representante {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, .06);
+    border-radius: 8px;
+}
+
+@media (max-width: 767px) {
+    .jb3-representante {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+.jb3-representante__nombre {
+    font-weight: 500;
+    font-size: 1.3rem;
+    text-transform: uppercase;
+}
+
+.jb3-representante__contacto {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .55rem;
+    flex-shrink: 0;
+}
+
+/* !important: el tema pinta los links con .entry-content a{color:...} —
+   más específico que un solo .jb3-representante__dato, se comía el
+   blanco. Mismo criterio que .jb3-grid-posters__item en el tema. */
+.jb3-representante__dato {
+    display: inline-flex;
+    align-items: center;
+    gap: .7rem;
+    font-size: .95rem;
+    color: #fff !important;
+    text-decoration: none !important;
+    white-space: nowrap;
+}
+
+.jb3-representante__icono {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
 /* ─── Admin styles ────────────────────────────────────────────────────────── */
 
 .jb3-admin .jb3-admin-form table.form-table th {

@@ -184,6 +184,14 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    /* Red de seguridad: con body en flex-column, cualquier contenido ancho
+       en algún punto profundo del árbol (ej. un carrusel con overflow:hidden
+       propio, como .jb3-canales-slider) puede terminar empujando el ancho
+       de la página igual — es el "min-width:auto en flex items" de siempre,
+       no algo roto en el componente puntual. overflow-x:hidden acá corta
+       cualquier desborde horizontal a nivel de página sin tocar el truco
+       del sticky footer ni el mecanismo interno de ningún slider. */
+    overflow-x: hidden;
 }
 
 /* #page (con clase "container") envuelve todo el contenido entre el header y
@@ -194,6 +202,28 @@ body {
 #page {
     background-color: transparent !important;
     flex: 1 0 auto;
+    /* Fix real del scroll horizontal (lo de arriba en <body> solo tapaba el
+       síntoma): #page es un flex item de <body>, y por default un flex item
+       nunca se encoge más chico que el ancho mínimo de SU CONTENIDO
+       (min-width:auto implícito) — si algo adentro es ancho (ej. el
+       carrusel de canales con muchos logos), #page se agranda para
+       hacerle lugar, y como el slider de la cabecera mide "100% de su
+       padre" (no del viewport), todo lo de adentro de #page crece con
+       él — flechas y contenido terminan fuera de la pantalla visible.
+       min-width:0 le permite encogerse al ancho real de la pantalla; el
+       overflow:hidden que ya tiene cada carrusel por separado se encarga
+       de recortar su propio contenido ancho puertas adentro, sin inflar
+       a #page entero. */
+    min-width: 0;
+}
+
+/* Segunda capa del mismo bug: .site-content (de GeneratePress, el theme
+   padre) también es un contenedor flex propio, y <main id="jb3-main-content">
+   (nuestros templates) es SU flex item — mismo min-width:auto implícito,
+   un nivel más adentro del de #page de arriba. Sin esto, #page/.site-content
+   quedan con el ancho correcto pero <main> igual se desborda hacia afuera. */
+#jb3-main-content {
+    min-width: 0;
 }
 
 a {
@@ -891,36 +921,50 @@ body {
 /* !important porque la regla global "a { color: var(--link-color) !important }"
    (sección COLORES GLOBALES) le gana por !important a cualquier color sin
    !important acá, sin importar la especificidad de la clase — por eso el
-   texto quedaba invisible (mismo violeta que el fondo de la barra). */
+   texto quedaba invisible (mismo violeta que el fondo de la barra).
+   position:absolute + inset:0: el link (y su hover) ocupan TODA la barra,
+   no solo el texto — .jb3-footer-bar ya es position:fixed, así que sirve
+   de contenedor de posicionamiento sin agregar nada más. El botón de
+   volver arriba sigue siendo clickeable por separado porque va DESPUÉS en
+   el HTML: con z-index igual, el que pinta último (totop) queda arriba en
+   la pila y se queda con el click en su propia zona. */
 .jb3-footer-bar__cta {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--footer-bar-text) !important;
     text-decoration: none;
     font-weight: 600;
     font-size: 14px;
 }
 
+/* margin en vez de confiar en los espacios del texto alrededor de <strong>:
+   display:flex en el link (arriba) puede comerse el espacio en blanco en
+   el borde entre texto suelto y un elemento inline ("CONECTATEAQUÍCON").
+   Sin color propio a propósito: hereda el de .jb3-footer-bar__cta (acá
+   arriba y en :hover) — todo el texto cambia de color junto, en vez de
+   cruzarse entre "aquí" y el resto. */
 .jb3-footer-bar__cta strong {
-    color: var(--footer-bar-cta) !important;
+    margin: 0 .3em;
+    font-size: 1.2em;
 }
 
-/* En hover/focus el texto sin <strong> pasa al mismo color que "aquí" tiene
-   en reposo, y "aquí" hace el camino inverso (pasa a blanco) — se cruzan. */
 .jb3-footer-bar__cta:hover,
 .jb3-footer-bar__cta:focus-visible {
     color: var(--footer-bar-cta) !important;
 }
 
-.jb3-footer-bar__cta:hover strong,
-.jb3-footer-bar__cta:focus-visible strong {
-    color: var(--footer-bar-text) !important;
-}
-
 /* Botón circular con el ícono; el texto "Ir arriba" vive en un tooltip
    propio (span), oculto hasta el hover/focus — no es un title="" nativo
    porque esos no se pueden animar ni estilar. Anclado a la derecha de la
-   barra con position:absolute, así no compite con el centrado del texto. */
+   barra con position:absolute, así no compite con el centrado del texto.
+   z-index explícito: queda por encima de .jb3-footer-bar__cta (que ahora
+   cubre toda la barra) para que su click siga siendo suyo. */
 .jb3-footer-bar__totop {
     position: absolute;
+    z-index: 1;
     right: 20px;
     top: 50%;
     transform: translateY(-50%);
@@ -1388,25 +1432,19 @@ body {
     }
 }
 
-/* .jb3-canales-slider__wrap + .swiper-slide (no ".swiper-slide" solo): la
-   base de Swiper ya trae ".swiper-slide { width: 100% }" con la misma
-   especificidad que una clase sola — según qué hoja de estilo cargue
-   después, esa regla le podía ganar a la nuestra y dejaba cada logo
-   estirado al 100% del slider (se veía "una sola marca" a la vez). Este
-   selector compuesto tiene más especificidad, así que gana siempre. */
-.jb3-canales-slider__wrap .swiper-slide {
-    width: 160px;
-}
-
+/* Ancho del slide: ya NO se fija acá — slidesPerView es numérico (ver
+   _init_canales_slider.php), Swiper reparte el ancho del contenedor exacto
+   entre esa cantidad. .jb3-canales-slider__logo con width:100% ocupa lo
+   que Swiper le asigne a cada slide, sea lo que sea. */
 .jb3-canales-slider__logo {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
-    height: 70px;
+    height: 105px;
 }
 
-.jb3-canales-slider__logo img {
+.jb3-canales-slider__logo-img {
     display: block;
     max-width: 100%;
     max-height: 100%;
@@ -1414,24 +1452,111 @@ body {
     height: auto;
 }
 
-@media (max-width: 1023px) {
-    .jb3-canales-slider__wrap .swiper-slide {
-        width: 130px;
-    }
+/* Hover a color: solo los canales con página propia (jb3_canal_pagina_url())
+   Y con logo byn+color cargados los dos traen esta clase — el resto
+   muestra un único <img> normal, sin nada de esto. Logo byn y color
+   superpuestos en el mismo lugar (position:absolute, ambos ocupando toda
+   la caja) — position:relative en el link/span de arriba para que el
+   absolute de los <img> sea relativo a ESA caja, no a la página entera. */
+.jb3-canales-slider__logo--hover {
+    position: relative;
+}
 
+.jb3-canales-slider__logo--hover .jb3-canales-slider__logo-img {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    transition: opacity .25s ease;
+}
+
+.jb3-canales-slider__logo--hover .jb3-canales-slider__logo-img--hover {
+    opacity: 0;
+}
+
+.jb3-canales-slider__logo--hover:hover .jb3-canales-slider__logo-img--default {
+    opacity: 0;
+}
+
+.jb3-canales-slider__logo--hover:hover .jb3-canales-slider__logo-img--hover {
+    opacity: 1;
+}
+
+@media (max-width: 1023px) {
     .jb3-canales-slider__logo {
-        height: 60px;
+        height: 90px;
     }
 }
 
 @media (max-width: 767px) {
-    .jb3-canales-slider__wrap .swiper-slide {
-        width: 100px;
-    }
-
     .jb3-canales-slider__logo {
-        height: 50px;
+        height: 75px;
     }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PÁGINA INDIVIDUAL DE OP. COMERCIAL (single-op_comerciales.php)
+   Único single-{cpt}.php del sitio con título visible (sin hero que le dé
+   identidad). Mismo padding lateral que el resto (--jb3-modulo-padding-x),
+   vía margin en vez de padding porque son varios elementos hermanos sueltos
+   (h1/div/div), no un único contenedor.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-op-comercial__titulo {
+    margin: 40px var(--jb3-modulo-padding-x) 20px;
+}
+
+.jb3-op-comercial__descripcion {
+    margin: 0 var(--jb3-modulo-padding-x) 30px;
+}
+
+.jb3-op-comercial__pdf {
+    margin: 0 var(--jb3-modulo-padding-x) 40px;
+}
+
+.jb3-op-comercial__pdf-descarga {
+    margin: 16px 0 0;
+    text-align: center;
+}
+
+/* ─── Visor de PDF propio (_init_pdf_viewer.php) ────────────────────────────
+   Cada página del PDF es un <canvas> suelto, apilado uno debajo del otro
+   (scroll normal de la página, no del visor) — el navegador nunca "ve" que
+   es un PDF, así que ninguna extensión (Adobe Acrobat, etc.) tiene nada
+   que interceptar. */
+.jb3-pdf-viewer {
+    width: 100%;
+}
+
+.jb3-pdf-viewer__pagina {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .4);
+}
+
+.jb3-pdf-viewer__cargando,
+.jb3-pdf-viewer__error {
+    padding: 60px 20px;
+    text-align: center;
+    opacity: .7;
+}
+
+.jb3-pdf-viewer__login-cta {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.jb3-pdf-viewer__login-cta p {
+    margin: 0 0 16px;
+}
+
+/* Estado "sin sesión" (single-op_comerciales.php): miniatura destacada del
+   post en vez del PDF real — ver el comentario del template sobre por qué
+   el gate está ahí y no en el visor. */
+.jb3-pdf-viewer__preview {
+    display: block;
+    width: 100%;
+    height: auto;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1439,6 +1564,63 @@ body {
    Mismo padding lateral que la subnav/footer (--jb3-modulo-padding-x).
    ═══════════════════════════════════════════════════════════════════════════ */
 .jb3-modulo {
+    padding: 40px var(--jb3-modulo-padding-x);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ANCHO POR DEFECTO DE UN BLOQUE SUELTO (sin Grupo alrededor)
+   Un bloque suelto (párrafo, imagen, etc.) puesto directo en el editor,
+   sin envolverlo en un Grupo, queda en la columna angosta y centrada que
+   trae Gutenberg de fábrica — acá se lo lleva directo al margen de los
+   módulos (jb3-contenedor) SIN que el editor tenga que crear un Grupo a
+   mano para eso.
+   SOLO en el nivel de hijo directo de .entry-content (a propósito, nada
+   de ":not(.jb3-contenedor) > *" anidado) — la vez pasada, aplicar este
+   mismo truco en dos niveles anidados a la vez multiplicó el corrimiento
+   en vez de sumarlo y rompió el layout (scroll horizontal). Un bloque
+   Grupo puesto por el editor sigue intacto: como es hijo directo, ACÁ
+   también le entra este mismo margen — si el editor quiere que ese Grupo
+   vaya a pantalla completa, tiene que usar la alineación nativa "Ancho
+   completo" (alignfull/alignwide, excluidas abajo) en vez de dejarlo sin
+   marcar.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.entry-content > *:not(.jb3-contenedor):not(.jb3-modulo):not(.jb3-representantes):not(.alignfull):not(.alignwide) {
+    box-sizing: border-box;
+    width: 100vw;
+    max-width: 100vw;
+    position: relative;
+    left: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    padding: 40px var(--jb3-modulo-padding-x);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UTILIDAD: CONTENEDOR CON EL MISMO MARGEN QUE LOS MÓDULOS
+   Para páginas de contenido libre (page-canal.php y similares): se aplica
+   a mano en el editor de bloques a un bloque Grupo — Configuración del
+   bloque → Avanzado → "Clases CSS adicionales" → escribir jb3-contenedor.
+   Cualquier bloque DENTRO de ese Grupo queda alineado 80/40/20 igual que
+   el resto de los módulos del sitio. Sin la clase, el bloque va a
+   pantalla completa sin márgenes — es la opción por defecto a propósito,
+   para poder elegir por bloque.
+   No usar esta clase alrededor del shortcode [jb3_modulo]: ese módulo ya
+   trae su propio padding (.jb3-modulo arriba) y se duplicaría.
+
+   El truco width:100vw + margin -50vw rompe el ancho de contenido
+   acotado que Gutenberg le pone por defecto a un bloque Grupo (una caja
+   angosta centrada) — SIN esto el padding de acá arriba quedaba aplicado
+   adentro de esa caja chica en vez de contra el borde real de la
+   pantalla (confirmado con DevTools: el padding se calculaba bien, pero
+   la caja en sí no llegaba a los bordes). Así no hace falta acordarse de
+   marcar "Ancho completo" en el bloque cada vez — funciona siempre.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-contenedor {
+    box-sizing: border-box;
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    margin-left: -50vw;
     padding: 40px var(--jb3-modulo-padding-x);
 }
 

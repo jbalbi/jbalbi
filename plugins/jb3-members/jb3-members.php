@@ -47,6 +47,8 @@ register_deactivation_hook( __FILE__, [ 'JB3_Sync', 'deactivate' ] );
 add_action( 'plugins_loaded', 'jb3_members_boot' );
 
 function jb3_members_boot() {
+    JB3_Database::maybe_upgrade();
+
     JB3_Registration::init();
     JB3_Profile_Update::init();
     JB3_Login::init();
@@ -54,6 +56,7 @@ function jb3_members_boot() {
     JB3_Auth_Guard::init();
     JB3_Cleanup::init();
     JB3_Mailchimp::init();
+    JB3_Representatives::init();
 
     if ( is_admin() ) {
         JB3_Sync::init();

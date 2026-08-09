@@ -31,13 +31,30 @@ class JB3_Magic_Link {
     /**
      * Generate a fully-qualified magic-link URL for the user.
      * Points to the configured login page (or site root as fallback).
+     *
+     * @param int    $user_id
+     * @param string $redirect_to Optional URL to return the user to after login
+     *                            (e.g. the private page they tried to reach).
+     *                            Validated with wp_validate_redirect() both here
+     *                            AND again in handle_magic_link() — this URL
+     *                            travels inside an emailed link, so it's
+     *                            attacker-influenced input twice over.
      */
-    public static function generate_url( $user_id ) {
+    public static function generate_url( $user_id, $redirect_to = '' ) {
         $token   = self::generate_token( $user_id );
         $page_id = (int) get_option( 'jb3_login_page_id' );
         $base    = ( $page_id ? get_permalink( $page_id ) : '' ) ?: home_url( '/' );
 
-        return add_query_arg( [ 'jb3_magic' => $token ], $base );
+        $args = [ 'jb3_magic' => $token ];
+
+        $redirect_to = wp_validate_redirect( $redirect_to, '' );
+        if ( $redirect_to ) {
+            // add_query_arg() already url-encodes its values — passing an
+            // already-encoded string here would double-encode it.
+            $args['redirect_to'] = $redirect_to;
+        }
+
+        return add_query_arg( $args, $base );
     }
 
     // ─── Login handler ────────────────────────────────────────────────────────
@@ -75,6 +92,13 @@ class JB3_Magic_Link {
 
         $dashboard_id = (int) get_option( 'jb3_dashboard_page_id' );
         $redirect     = $dashboard_id ? get_permalink( $dashboard_id ) : home_url( '/' );
+
+        // redirect_to survived inside the emailed link (attacker-influenced
+        // input) — validate again here, not just when the link was built.
+        if ( ! empty( $_GET['redirect_to'] ) ) {
+            $requested = wp_unslash( $_GET['redirect_to'] );
+            $redirect  = wp_validate_redirect( $requested, $redirect );
+        }
 
         wp_redirect( esc_url_raw( $redirect ) );
         exit;

@@ -19,8 +19,8 @@ class JB3_Registration {
         if ( has_shortcode( $post->post_content, 'jb3_register' )
             || has_shortcode( $post->post_content, 'jb3_profile' )
             || has_shortcode( $post->post_content, 'jb3_login' ) ) {
-            wp_enqueue_style(  'jb3-forms', JB3_URL . 'public/css/jb3-forms.css', [], JB3_VERSION );
-            wp_enqueue_script( 'jb3-forms', JB3_URL . 'public/js/jb3-forms.js', [ 'jquery' ], JB3_VERSION, true );
+            wp_enqueue_style(  'jb3-forms', JB3_URL . 'public/css/jb3-forms.css', [], jb3_asset_ver( 'public/css/jb3-forms.css' ) );
+            wp_enqueue_script( 'jb3-forms', JB3_URL . 'public/js/jb3-forms.js', [ 'jquery' ], jb3_asset_ver( 'public/js/jb3-forms.js' ), true );
         }
     }
 

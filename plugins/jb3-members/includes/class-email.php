@@ -64,10 +64,13 @@ class JB3_Email {
 
     /**
      * Send a fresh magic-link to a user who requests one from the login form.
+     *
+     * @param int    $user_id
+     * @param string $redirect_to Optional page to return the user to after login.
      */
-    public static function send_magic_link( $user_id ) {
+    public static function send_magic_link( $user_id, $redirect_to = '' ) {
         $user      = get_userdata( $user_id );
-        $magic_url = JB3_Magic_Link::generate_url( $user_id );
+        $magic_url = JB3_Magic_Link::generate_url( $user_id, $redirect_to );
 
         $subject = sprintf(
             /* translators: %s: site name */

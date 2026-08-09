@@ -85,7 +85,7 @@ function jb3_exp_render_metabox( WP_Post $post ): void {
 	wp_nonce_field( 'jb3_fecha_out_save', JB3_EXP_NONCE );
 
 	// Hora por defecto 23:59: mismo criterio que fecha_out en el slider de
-	// Home (_shortcode_home_slider.php), que compara por día ("today <=
+	// Home (_init_home_slider.php), que compara por día ("today <=
 	// fecha_out") — el día elegido queda vigente completo, hasta el final,
 	// no se corta al arrancar.
 	$valor = get_post_meta( $post->ID, JB3_EXP_META, true );
