@@ -32,7 +32,7 @@ function crear_taxonomia_canales() {
     );
 
     // Registrar la taxonomía para los CPTs específicos
-    register_taxonomy( 'canales', array( 'peliculas', 'series', 'prod_originales', 'op_comerciales', 'videos' ), $args );
+    register_taxonomy( 'canales', array( 'peliculas', 'series', 'prod_originales', 'op_comerciales', 'videos', 'integraciones' ), $args );
 
 }
 

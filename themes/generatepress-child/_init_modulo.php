@@ -49,7 +49,16 @@ function jb3_modulo_query( array $tipos, array $canal_term_ids = [], int $limite
 	$tax_query = [];
 
 	if ( $canal_term_ids ) {
-		$tax_query[] = [ 'taxonomy' => 'canales', 'field' => 'term_id', 'terms' => $canal_term_ids ];
+		// Sin canal asignado = visible en cualquier canal (mismo criterio que
+		// ya usa "pais" un poco más abajo, y "etiquetas"/"paises" en el resto
+		// del sitio) — un match estricto por IN excluía en silencio todo el
+		// contenido sin canal cargado, aunque debía verse en todos. Bug real
+		// detectado 2026-08-11 en Op. Comerciales/Integraciones de AXN.
+		$tax_query[] = [
+			'relation' => 'OR',
+			[ 'taxonomy' => 'canales', 'operator' => 'NOT EXISTS' ],
+			[ 'taxonomy' => 'canales', 'field' => 'term_id', 'terms' => $canal_term_ids ],
+		];
 	}
 
 	if ( $pais ) {

@@ -33,6 +33,17 @@ function child_enqueue_fonts() {
     );
 }
 
+// El editor de bloques corre en un iframe aparte que, sin esto, NUNCA carga
+// el style.css del tema — cualquier bloque que dependa de clases propias
+// (.jb3-modulo, .jb3-grid-thumbs, etc., incluidos los ACF Blocks) se ve ahí
+// como HTML crudo sin estilo, aunque en el sitio real se vea perfecto.
+// add_theme_support('editor-styles') habilita el mecanismo; add_editor_style()
+// dice qué hoja de estilos cargar (mismo archivo que ya usa el front-end).
+add_action( 'after_setup_theme', function () {
+    add_theme_support( 'editor-styles' );
+    add_editor_style( 'style.css' );
+} );
+
 // ─── COMPATIBILIDAD CON TÚNELES Y PROXIES ─────────────────────────────────────
 
 add_filter( 'script_loader_src', 'make_relative_url' );
@@ -124,8 +135,11 @@ require_once __DIR__ . '/_init_subnav.php';             // [jb3_subnav] / [jb3_s
 require_once __DIR__ . '/_init_grids.php';              // jb3_grid_posters() / jb3_grid_thumbs(): grillas reutilizables
 require_once __DIR__ . '/_init_modulo.php';             // [jb3_modulo]: consulta canal+país+tipo, título/bajada/grilla + subnav
 require_once __DIR__ . '/_init_canales_slider.php';     // [jb3_canales_slider]: "Nuestras Marcas", slider de canales del país
+require_once __DIR__ . '/_init_canal_redes.php';        // jb3_canal_redes_sociales_html(): íconos de redes del canal (campo ACF del término)
 require_once __DIR__ . '/_init_relacionados.php';       // [jb3_relacionados]: contenido cruzado vía ACF Relationship (bidireccional)
 require_once __DIR__ . '/_init_etiquetas.php';          // jb3_etiquetas_auto(): "Contenido Relacionado" automático — mismo tipo+canal, taxonomía "etiquetas"
 require_once __DIR__ . '/_init_pdf_viewer.php';          // jb3_pdf_viewer(): visor de PDF propio (PDF.js autohospedado), sin controles nativos ni de extensiones
 require_once __DIR__ . '/_init_pdf_preview_admin.php';   // Genera la imagen destacada sola desde la página 1 del PDF (PDF.js en el navegador del editor)
 require_once __DIR__ . '/_init_video_modal.php';        // Modal de video (YouTube/Vimeo/archivo propio) para [data-jb3-video]
+require_once __DIR__ . '/_init_image_modal.php';        // Modal de imagen (mismo patrón que el de video) para [data-jb3-image]
+require_once __DIR__ . '/_init_acf_blocks.php';          // Bloque ACF "Módulo de Contenido" (jb3/modulo-contenido): reemplaza a [jb3_modulo] escrito a mano
