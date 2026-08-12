@@ -3,10 +3,30 @@ defined( 'ABSPATH' ) || exit;
 
 class JB3_Magic_Link {
 
-    const SESSION_DAYS  = 120;
-    const TOKEN_META    = 'jb3_magic_token';
-    const EXPIRY_META   = 'jb3_magic_token_expiry';
-    const SESSION_META  = 'jb3_session_expiry';
+    // Cuánto dura CLICKEABLE el link emailado antes de usarse — no tiene
+    // relación con cuánto dura la sesión una vez que se usa (ver abajo).
+    // Sin cambios respecto de antes.
+    const TOKEN_VALID_DAYS = 120;
+
+    // Sesión deslizante: se renueva sola en cada visita mientras el
+    // usuario siga activo (INACTIVITY_DAYS sin entrar = vence sola), pero
+    // nunca más allá de MAX_SESSION_DAYS desde el login real, aunque haya
+    // estado activo todos los días — evita que una sesión (o una cookie
+    // robada) quede viva indefinidamente. Recomendado y confirmado con el
+    // usuario 2026-08-10: 6 meses de inactividad, techo de 12 meses.
+    const INACTIVITY_DAYS = 180;
+    const MAX_SESSION_DAYS = 365;
+
+    // No renovar en CADA request (sería una escritura + reemisión de
+    // cookie por cada página vista) — solo si ya pasó al menos este
+    // margen desde la última renovación. Con esto, un usuario que entra
+    // varias veces por día genera como mucho una escritura por día.
+    const REFRESH_THRESHOLD = DAY_IN_SECONDS;
+
+    const TOKEN_META          = 'jb3_magic_token';
+    const EXPIRY_META         = 'jb3_magic_token_expiry';
+    const SESSION_META        = 'jb3_session_expiry';   // Vencimiento deslizante (se actualiza en cada renovación).
+    const SESSION_STARTED_META = 'jb3_session_started'; // Ancla fija del techo absoluto — se setea SOLO en el login real.
 
     public static function init() {
         add_action( 'init', [ __CLASS__, 'handle_magic_link' ], 5 );
@@ -16,11 +36,11 @@ class JB3_Magic_Link {
     // ─── Token lifecycle ──────────────────────────────────────────────────────
 
     /**
-     * Generate a one-time token valid for SESSION_DAYS and store it in user meta.
+     * Generate a one-time token valid for TOKEN_VALID_DAYS and store it in user meta.
      */
     public static function generate_token( $user_id ) {
         $token  = wp_generate_password( 64, false );
-        $expiry = time() + ( self::SESSION_DAYS * DAY_IN_SECONDS );
+        $expiry = time() + ( self::TOKEN_VALID_DAYS * DAY_IN_SECONDS );
 
         update_user_meta( $user_id, self::TOKEN_META,  $token );
         update_user_meta( $user_id, self::EXPIRY_META, $expiry );
@@ -87,8 +107,12 @@ class JB3_Magic_Link {
         wp_set_auth_cookie( $user->ID, true );
         do_action( 'wp_login', $user->user_login, $user );
 
-        // Store server-side session expiry for the guard check.
-        update_user_meta( $user->ID, self::SESSION_META, time() + ( self::SESSION_DAYS * DAY_IN_SECONDS ) );
+        // Arranca la sesión deslizante de cero: vencimiento por inactividad
+        // Y el ancla del techo absoluto (SESSION_STARTED_META), los dos
+        // solo se tocan acá, en un login real — nunca en una renovación.
+        $now = time();
+        update_user_meta( $user->ID, self::SESSION_META, $now + ( self::INACTIVITY_DAYS * DAY_IN_SECONDS ) );
+        update_user_meta( $user->ID, self::SESSION_STARTED_META, $now );
 
         $dashboard_id = (int) get_option( 'jb3_dashboard_page_id' );
         $redirect     = $dashboard_id ? get_permalink( $dashboard_id ) : home_url( '/' );
@@ -146,13 +170,47 @@ class JB3_Magic_Link {
     // ─── Cookie expiration ────────────────────────────────────────────────────
 
     /**
-     * Extend "remember me" cookies to 120 days for jb3_member users.
+     * Extend "remember me" cookies para jb3_member/admin — misma ventana
+     * que la sesión deslizante (INACTIVITY_DAYS); se recalcula sola cada
+     * vez que se reemite la cookie (login real o renovación por actividad).
      */
     public static function extend_cookie_expiration( $expiration, $user_id, $remember ) {
         if ( $remember && ( jb3_is_member( $user_id ) || user_can( $user_id, 'manage_options' ) ) ) {
-            return self::SESSION_DAYS * DAY_IN_SECONDS;
+            return self::INACTIVITY_DAYS * DAY_IN_SECONDS;
         }
         return $expiration;
+    }
+
+    // ─── Sesión deslizante ────────────────────────────────────────────────────
+
+    /**
+     * Se llama en CADA request de un usuario logueado (JB3_Auth_Guard).
+     * No hace nada la mayoría de las veces — throttle por REFRESH_THRESHOLD,
+     * ver comentario de la constante. Cuando sí renueva: corre el
+     * vencimiento por inactividad otros INACTIVITY_DAYS hacia adelante,
+     * pero nunca más allá del techo absoluto (session_started + MAX_SESSION_DAYS),
+     * y reemite la cookie del navegador para que coincida — sin reemitir
+     * la cookie, el navegador la descartaría en su fecha original sin
+     * importar lo que diga este meta del lado del servidor.
+     */
+    public static function maybe_refresh_session( int $user_id, int $current_expiry, int $session_started ): void {
+        $now         = time();
+        $full_window = self::INACTIVITY_DAYS * DAY_IN_SECONDS;
+        $remaining   = $current_expiry - $now;
+
+        // Todavía queda casi toda la ventana — se renovó hace poco, no hay nada que hacer.
+        if ( $remaining > ( $full_window - self::REFRESH_THRESHOLD ) ) {
+            return;
+        }
+
+        $new_expiry = $now + $full_window;
+        $max_expiry = $session_started + ( self::MAX_SESSION_DAYS * DAY_IN_SECONDS );
+        if ( $new_expiry > $max_expiry ) {
+            $new_expiry = $max_expiry; // El check_session() del caller ya habrá cortado la sesión si $now superó esto.
+        }
+
+        update_user_meta( $user_id, self::SESSION_META, $new_expiry );
+        wp_set_auth_cookie( $user_id, true );
     }
 
     // ─── Force logout ─────────────────────────────────────────────────────────
@@ -167,5 +225,6 @@ class JB3_Magic_Link {
         delete_user_meta( $user_id, self::TOKEN_META );
         delete_user_meta( $user_id, self::EXPIRY_META );
         delete_user_meta( $user_id, self::SESSION_META );
+        delete_user_meta( $user_id, self::SESSION_STARTED_META );
     }
 }

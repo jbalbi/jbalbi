@@ -138,3 +138,23 @@ function jb3_asset_ver( $relative_path ) {
     $file = JB3_DIR . ltrim( $relative_path, '/' );
     return file_exists( $file ) ? (string) filemtime( $file ) : JB3_VERSION;
 }
+
+/**
+ * Rate limit compartido por email — mismo criterio que ya usaba
+ * class-login.php a mano (ahora factorizado acá para que la entrada
+ * automática vía Mailchimp ?e= use el MISMO presupuesto que el
+ * formulario de login manual, y no se puedan combinar los dos caminos
+ * para mandar más magic links de los debidos a un mismo email).
+ *
+ * @return bool true si YA se alcanzó el límite (hay que bloquear); false
+ *              si todavía hay margen (esta llamada ya lo contabilizó).
+ */
+function jb3_rate_limited( string $email, int $max = 3, int $window_minutes = 10 ): bool {
+    $key   = 'jb3_rl_' . md5( strtolower( $email ) );
+    $count = (int) get_transient( $key );
+    if ( $count >= $max ) {
+        return true;
+    }
+    set_transient( $key, $count + 1, $window_minutes * MINUTE_IN_SECONDS );
+    return false;
+}

@@ -34,7 +34,7 @@ Plugin WordPress para registro, aprobación y acceso de miembros con magic link,
 JB3 Members implementa un sistema completo de membresías para WordPress:
 
 - **Registro con aprobación manual**: los usuarios se registran y quedan en estado *pendiente* hasta que un representante los aprueba. La aprobación se hace con un clic desde el email que llega al representante.
-- **Login por magic link (sin contraseñas)**: el usuario ingresa su email, recibe un enlace de un solo uso y queda logueado por 120 días.
+- **Login por magic link (sin contraseñas)**: el usuario ingresa su email, recibe un enlace de un solo uso (clickeable hasta 120 días) y al usarlo queda logueado con una sesión deslizante: se renueva sola mientras entre al menos cada 180 días, con un techo absoluto de 365 días desde el login.
 - **Representantes por país**: cada país tiene uno o más representantes que reciben el email de aprobación. Si no hay representante asignado para un país, recibe el default.
 - **Sincronización bidireccional con Mailchimp**: datos del perfil, preferencias de newsletter, intereses y newsletters por país se sincronizan automáticamente.
 - **Administradores incluidos**: los usuarios administradores de WordPress pueden loguearse por magic link, tener sus datos en Mailchimp y gestionar todo el sistema.
@@ -157,7 +157,7 @@ Verificación: el usuario existe Y es jb3_member O es administrador
         ↓
 Si es miembro: además debe estar aprobado (admins bypasean este check)
         ↓
-JB3_Magic_Link::generate_url() → token 64 chars + expiry 120 días en user_meta
+JB3_Magic_Link::generate_url() → token 64 chars + expiry 120 días en user_meta (ventana para hacer clic, no la sesión)
         ↓
 JB3_Email::send_magic_link() → email con URL ?jb3_magic=TOKEN
         ↓
@@ -167,12 +167,30 @@ validate_token(): busca el token por SQL directo en usermeta → verifica expiry
         ↓
 Token consumido: delete_user_meta(TOKEN_META, EXPIRY_META) — un solo uso
         ↓
-wp_set_auth_cookie($user_id, remember=true) + SESSION_META guardado server-side
+wp_set_auth_cookie($user_id, remember=true) + SESSION_META (vencimiento +180 días) y SESSION_STARTED_META (ancla del techo) guardados server-side
         ↓
-Filtro auth_cookie_expiration → cookie extendida a 120 días para jb3_member y admins
+Filtro auth_cookie_expiration → cookie extendida a 180 días (INACTIVITY_DAYS) para jb3_member y admins
         ↓
 Redirige al dashboard configurado
 ```
+
+### Sesión deslizante (inactividad + techo absoluto)
+
+En cada request de un usuario logueado, `JB3_Auth_Guard::check_session()` (hook `template_redirect`, priority 1) controla la sesión:
+
+```
+¿Pasó el vencimiento por inactividad (SESSION_META) O el techo absoluto (SESSION_STARTED_META + 365 días)?
+        ↓ sí                                              ↓ no
+JB3_Magic_Link::force_logout() + wp_logout()      JB3_Magic_Link::maybe_refresh_session()
+redirige a login con ?jb3_error=session_expired   ¿queda menos de 1 día (REFRESH_THRESHOLD) de margen?
+                                                          ↓ sí                        ↓ no
+                                                   Corre SESSION_META otros 180    no hace nada
+                                                   días (sin pasar el techo        (evita escribir/
+                                                   absoluto) + reemite la          reemitir cookie
+                                                   cookie con wp_set_auth_cookie() en cada request)
+```
+
+Un usuario que entra seguido nunca ve pedido de login de nuevo (se renueva sola, como mucho una escritura por día gracias al throttle); si deja de entrar 180 días seguidos, o pasan 365 días desde el login sin importar cuánto entró, la sesión se cierra sola. Usuarios que ya estaban logueados antes de esta funcionalidad (sin `SESSION_STARTED_META`) se migran solos: `check_session()` les ancla el techo absoluto la primera vez que se los ve después del update, arrancando desde ese momento.
 
 ### Gestión de perfil incompleto
 
@@ -350,22 +368,28 @@ Al guardar el perfil admin: sincroniza automáticamente con Mailchimp (o archiva
 ### Clase `JB3_Magic_Link`
 
 **Constantes:**
-- `SESSION_DAYS = 120` — duración de sesión en días
+- `TOKEN_VALID_DAYS = 120` — ventana para hacer clic en el magic link emailado (no es la duración de la sesión)
+- `INACTIVITY_DAYS = 180` — la sesión se renueva sola mientras el usuario entre al menos con esta frecuencia
+- `MAX_SESSION_DAYS = 365` — techo absoluto desde el login real, sin importar cuánta actividad haya
+- `REFRESH_THRESHOLD = DAY_IN_SECONDS` — margen mínimo de vencimiento restante antes de disparar una renovación (throttle, evita reescribir en cada request)
 - `TOKEN_META = 'jb3_magic_token'` — meta key del token activo
-- `EXPIRY_META = 'jb3_magic_token_expiry'` — meta key del timestamp de expiración
-- `SESSION_META = 'jb3_session_expiry'` — meta key de la sesión server-side
+- `EXPIRY_META = 'jb3_magic_token_expiry'` — meta key del timestamp de expiración del token
+- `SESSION_META = 'jb3_session_expiry'` — meta key del vencimiento deslizante de la sesión
+- `SESSION_STARTED_META = 'jb3_session_started'` — meta key del ancla fija del techo absoluto (se setea solo en el login real, nunca en una renovación)
 
-**`generate_token($user_id)`**: crea un token alfanumérico de 64 chars con `wp_generate_password()`. Lo guarda en user_meta junto con su timestamp de expiración (ahora + 120 días). Sobreescribe el token anterior si existía (solo puede haber un magic link activo por usuario).
+**`generate_token($user_id)`**: crea un token alfanumérico de 64 chars con `wp_generate_password()`. Lo guarda en user_meta junto con su timestamp de expiración (ahora + `TOKEN_VALID_DAYS` días). Sobreescribe el token anterior si existía (solo puede haber un magic link activo por usuario).
 
 **`generate_url($user_id)`**: llama a `generate_token()` y construye la URL completa: `{URL_pagina_login}?jb3_magic={TOKEN}`.
 
-**`handle_magic_link()`**: se ejecuta en el hook `init` con priority 5 (antes del template). Si detecta `?jb3_magic=TOKEN` en la URL, llama a `validate_token()`. Si el token es válido, hace login y redirige; si no, redirige al login con `?jb3_error=invalid_link`.
+**`handle_magic_link()`**: se ejecuta en el hook `init` con priority 5 (antes del template). Si detecta `?jb3_magic=TOKEN` en la URL, llama a `validate_token()`. Si el token es válido, hace login, setea `SESSION_META` (+`INACTIVITY_DAYS`) y `SESSION_STARTED_META` (ahora) y redirige; si no, redirige al login con `?jb3_error=invalid_link`.
 
 **`validate_token($token)`**: busca el token por SQL directo en `wp_usermeta` (más eficiente que iterar usuarios). Verifica: token existe → no expirado → usuario aprobado (o admin). Retorna el objeto `WP_User` o `false`.
 
-**`extend_cookie_expiration()`**: filtro `auth_cookie_expiration` que extiende la cookie a 120 días cuando `$remember=true` para `jb3_member` y administradores.
+**`extend_cookie_expiration()`**: filtro `auth_cookie_expiration` que extiende la cookie a `INACTIVITY_DAYS` días cuando `$remember=true` para `jb3_member` y administradores.
 
-**`force_logout($user_id)`**: destruye todas las sesiones WP del usuario + borra los tres metas de token/sesión.
+**`maybe_refresh_session($user_id, $current_expiry, $session_started)`**: llamado por `JB3_Auth_Guard::check_session()` en cada request de un usuario logueado. Si queda menos de `REFRESH_THRESHOLD` de margen antes del vencimiento, corre `SESSION_META` otros `INACTIVITY_DAYS` hacia adelante (sin pasar `session_started + MAX_SESSION_DAYS`) y reemite la cookie con `wp_set_auth_cookie()`. Si todavía queda margen, no hace nada — así un usuario activo genera como mucho una escritura por día, no una por request.
+
+**`force_logout($user_id)`**: destruye todas las sesiones WP del usuario + borra los cuatro metas de token/sesión (incluyendo `SESSION_STARTED_META`).
 
 ### Clase `JB3_Login`
 
@@ -389,8 +413,10 @@ Dos hooks en `template_redirect` (solo en el frontend):
 
 **`check_session()` (priority 1)**:
 - Solo actúa para `jb3_member` y administradores logueados
-- Lee `jb3_session_expiry` del user_meta
-- Si `$expiry > 0` y `time() > $expiry`: llama a `force_logout()`, desloguea y redirige al login con `?jb3_error=session_expired`
+- Lee `jb3_session_expiry` (vencimiento deslizante) y `jb3_session_started` (ancla del techo absoluto) del user_meta
+- Migración: si hay `$expiry` pero no `$session_started` (sesión de antes de esta funcionalidad), le ancla el techo absoluto ahora mismo (`session_started = time()`)
+- Si `time() > $expiry` (venció por inactividad) O `time() > $session_started + MAX_SESSION_DAYS` (venció por techo absoluto): llama a `force_logout()`, desloguea y redirige al login con `?jb3_error=session_expired`
+- Si la sesión sigue vigente: delega en `JB3_Magic_Link::maybe_refresh_session()` para renovarla si corresponde (con throttle interno)
 - Si `$expiry = 0` (usuario nuevo o sin meta): no fuerza logout (safe)
 
 **`enforce_complete_profile()` (priority 5)**:
@@ -657,7 +683,8 @@ El hook `set_user_role` detecta si se intenta quitar el rol `administrator` a un
 | `jb3_approval_token` | string 48 chars | Token one-time para aprobación (se elimina tras su uso) |
 | `jb3_magic_token` | string 64 chars | Token one-time del magic link activo |
 | `jb3_magic_token_expiry` | int (Unix timestamp) | Expiración del magic link |
-| `jb3_session_expiry` | int (Unix timestamp) | Expiración server-side de la sesión (120 días) |
+| `jb3_session_expiry` | int (Unix timestamp) | Vencimiento deslizante de la sesión (se renueva sola con actividad, cada 180 días) |
+| `jb3_session_started` | int (Unix timestamp) | Ancla del login real — techo absoluto de la sesión a los 365 días desde este valor |
 
 **Nota sobre intereses**: el array `jb3_interests` almacena IDs de Mailchimp (ej: `abc123`), no nombres. Esto es correcto y es lo que se envía a Mailchimp en el sync. Los nombres de los intereses se resuelven en runtime via el caché.
 
@@ -796,10 +823,14 @@ delete_transient( 'jb3_mc_nl_interests_cache' );
 ### Constantes de `JB3_Magic_Link`
 
 ```php
-JB3_Magic_Link::SESSION_DAYS  // 120
-JB3_Magic_Link::TOKEN_META    // 'jb3_magic_token'
-JB3_Magic_Link::EXPIRY_META   // 'jb3_magic_token_expiry'
-JB3_Magic_Link::SESSION_META  // 'jb3_session_expiry'
+JB3_Magic_Link::TOKEN_VALID_DAYS      // 120 — ventana para clickear el link emailado
+JB3_Magic_Link::INACTIVITY_DAYS       // 180 — la sesión se renueva sola con esta frecuencia de uso
+JB3_Magic_Link::MAX_SESSION_DAYS      // 365 — techo absoluto desde el login real
+JB3_Magic_Link::REFRESH_THRESHOLD     // DAY_IN_SECONDS — throttle de la renovación
+JB3_Magic_Link::TOKEN_META            // 'jb3_magic_token'
+JB3_Magic_Link::EXPIRY_META           // 'jb3_magic_token_expiry'
+JB3_Magic_Link::SESSION_META          // 'jb3_session_expiry'
+JB3_Magic_Link::SESSION_STARTED_META  // 'jb3_session_started'
 ```
 
 ### Helpers globales (`includes/helpers.php`)

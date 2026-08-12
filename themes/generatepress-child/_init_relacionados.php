@@ -2,14 +2,26 @@
 defined( 'ABSPATH' ) || exit;
 
 // ─── RELACIONADOS: contenido cruzado vía ACF Relationship, automático ───────
-// Fuente única de datos: el campo ACF "contenido_relacionado" (Relationship,
-// bidireccional — cargar la relación de un lado alcanza, ACF la refleja
-// sola del otro). Se agrupa por tipo de contenido y se arma UN MÓDULO POR
-// TIPO que tenga algo cargado ("Películas Relacionadas", "Series
-// Relacionadas", etc.) — sin esto, cargar 5-6 shortcodes a mano en cada
-// película/serie/etc. del catálogo entero es autodestructivo (se olvida,
-// queda inconsistente). jb3_relacionados_auto() se llama sola desde cada
-// single-{cpt}.php, después de the_content() — cero trabajo por página.
+// Fuente de datos: el campo ACF "contenido_relacionado" (Relationship),
+// pero SOLO existe un grupo de campos con ese nombre, ubicado únicamente en
+// Op. Comerciales/Videos/Integraciones (ver Custom Fields en el admin) — no
+// hay ningún campo equivalente del lado de Películas/Series/Prod.
+// Originales/Páginas/Entradas. El campo está marcado como "bidireccional"
+// en ACF, pero su bidirectional_target quedó mal configurado (apunta a sí
+// mismo, no a un campo del otro lado que ni siquiera existe) — detectado
+// 2026-08-11: por eso nunca se reflejó solo como prometía el comentario
+// viejo de esta función. En vez de depender de arreglar esa config de ACF,
+// se resuelve la relación "de vuelta" con una consulta directa: cualquier
+// Op. Comercial/Video/Integración cuyo PROPIO campo contenido_relacionado
+// incluya a este post cuenta como relacionado, leyendo el postmeta crudo
+// (evita el viaje de ida y vuelta de get_field() por cada post candidato).
+//
+// Se agrupa por tipo de contenido y se arma UN MÓDULO POR TIPO que tenga
+// algo cargado ("Oportunidades Comerciales", "Videos", etc.) — sin esto,
+// cargar 5-6 shortcodes a mano en cada película/serie/etc. del catálogo
+// entero es autodestructivo (se olvida, queda inconsistente).
+// jb3_relacionados_auto() se llama sola desde cada single-{cpt}.php,
+// después de the_content() — cero trabajo por página.
 //
 // [jb3_sin_relacionados] en el contenido de un post puntual apaga el
 // módulo SOLO ahí, por si alguna vez hace falta.
@@ -36,10 +48,9 @@ function jb3_relacionados_titulos_por_tipo(): array {
 
 // Un solo tipo por módulo → una sola familia de grilla (poster o thumb),
 // no hace falta separar como en jb3_modulo_render(). $id opcional: por
-// defecto uno por tipo, pero jb3_genero_auto() (_init_genero.php) puede
-// necesitar varios módulos del MISMO tipo en la misma página (ej. "Más
-// películas de Terror" + "Más películas de Acción"), ahí sí hace falta un
-// id propio por módulo para no pisarse.
+// defecto uno por tipo, pero jb3_etiquetas_auto() (_init_etiquetas.php) le
+// pasa el suyo propio ("etiquetas") para que el ancla de la subnav quede
+// prolija en vez del genérico "relacionados-{tipo}".
 function jb3_relacionados_modulo( string $tipo, array $posts, string $titulo, string $id = '' ): string {
 	if ( ! $posts ) {
 		return '';
@@ -73,19 +84,39 @@ function jb3_relacionados_auto( int $post_id ): string {
 		return '';
 	}
 
+	$ids = array();
+
+	// Lado "propio": lo que este post cargó en su propio campo (hoy solo
+	// existe en Op. Comerciales/Videos/Integraciones — ver comentario de
+	// arriba). En Películas/Series/Prod. Originales esto siempre viene
+	// vacío porque el campo no está ahí, y se completa con la consulta de
+	// abajo.
 	$relacionados = get_field( 'contenido_relacionado', $post_id );
-	if ( empty( $relacionados ) ) {
-		return '';
+	if ( ! empty( $relacionados ) ) {
+		// Normaliza a IDs sin importar el "Return Format" configurado en
+		// ACF para el campo (Post Object devuelve WP_Post, ID devuelve int).
+		$ids = array_map(
+			function ( $item ) {
+				return is_object( $item ) ? $item->ID : (int) $item;
+			},
+			(array) $relacionados
+		);
 	}
 
-	// Normaliza a IDs sin importar el "Return Format" configurado en ACF
-	// para el campo (Post Object devuelve WP_Post, ID devuelve int).
-	$ids = array_map(
-		function ( $item ) {
-			return is_object( $item ) ? $item->ID : (int) $item;
-		},
-		(array) $relacionados
-	);
+	// Lado "reflejo": cualquier Op. Comercial/Video/Integración que haya
+	// elegido a ESTE post en su propio campo — ver comentario de arriba
+	// sobre por qué no se puede depender del "bidireccional" de ACF acá.
+	global $wpdb;
+	$reflejo_ids = $wpdb->get_col( $wpdb->prepare(
+		"SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = 'contenido_relacionado' AND meta_value LIKE %s",
+		'%"' . $wpdb->esc_like( (string) $post_id ) . '"%'
+	) );
+	$ids = array_merge( $ids, array_map( 'intval', $reflejo_ids ) );
+
+	$ids = array_values( array_unique( $ids ) );
+	if ( ! $ids ) {
+		return '';
+	}
 
 	// Mismo geo-targeting que el resto del sitio: un relacionado no
 	// disponible para el país del visitante no se lista (evita un link que

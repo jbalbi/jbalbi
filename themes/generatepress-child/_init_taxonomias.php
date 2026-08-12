@@ -71,23 +71,29 @@ function crear_taxonomia_paises() {
 add_action( 'init', 'crear_taxonomia_paises' );
 
 // Tags libres (NO lista cerrada como canales/pais — el editor escribe y
-// crea géneros/etiquetas al vuelo, con autocompletado de lo ya usado) para
-// agrupar contenido por tag (género de película, "Nuevos Formatos" de Op.
-// Comercial, lo que haga falta). Usada por jb3_genero_auto() en
-// _init_genero.php para armar el módulo "Más contenido de {tag}" — el
+// crea etiquetas al vuelo, con autocompletado de lo ya usado) para agrupar
+// contenido por tag — a propósito NO se llama "género": no es solo género
+// de película (Terror), también sirve para actor, franquicia (Spider-Man),
+// categoría de paquete ("Nuevos Formatos" de Op. Comercial), o cualquier
+// otra cosa que relacione contenido. Usada por jb3_etiquetas_auto() en
+// _init_etiquetas.php para armar el módulo "Contenido Relacionado" — el
 // ALCANCE del cruce (si mezcla tipos entre sí o solo el mismo tipo) lo
 // decide esa función según la familia del post actual, no esta lista.
-function crear_taxonomia_genero() {
+// Renombrada de "genero" a "etiquetas" el 2026-08-11 (ver migración de
+// datos: UPDATE wp_term_taxonomy SET taxonomy='etiquetas' WHERE
+// taxonomy='genero' — mismos term_id, mismas relaciones, no se perdió
+// ningún tag ya cargado).
+function crear_taxonomia_etiquetas() {
     $labels = array(
-        'name'          => 'Géneros',
-        'singular_name' => 'Género',
-        'search_items'  => 'Buscar Géneros',
-        'all_items'     => 'Todos los Géneros',
-        'edit_item'     => 'Editar Género',
-        'update_item'   => 'Actualizar Género',
-        'add_new_item'  => 'Agregar Género',
-        'new_item_name' => 'Nuevo Género',
-        'menu_name'     => 'Géneros',
+        'name'          => 'Etiquetas',
+        'singular_name' => 'Etiqueta',
+        'search_items'  => 'Buscar Etiquetas',
+        'all_items'     => 'Todas las Etiquetas',
+        'edit_item'     => 'Editar Etiqueta',
+        'update_item'   => 'Actualizar Etiqueta',
+        'add_new_item'  => 'Agregar Etiqueta',
+        'new_item_name' => 'Nueva Etiqueta',
+        'menu_name'     => 'Etiquetas',
     );
 
     $args = array(
@@ -99,10 +105,10 @@ function crear_taxonomia_genero() {
         'rewrite'           => false, // Sin URL propia, solo filtrado interno (mismo criterio que "pais").
     );
 
-    register_taxonomy( 'genero', array( 'peliculas', 'series', 'prod_originales', 'op_comerciales' ), $args );
+    register_taxonomy( 'etiquetas', array( 'peliculas', 'series', 'prod_originales', 'op_comerciales' ), $args );
 }
 
-add_action( 'init', 'crear_taxonomia_genero' );
+add_action( 'init', 'crear_taxonomia_etiquetas' );
 
 // Oculta el botón "Agregar" de las taxonomías en el editor — los términos se gestionan desde sus menús de admin.
 add_action( 'admin_head', function() {

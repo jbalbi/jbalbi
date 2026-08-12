@@ -65,13 +65,21 @@ add_shortcode( 'jb3_subnav', function () {
 	return JB3_SUBNAV_PLACEHOLDER;
 } );
 
-// [jb3_subnav_anchor titulo="Galería"] — ancla suelta para cualquier punto
-// de la página que el editor quiera que aparezca en la subnav, sin que sea
-// un módulo de contenido armado por código.
+// [jb3_subnav_anchor titulo="Sinopsis"] — para cualquier sección suelta del
+// editor (no un módulo de contenido armado por código) que el editor quiera
+// que aparezca en la subnav CON el mismo título visible que ya usan los
+// módulos (rayita vertical + mayúsculas, .jb3-modulo__titulo — mismo trato
+// en todo el sitio, ver comentario en style.css). Antes solo dejaba el
+// ancla invisible y el editor tenía que armar el título aparte a mano (con
+// un bloque Encabezado suelto, sin estilo ni entrada en la subnav) — ahora
+// una sola llamada resuelve las dos cosas.
+// visible="0" para volver al comportamiento viejo (solo ancla, sin título
+// impreso) por si hace falta en algún caso puntual.
 add_shortcode( 'jb3_subnav_anchor', function ( $atts ) {
 	$atts = shortcode_atts( [
-		'titulo' => '',
-		'id'     => '',
+		'titulo'  => '',
+		'id'      => '',
+		'visible' => '1',
 	], $atts );
 
 	$titulo = trim( $atts['titulo'] );
@@ -82,5 +90,9 @@ add_shortcode( 'jb3_subnav_anchor', function ( $atts ) {
 	$id = $atts['id'] ? sanitize_title( $atts['id'] ) : sanitize_title( $titulo );
 	jb3_subnav_register( $titulo, $id );
 
-	return '<span id="' . esc_attr( $id ) . '" class="jb3-subnav-anchor"></span>';
+	if ( '0' === $atts['visible'] ) {
+		return '<span id="' . esc_attr( $id ) . '" class="jb3-subnav-anchor"></span>';
+	}
+
+	return '<h2 id="' . esc_attr( $id ) . '" class="jb3-modulo__titulo jb3-subnav-anchor">' . esc_html( $titulo ) . '</h2>';
 } );

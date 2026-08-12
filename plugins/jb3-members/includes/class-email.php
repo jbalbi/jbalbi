@@ -86,6 +86,37 @@ class JB3_Email {
         wp_mail( $user->user_email, $subject, $body, self::headers() );
     }
 
+    /**
+     * Notify the representatives of the DOWNLOADING USER's country that
+     * someone downloaded an Op. Comercial — so the right regional rep can
+     * follow up directly. Mismo criterio que send_approval_request(): país
+     * del usuario, no del contenido.
+     */
+    public static function send_op_comercial_descargado( array $reps, $user_id, $post_id ) {
+        if ( ! $reps ) {
+            return;
+        }
+
+        $user = get_userdata( $user_id );
+
+        $subject = sprintf(
+            /* translators: 1: user display name, 2: Op. Comercial title */
+            __( '[JB3] %1$s descargó "%2$s"', 'jb3-members' ),
+            $user->display_name,
+            get_the_title( $post_id )
+        );
+
+        $body = self::render( 'email-op-comercial-descargado', [
+            'user'    => $user,
+            'user_id' => $user_id,
+            'post_id' => $post_id,
+        ] );
+
+        foreach ( $reps as $rep ) {
+            wp_mail( $rep->email, $subject, $body, self::headers() );
+        }
+    }
+
     // ─── Internals ────────────────────────────────────────────────────────────
 
     private static function headers() {

@@ -3,9 +3,11 @@ defined( 'ABSPATH' ) || exit;
 
 class JB3_Mailchimp {
 
-    private static function api_key() { return get_option( 'jb3_mc_api_key', '' ); }
-    private static function list_id() { return get_option( 'jb3_mc_list_id', '' ); }
-    private static function server() {
+    // public: reutilizados por JB3_Mailchimp_Entry (validación por ?e=) para
+    // no duplicar el parseo de server/list — mismo par de credenciales.
+    public static function api_key() { return get_option( 'jb3_mc_api_key', '' ); }
+    public static function list_id() { return get_option( 'jb3_mc_list_id', '' ); }
+    public static function server() {
         $key = self::api_key();
         $pos = strrpos( $key, '-' );
         return $pos !== false ? substr( $key, $pos + 1 ) : 'us1';

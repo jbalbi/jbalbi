@@ -31,7 +31,11 @@ $jb3_includes = [
     'includes/class-auth-guard.php',
     'includes/class-cleanup.php',
     'includes/class-mailchimp.php',
+    'includes/class-mailchimp-entry.php',
     'includes/class-sync.php',
+    'includes/class-content-privacy.php',
+    'includes/class-google-sheets.php',
+    'includes/class-op-comerciales-tracking.php',
     'admin/class-admin.php',
 ];
 
@@ -57,6 +61,8 @@ function jb3_members_boot() {
     JB3_Cleanup::init();
     JB3_Mailchimp::init();
     JB3_Representatives::init();
+    JB3_Content_Privacy::init();
+    JB3_Op_Comerciales_Tracking::init();
 
     if ( is_admin() ) {
         JB3_Sync::init();

@@ -145,6 +145,7 @@ class JB3_Admin {
         register_setting( 'jb3_settings', 'jb3_dashboard_page_id',    [ 'type' => 'integer', 'sanitize_callback' => 'absint' ] );
         register_setting( 'jb3_settings', 'jb3_mc_api_key',  [ 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ] );
         register_setting( 'jb3_settings', 'jb3_mc_list_id', [ 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ] );
+        register_setting( 'jb3_settings', 'jb3_gsheets_id', [ 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ] );
     }
 
     // -------------------------------------------------------------------------
@@ -687,6 +688,24 @@ class JB3_Admin {
                 });
                 </script>
                 <?php endif; ?>
+
+                <!-- Google Sheets -->
+                <hr>
+                <h2><?php esc_html_e( 'Google Sheets', 'jb3-members' ); ?></h2>
+                <div class="notice notice-info inline" style="margin:0 0 16px;">
+                    <p>
+                        <?php esc_html_e( 'Registra vistas y descargas de Op. Comerciales en una planilla — la cuenta de servicio necesita acceso de Editor sobre esa planilla (compartida a mano desde Google Sheets).', 'jb3-members' ); ?>
+                    </p>
+                </div>
+                <table class="form-table">
+                    <tr>
+                        <th><label for="jb3_gsheets_id"><?php esc_html_e( 'ID de la planilla', 'jb3-members' ); ?></label></th>
+                        <td>
+                            <input type="text" id="jb3_gsheets_id" name="jb3_gsheets_id" value="<?php echo esc_attr( get_option( 'jb3_gsheets_id' ) ); ?>" class="regular-text">
+                            <p class="description"><?php esc_html_e( 'El texto entre /d/ y /edit en la URL de la planilla de Google Sheets.', 'jb3-members' ); ?></p>
+                        </td>
+                    </tr>
+                </table>
 
                 <?php submit_button(); ?>
             </form>

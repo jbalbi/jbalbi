@@ -35,8 +35,13 @@ class JB3_Auth_Guard {
     // ─── Session expiry check ─────────────────────────────────────────────────
 
     /**
-     * Log out users whose 120-day session has elapsed server-side.
-     * (Belt-and-suspenders alongside the auth cookie expiration filter.)
+     * Sesión deslizante: se cierra si pasaron más de INACTIVITY_DAYS desde
+     * la última visita, O si se llegó al techo absoluto de MAX_SESSION_DAYS
+     * desde el login real (lo que pase primero) — belt-and-suspenders junto
+     * al filtro auth_cookie_expiration, que ya vence la cookie del navegador
+     * sola en ese mismo plazo. Si la sesión sigue vigente, delega en
+     * JB3_Magic_Link::maybe_refresh_session() para renovarla (con throttle
+     * interno, no en cada request).
      */
     public static function check_session() {
         if ( ! is_user_logged_in() ) {
@@ -48,8 +53,26 @@ class JB3_Auth_Guard {
             return;
         }
 
-        $expiry = (int) get_user_meta( $user_id, JB3_Magic_Link::SESSION_META, true );
-        if ( $expiry && time() > $expiry ) {
+        $expiry          = (int) get_user_meta( $user_id, JB3_Magic_Link::SESSION_META, true );
+        $session_started = (int) get_user_meta( $user_id, JB3_Magic_Link::SESSION_STARTED_META, true );
+        $now             = time();
+
+        // Migración: sesiones que ya estaban logueadas antes de que existiera
+        // SESSION_STARTED_META no tienen ancla para el techo absoluto — se la
+        // creamos ahora mismo (arranca el techo de MAX_SESSION_DAYS desde
+        // hoy) en vez de dejarlas sin renovación para siempre.
+        if ( $expiry && ! $session_started ) {
+            $session_started = $now;
+            update_user_meta( $user_id, JB3_Magic_Link::SESSION_STARTED_META, $session_started );
+        }
+
+        $max_expiry = $session_started
+            ? $session_started + ( JB3_Magic_Link::MAX_SESSION_DAYS * DAY_IN_SECONDS )
+            : 0;
+
+        $vencida = ( $expiry && $now > $expiry ) || ( $max_expiry && $now > $max_expiry );
+
+        if ( $vencida ) {
             JB3_Magic_Link::force_logout( $user_id );
             wp_logout();
 
@@ -57,6 +80,10 @@ class JB3_Auth_Guard {
             $url        = $login_page ? get_permalink( $login_page ) : home_url( '/' );
             wp_redirect( add_query_arg( 'jb3_error', 'session_expired', esc_url_raw( $url ) ) );
             exit;
+        }
+
+        if ( $expiry && $session_started ) {
+            JB3_Magic_Link::maybe_refresh_session( $user_id, $expiry, $session_started );
         }
     }
 

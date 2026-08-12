@@ -115,15 +115,22 @@
     margin: .2rem 0 1.4rem;
 }
 
-/* Submit button */
+/* Submit button — !important en color/text-decoration: el tema pinta
+   cualquier <a> con "a{color:...!important;text-decoration:underline!important}"
+   (COLORES GLOBALES en style.css), más fuerte que un color sin !important
+   acá sin importar la especificidad de la clase. var(--color-primary): esa
+   sí está definida en el tema (el morado de marca) — --primary-color no
+   existía en ningún lado, por eso el botón salía celeste genérico en vez
+   del morado del sitio. */
 .jb3-btn {
     display: inline-block;
     padding: .7rem 2rem;
-    background: var(--primary-color, #0073aa);
-    color: #fff;
+    background: var(--color-primary, #0073aa);
+    color: #fff !important;
     border: none;
     font-size: 1rem;
     font-weight: 600;
+    text-decoration: none !important;
     cursor: pointer;
     transition: opacity .15s;
     font-family: inherit;
@@ -135,9 +142,51 @@
     outline: none;
 }
 
+/* Segunda acción, menos protagonismo que el submit/CTA principal */
+.jb3-btn--outline {
+    background: transparent;
+    border: 1px solid currentColor;
+    color: #fff !important;
+}
+
+.jb3-btn--outline:hover,
+.jb3-btn--outline:focus {
+    background: rgba(255, 255, 255, .1);
+    opacity: 1;
+}
+
+/* ─── Contenido privado bloqueado (class-content-privacy.php) ──────────── */
+.jb3-privado-bloqueado {
+    max-width: 560px;
+    margin: 80px auto;
+    padding: 0 20px;
+    text-align: center;
+}
+
+.jb3-privado-bloqueado__titulo {
+    margin: 0 0 .6rem;
+}
+
+.jb3-privado-bloqueado__texto {
+    margin: 0 0 1.6rem;
+    opacity: .85;
+}
+
+.jb3-privado-bloqueado__botones {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
 /* Notices */
+/* Padding lateral 80/40/20 responsive — --jb3-modulo-padding-x la define
+   el tema (style.css) en :root, pero cualquier hoja de estilo cargada en
+   la misma página puede usarla igual, no hace falta redefinirla acá. Así
+   este aviso respira igual que el resto de los módulos del sitio en vez
+   de quedar pegado al borde de la pantalla. */
 .jb3-notice {
-    padding: 1rem 1.2rem;
+    padding: 1rem var(--jb3-modulo-padding-x);
     margin-bottom: 1.4rem;
     border-left: 4px solid;
     font-size: .95rem;

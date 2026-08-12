@@ -171,6 +171,13 @@ add_shortcode( 'jb3_modulo_override', function ( $atts, $content = null ) {
 		return '';
 	}
 
+	// trim(): sin esto, la indentación/salto de línea alrededor del <p> que
+	// deja el editor entre las etiquetas del shortcode le queda pegada a la
+	// bajada — wpautop() (que corre sobre la página entera después) la
+	// convierte en un <p></p> vacío de más antes y después del contenido
+	// real. Mismo mecanismo que el bug de la bajada genérica, más chico.
+	$content = $content ? trim( $content ) : '';
+
 	$GLOBALS['jb3_modulo_overrides'][ strtolower( $atts['pais'] ) ] = [
 		'titulo' => $atts['titulo'],
 		'bajada' => $content ? do_shortcode( $content ) : '',
@@ -178,6 +185,32 @@ add_shortcode( 'jb3_modulo_override', function ( $atts, $content = null ) {
 
 	return '';
 } );
+
+// El bloque nativo de Gutenberg "Shortcode" (core/shortcode) le aplica
+// wpautop() a su contenido ANTES de expandir cualquier shortcode (ver
+// wp-includes/blocks/shortcode.php: render_block_core_shortcode() hace
+// literalmente `return wpautop($content)`, sin do_shortcode()). Con
+// [jb3_modulo]/[jb3_modulo_override] escritos cada uno en su propia línea
+// (sin línea en blanco entre medio, como los deja el editor), wpautop las
+// interpreta como UN solo párrafo separado por <br> — y esos <br> quedan
+// pegados en el HTML final aunque el shortcode que los rodeaba termine
+// vaciándose. Bug real detectado 2026-08-10: el hueco debajo de la bajada
+// crecía un <br> por cada [jb3_modulo_override] agregado, en cualquier país
+// que no matcheara ninguno de los definidos.
+// Se evita de raíz: para bloques de shortcode que contengan [jb3_modulo,
+// se salta el wpautop() del bloque y se corre do_shortcode() directo sobre
+// el texto realmente crudo — que es lo que jb3_modulo_render() ya espera
+// (el editor escribe sus propios <p> a mano en la bajada).
+add_filter( 'pre_render_block', function ( $pre_render, $parsed_block ) {
+	if ( ( $parsed_block['blockName'] ?? '' ) !== 'core/shortcode' ) {
+		return $pre_render;
+	}
+	$raw = $parsed_block['innerHTML'] ?? '';
+	if ( ! str_contains( $raw, '[jb3_modulo' ) ) {
+		return $pre_render;
+	}
+	return do_shortcode( $raw );
+}, 10, 2 );
 
 // ─── SHORTCODE ───────────────────────────────────────────────────────────────
 // [jb3_modulo tipo="peliculas" canal="axn" titulo="Películas" limite="5" boton_texto="Ver todas" boton_link="/peliculas/"]
@@ -225,9 +258,27 @@ add_shortcode( 'jb3_modulo', function ( $atts, $content = null ) {
 	}
 
 	$GLOBALS['jb3_modulo_overrides'] = [];
-	$bajada = $content ? do_shortcode( $content ) : ''; // Dispara [jb3_modulo_override] como efecto secundario.
+	do_shortcode( $content ); // Dispara [jb3_modulo_override] como efecto secundario; el resultado en sí se descarta.
+
+	// Bajada "genérica" (sin país que matchee ningún override): el $content
+	// crudo de arriba, pero SACANDO los bloques [jb3_modulo_override]...
+	// [/jb3_modulo_override] antes de usarla — do_shortcode() los deja en
+	// '' pero NO borra los saltos de línea que quedan alrededor de cada
+	// uno, y wpautop() (que corre después, sobre la página entera) convierte
+	// esas líneas en blanco sueltas en <br> visibles: uno de más por cada
+	// override que haya definido el editor, sin importar si el visitante
+	// termina viéndolo o no. Bug real detectado 2026-08-10 (el hueco debajo
+	// de la bajada crecía cada vez que se agregaba un [jb3_modulo_override]
+	// nuevo, en cualquier país que no matcheara ninguno de los definidos).
+	$bajada_generica = '';
+	if ( $content ) {
+		$sin_overrides    = preg_replace( '#\[jb3_modulo_override\b[^\]]*\].*?\[/jb3_modulo_override\]#s', '', $content );
+		$sin_overrides    = trim( preg_replace( '#(\r?\n\s*){2,}#', "\n", $sin_overrides ) );
+		$bajada_generica  = $sin_overrides ? do_shortcode( $sin_overrides ) : '';
+	}
 
 	$titulo = $atts['titulo'];
+	$bajada = $bajada_generica;
 	$pais   = function_exists( 'jb3_geo_visitor_country' ) ? jb3_geo_visitor_country() : '';
 
 	if ( $pais && isset( $GLOBALS['jb3_modulo_overrides'][ $pais ] ) ) {

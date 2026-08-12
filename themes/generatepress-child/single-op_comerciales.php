@@ -51,6 +51,24 @@ get_header();
 	<?php while ( have_posts() ) : the_post();
 		$pdf = get_field( 'pdf' );
 		$pdf_url = is_array( $pdf ) ? ( $pdf['url'] ?? '' ) : (string) $pdf;
+
+		// URL actual sin "e" — redirect_to tanto del login genérico como del
+		// magic link automático de Mailchimp más abajo.
+		$current_url = remove_query_arg( 'e', esc_url_raw(
+			( is_ssl() ? 'https' : 'http' ) . '://' . wp_unslash( $_SERVER['HTTP_HOST'] ) . wp_unslash( $_SERVER['REQUEST_URI'] )
+		) );
+
+		// Entrada validada por Mailchimp (?e=*|UNIQID|*): "e" SOLO importa
+		// cuando no hay sesión — sirve para saber a quién mandarle el magic
+		// link en vez de mostrarle el formulario genérico. Con sesión activa
+		// no se consulta ni tiene efecto: el acceso ya lo decide is_user_logged_in()
+		// de abajo, sin importar de quién era el link (ver JB3_Mailchimp_Entry).
+		$mc_resultado = null;
+		if ( ! is_user_logged_in() && ! empty( $_GET['e'] ) && class_exists( 'JB3_Mailchimp_Entry' ) ) {
+			$mc_resultado = JB3_Mailchimp_Entry::verificar( sanitize_text_field( wp_unslash( $_GET['e'] ) ), $current_url );
+		}
+
+		$mostrar_pdf_completo = is_user_logged_in();
 		?>
 
 		<article <?php post_class(); ?> id="post-<?php the_ID(); ?>">
@@ -64,20 +82,43 @@ get_header();
 
 			<?php if ( $pdf_url ) : ?>
 				<div class="jb3-op-comercial__pdf">
-					<?php if ( is_user_logged_in() ) : ?>
+					<?php if ( $mostrar_pdf_completo ) : ?>
 						<?php echo jb3_pdf_viewer( $pdf_url ); ?>
 						<p class="jb3-op-comercial__pdf-descarga">
-							<a class="button" href="<?php echo esc_url( $pdf_url ); ?>" download>Descargar PDF</a>
+							<?php
+							// Ruta por JB3_Op_Comerciales_Tracking::download_url() en vez del
+							// PDF directo: un <a href="archivo.pdf" download> nunca pasa por
+							// PHP (el navegador lo baja solo), así que es la única forma de
+							// registrar la descarga en Sheets y avisar a los representantes.
+							$descarga_url = class_exists( 'JB3_Op_Comerciales_Tracking' )
+								? JB3_Op_Comerciales_Tracking::download_url( get_the_ID() )
+								: $pdf_url;
+							?>
+							<a class="button" href="<?php echo esc_url( $descarga_url ); ?>" target="_blank" rel="noopener">Descargar PDF</a>
 						</p>
+					<?php elseif ( 'magic_link_enviado' === $mc_resultado ) : ?>
+						<div class="jb3-pdf-viewer jb3-pdf-viewer--bloqueado">
+							<div class="jb3-pdf-viewer__login-cta">
+								<p>¡Revisá tu correo! Te mandamos un enlace de acceso — al hacer clic vas a volver directo acá.</p>
+							</div>
+						</div>
 					<?php else : ?>
 						<div class="jb3-pdf-viewer jb3-pdf-viewer--bloqueado">
 							<?php if ( has_post_thumbnail() ) : ?>
 								<?php /* 'full', no 'large': se muestra a width:100% (ver .jb3-pdf-viewer__preview en style.css), y 'large' tiene un tope de 1024px — en un contenedor más ancho que eso el navegador la estira y se ve borrosa aunque el archivo original sea nítido. */ ?>
 								<img class="jb3-pdf-viewer__preview" src="<?php echo esc_url( get_the_post_thumbnail_url( get_the_ID(), 'full' ) ); ?>" alt="">
 							<?php endif; ?>
+							<?php
+							// redirect_to: vuelve acá mismo después de loguearse/registrarse,
+							// en vez de mandar al dashboard genérico (JB3_Magic_Link ya
+							// soporta esto — ver el paso "redirect_to en el magic link").
+							$login_url    = add_query_arg( 'redirect_to', rawurlencode( $current_url ), home_url( '/login/' ) );
+							$registro_url = home_url( '/registro/' );
+							?>
 							<div class="jb3-pdf-viewer__login-cta">
 								<p>Iniciá sesión para ver el documento completo.</p>
-								<a class="button" href="/login/">Ingresar</a>
+								<a class="button" href="<?php echo esc_url( $login_url ); ?>">Ingresar</a>
+								<a class="button" href="<?php echo esc_url( $registro_url ); ?>">Registrarte</a>
 							</div>
 						</div>
 					<?php endif; ?>
@@ -85,7 +126,7 @@ get_header();
 			<?php endif; ?>
 		</article>
 
-		<?php echo jb3_genero_auto( get_the_ID() ); ?>
+		<?php echo jb3_etiquetas_auto( get_the_ID() ); ?>
 
 		<?php
 		echo jb3_modulo_render(

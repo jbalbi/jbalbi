@@ -119,13 +119,11 @@ class JB3_Login {
             return [ [ __( 'Por favor ingresá un email válido.', 'jb3-members' ) ], false ];
         }
 
-        // Rate limit: max 3 solicitudes por email cada 10 minutos.
-        $rl_key   = 'jb3_rl_' . md5( strtolower( $email ) );
-        $rl_count = (int) get_transient( $rl_key );
-        if ( $rl_count >= 3 ) {
+        // Rate limit: max 3 solicitudes por email cada 10 minutos — compartido
+        // con la entrada automática vía Mailchimp (?e=), ver jb3_rate_limited().
+        if ( jb3_rate_limited( $email ) ) {
             return [ [ __( 'Demasiadas solicitudes. Esperá unos minutos antes de intentar nuevamente.', 'jb3-members' ) ], false ];
         }
-        set_transient( $rl_key, $rl_count + 1, 10 * MINUTE_IN_SECONDS );
 
         $user = get_user_by( 'email', $email );
 
