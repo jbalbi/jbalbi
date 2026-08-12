@@ -94,10 +94,28 @@ class JB3_Op_Comerciales_Tracking {
 			wp_die( esc_html__( 'Este contenido no tiene un PDF cargado.', 'jb3-members' ) );
 		}
 
+		// Antes se hacía wp_redirect() directo a $pdf_url — el navegador
+		// terminaba mostrando/guardando esa URL real, sin ninguna
+		// protección (cualquiera con esa URL podía bajar el archivo para
+		// siempre, sin login). Sirviendo el archivo acá mismo, la URL que
+		// ve/comparte el usuario sigue siendo siempre la de tracking (atada
+		// a su sesión + nonce) — la ubicación real del archivo nunca viaja
+		// al navegador.
+		$upload_dir = wp_upload_dir();
+		$file_path  = str_replace( $upload_dir['baseurl'], $upload_dir['basedir'], $pdf_url );
+		if ( ! file_exists( $file_path ) || ! is_file( $file_path ) ) {
+			wp_die( esc_html__( 'El archivo no se encontró en el servidor.', 'jb3-members' ) );
+		}
+
 		self::log_evento( self::HOJA_DESCARGAS, $post_id );
 		self::avisar_representantes( $post_id );
 
-		wp_redirect( esc_url_raw( $pdf_url ) );
+		nocache_headers();
+		header( 'Content-Type: application/pdf' );
+		header( 'Content-Disposition: inline; filename="' . basename( $file_path ) . '"' );
+		header( 'Content-Length: ' . filesize( $file_path ) );
+		header( 'X-Content-Type-Options: nosniff' );
+		readfile( $file_path );
 		exit;
 	}
 

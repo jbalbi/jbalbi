@@ -32,6 +32,34 @@ add_action( 'wp_footer', function () {
 			return { tipo: 'archivo', src: url }; // Subido a la Biblioteca de medios (mp4, etc).
 		}
 
+		// Pantalla completa REAL (sin barra de direcciones/pestañas del
+		// navegador, no solo el modal ocupando el viewport por CSS) — mismos
+		// prefijos que hacen falta para que ande en todos los navegadores.
+		function pedirFullscreen( el ) {
+			var f = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+			if ( ! f ) {
+				return; // Ej. iOS Safari no lo soporta para un div cualquiera — el modal sigue andando igual, sin fullscreen real.
+			}
+			var resultado = f.call( el );
+			if ( resultado && resultado.catch ) {
+				resultado.catch( function () {} ); // Bloqueado por el navegador o el usuario — no rompe nada, sigue como modal normal.
+			}
+		}
+
+		function elementoFullscreen() {
+			return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+		}
+
+		function salirFullscreen() {
+			var s = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+			if ( s ) {
+				var resultado = s.call( document );
+				if ( resultado && resultado.catch ) {
+					resultado.catch( function () {} );
+				}
+			}
+		}
+
 		function abrir( url ) {
 			var video    = parseVideo( url );
 			var modal    = document.getElementById( 'jb3-video-modal' );
@@ -43,6 +71,7 @@ add_action( 'wp_footer', function () {
 
 			modal.hidden = false;
 			document.body.style.overflow = 'hidden';
+			pedirFullscreen( modal );
 		}
 
 		function cerrar() {
@@ -50,6 +79,9 @@ add_action( 'wp_footer', function () {
 			modal.hidden = true;
 			modal.querySelector( '.jb3-video-modal__frame' ).innerHTML = ''; // corta la reproducción.
 			document.body.style.overflow = '';
+			if ( elementoFullscreen() ) {
+				salirFullscreen();
+			}
 		}
 
 		document.addEventListener( 'click', function ( e ) {
@@ -68,6 +100,19 @@ add_action( 'wp_footer', function () {
 			if ( 'Escape' === e.key ) {
 				cerrar();
 			}
+		} );
+
+		// Si el usuario sale de pantalla completa por afuera de nuestro botón
+		// (Esc lo maneja el navegador solo, gesto en mobile, etc.), el modal
+		// tiene que cerrarse igual — si no, queda "abierto" atrás sin que se
+		// note por qué.
+		[ 'fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange' ].forEach( function ( evento ) {
+			document.addEventListener( evento, function () {
+				var modal = document.getElementById( 'jb3-video-modal' );
+				if ( ! elementoFullscreen() && ! modal.hidden ) {
+					cerrar();
+				}
+			} );
 		} );
 	} )();
 	</script>

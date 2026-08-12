@@ -1895,13 +1895,19 @@ body {
 
 .jb3-video-modal__dialog {
     position: relative;
-    width: min(1100px, 92vw);
+    width: 100vw;
+    height: 100vh;
 }
 
+/* position:fixed (no absolute contra el diálogo, que ahora ES la pantalla
+   entera): con el diálogo a 100vw/100vh ya no hay "arriba del diálogo"
+   donde flotar el botón como cuando era una caja chica centrada — fixed
+   arriba a la derecha lo deja siempre visible sobre el video. */
 .jb3-video-modal__close {
-    position: absolute;
-    top: -44px;
-    right: 0;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100001;
     background: none;
     border: 0;
     color: #ffffff;
@@ -1912,7 +1918,7 @@ body {
 .jb3-video-modal__frame {
     position: relative;
     width: 100%;
-    aspect-ratio: 16 / 9;
+    height: 100%;
     background: #000000;
 }
 
