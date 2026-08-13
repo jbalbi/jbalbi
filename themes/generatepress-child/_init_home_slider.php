@@ -79,11 +79,27 @@ function jb3_home_slider_shortcode() {
 		return '';
 	}
 
-	$today  = current_time( 'Ymd' );
-	$slides = [];
+	$today          = current_time( 'Ymd' );
+	$pais_visitante = function_exists( 'jb3_geo_visitor_country' ) ? jb3_geo_visitor_country() : '';
+	$slides         = [];
 
 	while ( have_rows( 'slide', $front_page_id ) ) {
 		the_row();
+
+		// Mismo criterio que el módulo de Programación (a propósito AL
+		// REVÉS del resto del sitio): sin país elegido, el slide NO se
+		// muestra en NINGÚN país — sirve para dejar uno cargándose a medio
+		// hacer sin que se publique solo en todos lados mientras tanto.
+		$paises_fila = (array) get_sub_field( 'pais' );
+		$slugs       = array_map(
+			function ( $t ) {
+				return is_object( $t ) ? $t->slug : '';
+			},
+			$paises_fila
+		);
+		if ( empty( $slugs ) || ! in_array( $pais_visitante, $slugs, true ) ) {
+			continue;
+		}
 
 		$fecha_in  = get_sub_field( 'fecha_in' );
 		$fecha_out = get_sub_field( 'fecha_out' );

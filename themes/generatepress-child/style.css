@@ -1351,6 +1351,19 @@ body {
 .jb3-subnav {
     background: var(--header-bg);
     border-bottom: 1px solid rgba(255, 255, 255, .15);
+    /* Ancho completo propio (mismo truco que .jb3-contenedor) — sin esto,
+       al quedar como hijo suelto de .entry-content (shortcode [jb3_subnav]
+       puesto directo en el contenido), la regla de "bloque suelto" de más
+       abajo le agregaba 40px de padding arriba/abajo pensados para texto,
+       no para esta barra. Excluida de esa regla (ver
+       :not(.jb3-subnav) ahí) — este es su propio ancho completo, sin ese
+       padding de más. */
+    width: 100vw;
+    box-sizing: border-box;
+    position: relative;
+    left: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
 }
 
 .jb3-subnav__menu {
@@ -1376,6 +1389,15 @@ body {
 .jb3-subnav__link:hover,
 .jb3-subnav__link:focus {
     color: var(--nav-hover) !important;
+}
+
+/* En mobile no entra cómodo (muchos ítems envueltos en varias líneas,
+   ocupa demasiado alto arriba de todo) — se oculta directo, mismo
+   breakpoint que el resto del sitio. */
+@media (max-width: 767px) {
+    .jb3-subnav {
+        display: none;
+    }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1649,7 +1671,7 @@ body {
    regla le pisa el padding/posición y se ve "roto" (no llega a los
    bordes, no arranca al tope). Ya pasó una vez con .jb3-hero.
    ═══════════════════════════════════════════════════════════════════════════ */
-.entry-content > *:not(.jb3-contenedor):not(.jb3-modulo):not(.jb3-representantes):not(.jb3-hero):not(.alignfull):not(.alignwide):not([class*="jb3-mw-"]) {
+.entry-content > *:not(.jb3-contenedor):not(.jb3-modulo):not(.jb3-representantes):not(.jb3-hero):not(.jb3-subnav):not(.alignfull):not(.alignwide):not([class*="jb3-mw-"]) {
     box-sizing: border-box;
     width: 100vw;
     max-width: 100vw;
