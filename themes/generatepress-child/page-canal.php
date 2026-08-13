@@ -35,7 +35,7 @@ if ( $canal_term_id ) {
 
 		<article <?php post_class(); ?> id="post-<?php the_ID(); ?>">
 			<?php if ( $logo_url ) : ?>
-				<div class="jb3-canal-header">
+				<div class="jb3-canal-header jb3-contenedor">
 					<img class="jb3-canal-header__logo" src="<?php echo esc_url( $logo_url ); ?>" alt="">
 				</div>
 			<?php endif; ?>

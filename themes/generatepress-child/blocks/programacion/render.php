@@ -108,6 +108,11 @@ if ( $resuelto['titulo'] && function_exists( 'jb3_subnav_register' ) ) {
 	jb3_subnav_register( $resuelto['titulo'], $id );
 }
 ?>
+<?php
+/* Sin ".jb3-contenedor" acá: es un bloque ACF, insertable por Gutenberg en
+   cualquier lugar (incluso adentro de Columnas) — mismo motivo que en
+   jb3_modulo_render() (ver _init_modulo.php). */
+?>
 <section class="jb3-modulo" id="<?php echo esc_attr( $id ); ?>">
 	<?php if ( $resuelto['titulo'] ) : ?>
 		<h2 class="jb3-modulo__titulo"><?php echo esc_html( $resuelto['titulo'] ); ?></h2>

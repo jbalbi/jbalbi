@@ -49,15 +49,18 @@ function jb3_modulo_query( array $tipos, array $canal_term_ids = [], int $limite
 	$tax_query = [];
 
 	if ( $canal_term_ids ) {
-		// Sin canal asignado = visible en cualquier canal (mismo criterio que
-		// ya usa "pais" un poco más abajo, y "etiquetas"/"paises" en el resto
-		// del sitio) — un match estricto por IN excluía en silencio todo el
-		// contenido sin canal cargado, aunque debía verse en todos. Bug real
-		// detectado 2026-08-11 en Op. Comerciales/Integraciones de AXN.
+		// Match estricto A PROPÓSITO: el criterio "sin canal asignado =
+		// visible en todos lados" es del FILTRO del módulo (ver más abajo,
+		// $canal_term_ids vacío), no del contenido en sí — si el módulo
+		// filtra por un canal puntual (ej. AXN), tiene que traer SOLO lo
+		// cargado para ese canal, nunca lo que no tiene canal cargado.
+		// Bug real detectado 2026-08-13: el módulo de Op. Comerciales de
+		// AXN (filtrado a "AXN") traía también las que no tenían ningún
+		// canal asignado, colándose en un listado que se suponía exclusivo.
 		$tax_query[] = [
-			'relation' => 'OR',
-			[ 'taxonomy' => 'canales', 'operator' => 'NOT EXISTS' ],
-			[ 'taxonomy' => 'canales', 'field' => 'term_id', 'terms' => $canal_term_ids ],
+			'taxonomy' => 'canales',
+			'field'    => 'term_id',
+			'terms'    => $canal_term_ids,
 		];
 	}
 
@@ -135,6 +138,16 @@ function jb3_modulo_render(
 	// pasárselo desde acá.
 	ob_start();
 	?>
+	<?php // Sin ".jb3-contenedor" acá: esta función la llaman tanto plantillas
+	// PHP directas como el shortcode [jb3_modulo] y el bloque ACF "Módulo de
+	// Contenido" — ambos insertables por Gutenberg en CUALQUIER lugar, incluso
+	// adentro de un bloque Columnas. Si este <section> se autoaplicara el
+	// breakout a 100vw de ".jb3-contenedor", en ese caso se saldría de la
+	// columna y rompería el layout (no tiene forma de saber en qué contexto
+	// quedó insertado). Como hijo directo de .entry-content ya lo cubre el
+	// selector genérico de ahí abajo; quien lo llame por PHP directo y
+	// necesite el breakout se lo agrega en el propio call site (ver
+	// single-op_comerciales.php). ?>
 	<section class="jb3-modulo" id="<?php echo esc_attr( $id ); ?>">
 		<h2 class="jb3-modulo__titulo"><?php echo esc_html( $titulo ); ?></h2>
 		<?php if ( $bajada ) : ?>

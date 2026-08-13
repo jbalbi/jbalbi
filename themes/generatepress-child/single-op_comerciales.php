@@ -72,6 +72,7 @@ get_header();
 		?>
 
 		<article <?php post_class(); ?> id="post-<?php the_ID(); ?>">
+			<div class="jb3-contenedor">
 			<h1 class="jb3-op-comercial__titulo"><?php the_title(); ?></h1>
 
 			<?php if ( get_the_content() ) : ?>
@@ -124,22 +125,32 @@ get_header();
 					<?php endif; ?>
 				</div>
 			<?php endif; ?>
+			</div>
 		</article>
 
 		<?php echo jb3_etiquetas_auto( get_the_ID() ); ?>
 
 		<?php
-		echo jb3_modulo_render(
-			[ 'op_comerciales' ],
-			[],
-			'Más Oportunidades Comerciales',
-			'',
-			6,
-			'Ver más',
-			'/op-comerciales/',
-			get_the_ID()
-		);
+		/* jb3_modulo_render() ya no se pone su propio ".jb3-contenedor" (ver
+		   _init_modulo.php) porque tambien la usa el bloque ACF/shortcode,
+		   insertables adentro de Columnas -- aca, llamada directo por PHP como
+		   hermana de .entry-content, si necesita el breakout, asi que se lo
+		   da este wrapper. */
 		?>
+		<div class="jb3-contenedor">
+			<?php
+			echo jb3_modulo_render(
+				[ 'op_comerciales' ],
+				[],
+				'Más Oportunidades Comerciales',
+				'',
+				6,
+				'Ver más',
+				'/op-comerciales/',
+				get_the_ID()
+			);
+			?>
+		</div>
 
 	<?php endwhile; ?>
 </main>

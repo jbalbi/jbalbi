@@ -65,7 +65,7 @@ function jb3_relacionados_modulo( string $tipo, array $posts, string $titulo, st
 
 	ob_start();
 	?>
-	<section class="jb3-modulo" id="<?php echo esc_attr( $id ); ?>">
+	<section class="jb3-modulo jb3-contenedor" id="<?php echo esc_attr( $id ); ?>">
 		<h2 class="jb3-modulo__titulo"><?php echo esc_html( $titulo ); ?></h2>
 		<?php echo $es_poster ? jb3_grid_posters( $posts ) : jb3_grid_thumbs( $posts ); ?>
 	</section>

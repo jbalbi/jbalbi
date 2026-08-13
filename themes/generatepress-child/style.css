@@ -215,6 +215,16 @@ body {
        de recortar su propio contenido ancho puertas adentro, sin inflar
        a #page entero. */
     min-width: 0;
+    /* width:100% (no dejarlo en "auto"): con min-width:0 puesto, el ancho de
+       #page vuelve a depender del cálculo de contenido de sus hijos — y
+       ahora que ".jb3-modulo"/".jb3-contenedor" etc. usan el truco de
+       breakout (width:100vw + margin-left/right:-50vw) en CASI TODOS los
+       hijos directos de .entry-content (Home llega a tener 6-7 a la vez),
+       ese cálculo de "auto" se degrada a ~0 en date Chrome (detectado
+       2026-08-13: el hero de la Home, el único componente sin su propio
+       breakout, quedaba con width:0 y desaparecía por completo). Un ancho
+       explícito saca a #page de ese cálculo de contenido enteramente. */
+    width: 100%;
 }
 
 /* Segunda capa del mismo bug: .site-content (de GeneratePress, el theme
@@ -224,6 +234,7 @@ body {
    quedan con el ancho correcto pero <main> igual se desborda hacia afuera. */
 #jb3-main-content {
     min-width: 0;
+    width: 100%; /* mismo motivo que #page — ver comentario de arriba. */
 }
 
 a {
@@ -1406,9 +1417,8 @@ body {
    esto es solo el logo, que sale solo del término vinculado (campo ACF
    "canal") para no tener que volver a subirlo en cada página.
    ═══════════════════════════════════════════════════════════════════════════ */
-.jb3-canal-header {
-    padding: 40px var(--jb3-modulo-padding-x) 0;
-}
+/* Sin padding propio a propósito, ver comentario grande de ".jb3-modulo" más
+   arriba — este div siempre lleva también la clase ".jb3-contenedor". */
 
 .jb3-canal-header__logo {
     display: block;
@@ -1576,15 +1586,15 @@ body {
    (h1/div/div), no un único contenedor.
    ═══════════════════════════════════════════════════════════════════════════ */
 .jb3-op-comercial__titulo {
-    margin: 40px var(--jb3-modulo-padding-x) 20px;
+    margin: 0 0 20px;
 }
 
 .jb3-op-comercial__descripcion {
-    margin: 0 var(--jb3-modulo-padding-x) 30px;
+    margin: 0 0 30px;
 }
 
 .jb3-op-comercial__pdf {
-    margin: 0 var(--jb3-modulo-padding-x) 40px;
+    margin: 0;
 }
 
 .jb3-op-comercial__pdf-descarga {
@@ -1641,37 +1651,39 @@ body {
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MÓDULO DE CONTENIDO (_init_modulo.php)
-   Mismo padding lateral que la subnav/footer (--jb3-modulo-padding-x).
+   SIN ancho ni padding propio a propósito, desde el rediseño del
+   2026-08-13: ".jb3-modulo" ya no maneja layout — el que lo dibuja
+   siempre le suma también la clase ".jb3-contenedor" (jb3_modulo_render(),
+   jb3_relacionados_modulo(), blocks/programacion/render.php), que es la
+   ÚNICA clase del sitio que sabe de ancho completo/padding lateral. Así
+   ".jb3-modulo" se ve exactamente igual sea que quede como hijo directo
+   de .entry-content (un bloque insertado por el editor) o como hermano
+   suelto impreso por PHP fuera de .entry-content (Etiquetas, Relacionados,
+   "Más Oportunidades…") — antes dependía de qué tan "a pantalla completa"
+   estuviera el contenedor ambiente en cada caso, y esa inconsistencia
+   causaba desalineados reales (detectado en Sony Pictures 2026-08-13).
+   Ver ".jb3-contenedor" más abajo para el motor real.
    ═══════════════════════════════════════════════════════════════════════════ */
-.jb3-modulo {
-    padding: 40px var(--jb3-modulo-padding-x);
-}
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   ANCHO POR DEFECTO DE UN BLOQUE SUELTO (sin Grupo alrededor)
-   Un bloque suelto (párrafo, imagen, etc.) puesto directo en el editor,
-   sin envolverlo en un Grupo, queda en la columna angosta y centrada que
-   trae Gutenberg de fábrica — acá se lo lleva directo al margen de los
-   módulos (jb3-contenedor) SIN que el editor tenga que crear un Grupo a
-   mano para eso.
-   SOLO en el nivel de hijo directo de .entry-content (a propósito, nada
-   de ":not(.jb3-contenedor) > *" anidado) — la vez pasada, aplicar este
-   mismo truco en dos niveles anidados a la vez multiplicó el corrimiento
-   en vez de sumarlo y rompió el layout (scroll horizontal). Un bloque
-   Grupo puesto por el editor sigue intacto: como es hijo directo, ACÁ
-   también le entra este mismo margen — si el editor quiere que ese Grupo
-   vaya a pantalla completa, tiene que usar la alineación nativa "Ancho
-   completo" (alignfull/alignwide, excluidas abajo) en vez de dejarlo sin
-   marcar.
-
-   OJO — cualquier componente propio que ya maneje su PROPIO ancho
-   completo (como .jb3-hero: Home/Series/Películas/Prod. Originales,
-   _init_hero.php) tiene que sumarse a la lista de :not(...) de acá abajo
-   si alguna vez queda como hijo directo de .entry-content — si no, esta
-   regla le pisa el padding/posición y se ve "roto" (no llega a los
-   bordes, no arranca al tope). Ya pasó una vez con .jb3-hero.
+   ANCHO POR DEFECTO DE UN BLOQUE SUELTO (sin ".jb3-contenedor" a mano)
+   Cualquier hijo directo de .entry-content queda CONTENIDO por defecto
+   (mismo ancho/padding que ".jb3-contenedor", ver más abajo) — no hace
+   falta que el editor arme un Grupo ni le ponga ninguna clase para que un
+   párrafo, una Imagen, un Módulo de Contenido, etc. se vean alineados con
+   el resto del sitio. Es la inversa del criterio viejo (todo suelto = a
+   pantalla completa por defecto, había que ACORDARSE de excluir cada
+   componente nuevo de una lista que no paraba de crecer) — ahora el
+   default es el caso común (contenido), y la lista de abajo son
+   ÚNICAMENTE los componentes que genuinamente necesitan pantalla completa
+   (Hero, Subnav) más los escapes nativos de Gutenberg (alignfull/alignwide)
+   y la utilidad de ancho fijo (jb3-mw-*). ".jb3-modulo"/".jb3-canal-header"
+   YA NO están acá: no lo necesitan, porque siempre llevan pegada la clase
+   ".jb3-contenedor" (ver comentario arriba), que sí está excluida — así
+   este selector no tiene que "saber" de la existencia de cada módulo de
+   contenido que agreguemos a futuro.
    ═══════════════════════════════════════════════════════════════════════════ */
-.entry-content > *:not(.jb3-contenedor):not(.jb3-modulo):not(.jb3-representantes):not(.jb3-hero):not(.jb3-subnav):not(.alignfull):not(.alignwide):not([class*="jb3-mw-"]) {
+.entry-content > *:not(.jb3-contenedor):not(.jb3-hero):not(.jb3-subnav):not(.alignfull):not(.alignwide):not([class*="jb3-mw-"]) {
     box-sizing: border-box;
     width: 100vw;
     max-width: 100vw;
@@ -1697,19 +1709,66 @@ body {
    uno de los bloques de abajo y cambiarle el número, en el nombre Y en el
    max-width) no requiere tocar esa exclusión — solo sumar la clase acá
    abajo. */
+/* Mismo truco de breakout que ".jb3-contenedor" (left:50%+margin-left:-50vw
+   ancla al borde real del viewport, sin importar el ancho/padding ambiente
+   de .entry-content) — si no, esta clase quedaba dependiendo de dónde
+   arrancara .entry-content y terminaba con el doble de margen o
+   desalineada respecto al resto de los componentes (logo de canal,
+   módulos), que sí usan ese mecanismo. max-width la recorta después. */
+.jb3-mw-600px,
+.jb3-mw-900px,
+.jb3-mw-1200px {
+    box-sizing: border-box;
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    margin-left: -50vw;
+    padding: 20px var(--jb3-modulo-padding-x) 0;
+}
+
 .jb3-mw-600px {
     max-width: 600px;
-    padding: 20px var(--jb3-modulo-padding-x) 0;
+    --jb3-mw: 600px;
 }
 
 .jb3-mw-900px {
     max-width: 900px;
-    padding: 20px var(--jb3-modulo-padding-x) 0;
+    --jb3-mw: 900px;
 }
 
 .jb3-mw-1200px {
     max-width: 1200px;
-    padding: 20px var(--jb3-modulo-padding-x) 0;
+    --jb3-mw: 1200px;
+}
+
+/* Modificadores de alineación: sumar jb3-a-left / jb3-a-center / jb3-a-right
+   a cualquiera de las jb3-mw-*px de arriba (ej. "jb3-mw-900px jb3-a-center"
+   en Clases CSS adicionales) para elegir dónde ancla el bloque dentro del
+   ancho REAL del viewport, sin depender del ancho ambiente de
+   .entry-content — mismo truco de ancla ("left:50%" ya puesto arriba),
+   variando solo cuánto se corre después con margin-left (fórmula derivada,
+   no números mágicos — "--jb3-mw" es el max-width de cada tamaño, puesto
+   arriba junto al max-width para no repetirlo):
+     - jb3-a-left   (default si no se pone ninguna clase de alineación): el
+                     borde IZQUIERDO del bloque queda en el borde real del
+                     viewport — mismo margen que el logo/los módulos (ej. la
+                     bajada de canal). No necesita regla propia porque es el
+                     comportamiento base de arriba (margin-left:-50vw); se
+                     puede sumar igual la clase por prolijidad/legibilidad
+                     en el editor, no hace nada distinto.
+     - jb3-a-center: el CENTRO del bloque queda en el centro real del
+                     viewport — para una "isla" de contenido standalone
+                     (ej. un formulario).
+     - jb3-a-right:  el borde DERECHO del bloque queda en el borde real del
+                     viewport (espejo de jb3-a-left). */
+.jb3-a-center {
+    margin-left: calc(-1 * var(--jb3-mw) / 2);
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.jb3-a-right {
+    margin-left: calc(50vw - var(--jb3-mw));
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
