@@ -65,10 +65,13 @@ function jb3_modulo_query( array $tipos, array $canal_term_ids = [], int $limite
 	}
 
 	if ( $pais ) {
+		// Match estricto: sin país tildado, NO se muestra en ningún país
+		// (cambiado 2026-08-14 — antes tenía el mismo NOT EXISTS/OR que
+		// arriba, ver jb3-geo-targeting.php para el criterio general).
 		$tax_query[] = [
-			'relation' => 'OR',
-			[ 'taxonomy' => 'pais', 'operator' => 'NOT EXISTS' ],
-			[ 'taxonomy' => 'pais', 'field' => 'slug', 'terms' => [ $pais ] ],
+			'taxonomy' => 'pais',
+			'field'    => 'slug',
+			'terms'    => [ $pais ],
 		];
 
 		if ( function_exists( 'jb3_geo_canales_visibles' ) ) {

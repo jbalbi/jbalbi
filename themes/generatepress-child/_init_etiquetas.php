@@ -60,12 +60,13 @@ function jb3_etiquetas_auto( int $post_id ): string {
 	}
 
 	// Mismo geo-targeting que el resto del sitio (ver jb3_modulo_query()
-	// en _init_modulo.php) — fail-open si no hay país detectado.
+	// en _init_modulo.php) — match estricto: sin país tildado, NO se
+	// muestra en ningún país (cambiado 2026-08-14).
 	if ( $pais ) {
 		$tax_query[] = array(
-			'relation' => 'OR',
-			array( 'taxonomy' => 'pais', 'operator' => 'NOT EXISTS' ),
-			array( 'taxonomy' => 'pais', 'field' => 'slug', 'terms' => array( $pais ) ),
+			'taxonomy' => 'pais',
+			'field'    => 'slug',
+			'terms'    => array( $pais ),
 		);
 		if ( function_exists( 'jb3_geo_canales_visibles' ) ) {
 			$tax_query[] = array(

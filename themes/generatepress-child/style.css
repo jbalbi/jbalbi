@@ -1804,6 +1804,37 @@ body {
     padding: 40px var(--jb3-modulo-padding-x);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   UTILIDAD: MENSAJE CENTRADO (404, "sin resultados", cualquier pantalla que
+   sea solo un aviso en vez de contenido real)
+   Centra horizontal Y verticalmente dentro del alto disponible de la
+   pantalla (100dvh menos el header, que es sticky) — con el mismo padding
+   lateral que el resto del sitio. Pensada para reusar en cualquier mensaje
+   de este tipo que aparezca a futuro (permiso denegado, carrito vacío, lo
+   que sea): sumar la clase "jb3-mensaje-centrado" al contenedor que
+   envuelve el aviso.
+   La 404 nativa de WordPress la recibe SOLA, sin tocar ningún template —
+   WordPress ya le pone la clase "error404" al <body> en cualquier 404, así
+   que alcanza con apuntarle el mismo estilo por ahí (ver regla de abajo).
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-mensaje-centrado,
+body.error404 .inside-article {
+    box-sizing: border-box;
+    min-height: calc(100dvh - var(--header-height));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px var(--jb3-modulo-padding-x);
+}
+
+.jb3-mensaje-centrado .search-form,
+body.error404 .inside-article .search-form {
+    display: flex;
+    justify-content: center;
+}
+
 .jb3-modulo__titulo {
     margin: 0 0 12px;
 }

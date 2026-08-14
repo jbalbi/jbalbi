@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: JB3 Geo Targeting
- * Description: Restringe la visibilidad del contenido según el país del visitante (taxonomía "pais"), usando Geolocation IP Detection. Sin país asignado el contenido es visible para todos; con país(es) asignado(s), solo ahí.
+ * Description: Restringe la visibilidad del contenido según el país del visitante (taxonomía "pais"), usando Geolocation IP Detection. Sin país asignado el contenido NO es visible en ningún país — hay que asignar explícitamente dónde se ve.
  * Version:     1.0
  */
 defined( 'ABSPATH' ) || exit;
@@ -54,9 +54,11 @@ function jb3_geo_visitor_country(): string {
 
 // ─── PAÍSES PERMITIDOS DE UN CANAL ──────────────────────────────────────────
 // Lee el campo ACF "paises_permitidos" (Taxonomy → pais, checkbox, return
-// format "Term ID") del término de "canales". Vacío = sin restricción, el
-// canal se ve en todos los países — mismo fail-open que ya usa "pais" a
-// nivel de post individual.
+// format "Term ID") del término de "canales". Vacío = SIN países tildados,
+// el canal NO se ve en ningún país — mismo criterio fail-closed que ahora
+// usa "pais" a nivel de post individual (cambiado 2026-08-14: antes vacío
+// = todos, pero con el botón "Seleccionar todo"/"Invertir selección" ya no
+// hace falta ese atajo, y "vacío = todos" escondía errores de carga real).
 function jb3_geo_canal_paises_permitidos( int $canal_term_id ): array {
 	if ( ! function_exists( 'get_field' ) ) {
 		return [];
@@ -78,7 +80,7 @@ function jb3_geo_canal_paises_permitidos( int $canal_term_id ): array {
 
 function jb3_geo_canal_visible_para( int $canal_term_id, string $pais ): bool {
 	$permitidos = jb3_geo_canal_paises_permitidos( $canal_term_id );
-	return empty( $permitidos ) || in_array( $pais, $permitidos, true );
+	return in_array( $pais, $permitidos, true );
 }
 
 // Term IDs de "canales" visibles para $pais — usado para armar tax_query en
@@ -105,10 +107,17 @@ function jb3_geo_canales_visibles( string $pais ): array {
 }
 
 // ─── ¿SE PUEDE MOSTRAR ESTE CONTENIDO? ──────────────────────────────────────
+// Sin país asignado = NO visible en ningún país (cambiado 2026-08-14, ver
+// comentario del plugin arriba) — hay que tildar explícitamente dónde se
+// muestra. EXCEPTO "page"/"post": el Home, Login/Registro/Perfil/Logout y
+// cualquier página institucional del sitio son infraestructura, no
+// catálogo — nunca usaron esta taxonomía y no tiene sentido exigírsela.
+// Bug real detectado 2026-08-14: sin esta excepción, el Home y el flujo de
+// Login quedaban 404 apenas se exigió país en todos lados por igual.
 function jb3_geo_post_pais_visible( int $post_id ): bool {
 	$terminos = get_the_terms( $post_id, JB3_GEO_TAXONOMY );
 	if ( empty( $terminos ) || is_wp_error( $terminos ) ) {
-		return true; // Sin país asignado = visible para todos.
+		return in_array( get_post_type( $post_id ), [ 'page', 'post' ], true );
 	}
 
 	$pais = jb3_geo_visitor_country();
@@ -171,6 +180,18 @@ function jb3_geo_page_canal_visible( int $post_id ): bool {
 }
 
 function jb3_geo_post_visible( int $post_id ): bool {
+	// Las Páginas de Canal (plantilla "Canal") delegan el país ENTERO al
+	// canal vinculado (campo ACF "canal" → jb3_geo_page_canal_visible(),
+	// que ya chequea los países permitidos de ESE canal) — nunca tuvieron
+	// ni necesitan su propia taxonomía "pais" cargada directamente. Bug
+	// real detectado 2026-08-14: al pasar "pais" a fail-closed, TODAS las
+	// páginas de canal (AXN, Sony Channel...) empezaron a dar 404, porque
+	// jb3_geo_post_pais_visible() les exigía una asignación que esas
+	// páginas jamás cargan por diseño.
+	if ( function_exists( 'get_field' ) && get_field( JB3_GEO_PAGE_CANAL_FIELD, $post_id ) ) {
+		return jb3_geo_page_canal_visible( $post_id );
+	}
+
 	return jb3_geo_post_pais_visible( $post_id )
 		&& jb3_geo_post_canal_visible( $post_id )
 		&& jb3_geo_page_canal_visible( $post_id );
@@ -196,12 +217,23 @@ add_action( 'template_redirect', function () {
 } );
 
 // ─── LISTADOS/ARCHIVOS/BÚSQUEDA: excluir lo que no corresponde ──────────────
-// tax_query con operator NOT EXISTS matchea posts SIN ningún término de
-// "pais" (sin restricción) — junto con el OR de "tiene el término del
-// visitante", cubre exactamente la regla de jb3_geo_post_visible() pero a
-// nivel de consulta, para que ese contenido ni aparezca en listados.
+// Match estricto por "pais" (sin el NOT EXISTS de antes) — un post sin país
+// tildado ya no aparece en ningún listado, misma regla que
+// jb3_geo_post_pais_visible() pero a nivel de consulta, para que ese
+// contenido ni aparezca en listados. La rama de "canales" de abajo es OTRO
+// eje (post sin CANAL asignado) y sigue fail-open a propósito — no es lo
+// que se pidió cambiar acá. Igual que en jb3_geo_post_pais_visible(): si el
+// post_type consultado es SOLO "page"/"post" (ej. la búsqueda nativa de
+// WordPress, que por defecto busca en los dos), no se aplica este filtro —
+// esas páginas nunca usaron "pais" y no tiene sentido exigírselo acá
+// tampoco.
 add_action( 'pre_get_posts', function ( WP_Query $query ) {
 	if ( is_admin() || ! $query->is_main_query() ) {
+		return;
+	}
+
+	$post_type = (array) ( $query->get( 'post_type' ) ?: [ 'post' ] );
+	if ( ! array_diff( $post_type, [ 'page', 'post' ] ) ) {
 		return;
 	}
 
@@ -212,16 +244,9 @@ add_action( 'pre_get_posts', function ( WP_Query $query ) {
 
 	$tax_query   = $query->get( 'tax_query' ) ?: [];
 	$tax_query[] = [
-		'relation' => 'OR',
-		[
-			'taxonomy' => JB3_GEO_TAXONOMY,
-			'operator' => 'NOT EXISTS',
-		],
-		[
-			'taxonomy' => JB3_GEO_TAXONOMY,
-			'field'    => 'slug',
-			'terms'    => [ $pais ],
-		],
+		'taxonomy' => JB3_GEO_TAXONOMY,
+		'field'    => 'slug',
+		'terms'    => [ $pais ],
 	];
 	$tax_query[] = [
 		'relation' => 'OR',
