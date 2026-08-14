@@ -45,7 +45,7 @@ Text Domain: generatepress-child
     --topbar-link-hover:  var(--color-primary);
 
     /* Cabecera */
-    --header-bg:          #00000000; // si le pones aa al final, queda semitransparente
+    --header-bg:          #00000000; /* si le pones aa al final, queda semitransparente */
     --site-title-color:   #ffffff;
     --site-tagline-color: #ffffff;
     /* Fallback mientras carga header-height.js, que la corrige al alto real
@@ -110,8 +110,8 @@ Text Domain: generatepress-child
     /* Slider Home — caja del logo del canal. Mismo ancho/alto para
        cualquier logo (ver .jb3-home-slider__canal-logo) — tocar estos dos
        valores para probar tamaños sin tener que buscar la regla. */
-    --slider-logo-width:  300px;
-    --slider-logo-height: 108px;
+    --slider-logo-width:  240px;
+    --slider-logo-height: 87px;
 
     /* Padding lateral del texto sobre el slide — mismos 3 valores que
        --footer-padding-x (ver breakpoints acá abajo), para que el
@@ -1232,9 +1232,13 @@ body.admin-bar .jb3-home-slider-wrap {
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    width: var(--slider-logo-width);
-    height: var(--slider-logo-height);
-    margin-bottom: 12px;
+    /* --logo-w/--logo-h: inline por slide, calculados en PHP a partir del
+       campo ACF "logo_proporcion" del canal (ver jb3_slide_canal() en
+       _init_home_slider.php) — sin ese campo cargado, no vienen y se cae al
+       tamaño fijo de siempre. */
+    width: var(--logo-w, var(--slider-logo-width));
+    height: var(--logo-h, var(--slider-logo-height));
+    margin-bottom: 28px;
 }
 
 .jb3-home-slider__canal-logo img {
@@ -1247,7 +1251,7 @@ body.admin-bar .jb3-home-slider-wrap {
 
 .jb3-home-slider__texto {
     max-width: 640px;
-    margin-bottom: 12px;
+    margin-bottom: 28px;
 }
 
 /* El editor WYSIWYG puede traer cualquier combinación de h1-h6/p (según lo
@@ -1321,7 +1325,7 @@ body.admin-bar .jb3-home-slider-wrap {
 
 .jb3-home-slider__copyright {
     display: block;
-    margin-top: 10px;
+    margin-top: 28px;
     font-size: 11px;
     opacity: .6;
 }

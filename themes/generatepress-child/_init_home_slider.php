@@ -41,7 +41,7 @@ defined( 'ABSPATH' ) || exit;
 // logo se carga una vez por canal, no por cada slide/post que lo use.
 function jb3_slide_canal( $canal ) {
 	if ( empty( $canal ) ) {
-		return [ 'name' => '', 'logo' => '' ];
+		return [ 'name' => '', 'logo' => '', 'logo_w' => 0, 'logo_h' => 0 ];
 	}
 	if ( is_array( $canal ) ) {
 		$canal = reset( $canal );
@@ -56,15 +56,43 @@ function jb3_slide_canal( $canal ) {
 	}
 
 	if ( ! $term || is_wp_error( $term ) ) {
-		return [ 'name' => '', 'logo' => '' ];
+		return [ 'name' => '', 'logo' => '', 'logo_w' => 0, 'logo_h' => 0 ];
 	}
 
 	$logo_field = function_exists( 'get_field' ) ? get_field( 'logo', 'canales_' . $term->term_id ) : '';
 	$logo_url   = is_array( $logo_field ) ? ( $logo_field['url'] ?? '' ) : (string) $logo_field;
 
+	// Proporción (ancho ÷ alto) opcional por canal — campo ACF "logo_proporcion"
+	// en el término. Sin ella, la caja del logo usa el tamaño fijo de siempre
+	// (--slider-logo-width/height en style.css). Con ella, se recalcula
+	// ancho/alto para que el logo ocupe aprox. la MISMA ÁREA que esa caja de
+	// referencia en vez de la misma caja — antes, un logo vertical (< 1)
+	// quedaba angosto porque solo el ALTO de la caja lo limitaba, mientras uno
+	// horizontal (> 1) aprovechaba casi todo el ANCHO; con el área fija en vez
+	// del rectángulo fijo, los dos terminan con un peso visual comparable.
+	$proporcion = (float) ( function_exists( 'get_field' ) ? get_field( 'logo_proporcion', 'canales_' . $term->term_id ) : 0 );
+	$logo_w     = 0;
+	$logo_h     = 0;
+	if ( $proporcion > 0 ) {
+		$area  = 240 * 87; // misma área que la caja de referencia (--slider-logo-width × --slider-logo-height).
+		$alto  = sqrt( $area / $proporcion );
+		$ancho = $proporcion * $alto;
+
+		// Topes para que una proporción muy extrema (ej. un isotipo casi
+		// cuadrado vs. un isologo panorámico) no dispare el tamaño fuera de
+		// lo razonable dentro del slide.
+		$ancho = max( 80, min( 340, $ancho ) );
+		$alto  = max( 48, min( 160, $alto ) );
+
+		$logo_w = (int) round( $ancho );
+		$logo_h = (int) round( $alto );
+	}
+
 	return [
-		'name' => $term->name,
-		'logo' => $logo_url,
+		'name'   => $term->name,
+		'logo'   => $logo_url,
+		'logo_w' => $logo_w,
+		'logo_h' => $logo_h,
 	];
 }
 
@@ -132,6 +160,8 @@ function jb3_home_slider_shortcode() {
 			'imagen_mobile'     => get_sub_field( 'imagen_mobile' ),
 			'canal_name'        => $canal['name'],
 			'canal_logo'        => $canal['logo'],
+			'canal_logo_w'      => $canal['logo_w'],
+			'canal_logo_h'      => $canal['logo_h'],
 			'titulo_del_slider' => get_sub_field( 'titulo_del_slider' ),
 			'texto'             => get_sub_field( 'texto' ),
 			'texto_boton'       => get_sub_field( 'texto_boton' ),
@@ -198,7 +228,7 @@ function jb3_home_slider_shortcode() {
 
 						<div class="jb3-home-slider__overlay">
 							<?php if ( $slide['canal_logo'] ) : ?>
-								<span class="jb3-home-slider__canal-logo">
+								<span class="jb3-home-slider__canal-logo"<?php if ( $slide['canal_logo_w'] && $slide['canal_logo_h'] ) : ?> style="--logo-w:<?php echo (int) $slide['canal_logo_w']; ?>px;--logo-h:<?php echo (int) $slide['canal_logo_h']; ?>px;"<?php endif; ?>>
 									<img src="<?php echo esc_url( $slide['canal_logo'] ); ?>" alt="<?php echo esc_attr( $slide['canal_name'] ); ?>">
 								</span>
 							<?php endif; ?>
