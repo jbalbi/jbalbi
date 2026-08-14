@@ -109,6 +109,18 @@ add_action( 'acf/init', function () {
 		// repeater en "Row" en vez de "Table" (ver comentario en la guía de
 		// campos).
 		'mode'            => 'preview',
+		// api_version 3 (no el default viejo, 2): sin esto, CUALQUIER página
+		// que use este bloque pierde el iframe del editor de bloques por
+		// completo (WordPress lo saca solo apenas detecta un bloque API<3 en
+		// la página — ver el warning de consola "may work as a non-iframe
+		// editor"). Bug real detectado 2026-08-14: sin iframe, el truco de
+		// centrado por vw (jb3-mw-*, jb3-contenedor, etc.) mide contra el
+		// viewport de LA VENTANA DEL ADMIN completa, no del área de edición
+		// — con el panel "Vista de lista" abierto corriendo el contenido
+		// hacia la derecha, cualquier texto con esas clases se salía del
+		// lienzo. Con iframe, ese truco vuelve a medir contra un viewport
+		// propio y centrado, como en el front real.
+		'api_version'     => 3,
 		'supports'        => array(
 			'align'           => false,
 			'customClassName' => false,
@@ -131,6 +143,7 @@ add_action( 'acf/init', function () {
 		'icon'            => 'share',
 		'keywords'        => array( 'redes', 'sociales', 'canal', 'youtube', 'facebook', 'instagram', 'tiktok' ),
 		'mode'            => 'preview',
+		'api_version'     => 3, // ver comentario largo en "modulo-contenido" más arriba.
 		'supports'        => array(
 			'align'           => false,
 			'customClassName' => false,
@@ -152,6 +165,7 @@ add_action( 'acf/init', function () {
 		'icon'            => 'share',
 		'keywords'        => array( 'redes', 'sociales', 'youtube', 'facebook', 'instagram', 'tiktok', 'host' ),
 		'mode'            => 'preview',
+		'api_version'     => 3, // ver comentario largo en "modulo-contenido" más arriba.
 		'supports'        => array(
 			'align'           => false,
 			'customClassName' => false,
@@ -174,6 +188,7 @@ add_action( 'acf/init', function () {
 		'icon'            => 'schedule',
 		'keywords'        => array( 'programacion', 'grilla', 'imagen', 'canal' ),
 		'mode'            => 'preview',
+		'api_version'     => 3, // ver comentario largo en "modulo-contenido" más arriba.
 		'supports'        => array(
 			'align'           => false,
 			'customClassName' => false,
