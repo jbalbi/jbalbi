@@ -64,23 +64,11 @@ function jb3_modulo_query( array $tipos, array $canal_term_ids = [], int $limite
 		];
 	}
 
-	if ( $pais ) {
-		// Match estricto: sin país tildado, NO se muestra en ningún país
-		// (cambiado 2026-08-14 — antes tenía el mismo NOT EXISTS/OR que
-		// arriba, ver jb3-geo-targeting.php para el criterio general).
-		$tax_query[] = [
-			'taxonomy' => 'pais',
-			'field'    => 'slug',
-			'terms'    => [ $pais ],
-		];
-
-		if ( function_exists( 'jb3_geo_canales_visibles' ) ) {
-			$tax_query[] = [
-				'relation' => 'OR',
-				[ 'taxonomy' => 'canales', 'operator' => 'NOT EXISTS' ],
-				[ 'taxonomy' => 'canales', 'field' => 'term_id', 'terms' => jb3_geo_canales_visibles( $pais ) ],
-			];
-		}
+	// Match estricto: sin país tildado, NO se muestra en ningún país (cambiado
+	// 2026-08-14). Cláusulas compartidas con el resto del sitio — ver
+	// jb3_geo_tax_query_pais() en jb3-geo-targeting.php.
+	if ( $pais && function_exists( 'jb3_geo_tax_query_pais' ) ) {
+		$tax_query = array_merge( $tax_query, jb3_geo_tax_query_pais( $pais ) );
 	}
 
 	$query = new WP_Query( [

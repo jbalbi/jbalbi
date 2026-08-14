@@ -106,6 +106,36 @@ function jb3_geo_canales_visibles( string $pais ): array {
 	} ) );
 }
 
+// Cláusulas de tax_query para "país + canales visibles en ese país" — mismo
+// criterio en los 3 lugares que restringen listados de contenido por país:
+// los listados nativos (pre_get_posts acá abajo), [jb3_modulo]
+// (jb3_modulo_query() en _init_modulo.php) y "Contenido Relacionado"
+// automático (jb3_etiquetas_auto() en _init_etiquetas.php). Antes estaba
+// copiada a mano en los 3 — eso ya generó un bug real (AXN mostrando Op.
+// Comerciales sin canal asignado en un módulo que se suponía exclusivo,
+// 2026-08-13) porque una de las copias no incluía la vuelta "OR: sin canal
+// asignado" y las otras dos sí. Devuelve un array de cláusulas para sumar
+// (array_merge) al 'tax_query' que ya tenga armado quien llama — [] si
+// $pais viene vacío (nada que filtrar).
+function jb3_geo_tax_query_pais( string $pais ): array {
+	if ( '' === $pais ) {
+		return [];
+	}
+
+	return [
+		[
+			'taxonomy' => JB3_GEO_TAXONOMY,
+			'field'    => 'slug',
+			'terms'    => [ $pais ],
+		],
+		[
+			'relation' => 'OR',
+			[ 'taxonomy' => JB3_GEO_CANAL_TAXONOMY, 'operator' => 'NOT EXISTS' ],
+			[ 'taxonomy' => JB3_GEO_CANAL_TAXONOMY, 'field' => 'term_id', 'terms' => jb3_geo_canales_visibles( $pais ) ],
+		],
+	];
+}
+
 // ─── ¿SE PUEDE MOSTRAR ESTE CONTENIDO? ──────────────────────────────────────
 // Sin país asignado = NO visible en ningún país (cambiado 2026-08-14, ver
 // comentario del plugin arriba) — hay que tildar explícitamente dónde se
@@ -242,24 +272,7 @@ add_action( 'pre_get_posts', function ( WP_Query $query ) {
 		return;
 	}
 
-	$tax_query   = $query->get( 'tax_query' ) ?: [];
-	$tax_query[] = [
-		'taxonomy' => JB3_GEO_TAXONOMY,
-		'field'    => 'slug',
-		'terms'    => [ $pais ],
-	];
-	$tax_query[] = [
-		'relation' => 'OR',
-		[
-			'taxonomy' => JB3_GEO_CANAL_TAXONOMY,
-			'operator' => 'NOT EXISTS',
-		],
-		[
-			'taxonomy' => JB3_GEO_CANAL_TAXONOMY,
-			'field'    => 'term_id',
-			'terms'    => jb3_geo_canales_visibles( $pais ),
-		],
-	];
+	$tax_query = array_merge( $query->get( 'tax_query' ) ?: [], jb3_geo_tax_query_pais( $pais ) );
 	$query->set( 'tax_query', $tax_query );
 } );
 

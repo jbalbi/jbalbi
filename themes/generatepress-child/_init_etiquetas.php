@@ -59,22 +59,11 @@ function jb3_etiquetas_auto( int $post_id ): string {
 		$tax_query[] = array( 'taxonomy' => 'canales', 'field' => 'term_id', 'terms' => $canal_ids );
 	}
 
-	// Mismo geo-targeting que el resto del sitio (ver jb3_modulo_query()
-	// en _init_modulo.php) — match estricto: sin país tildado, NO se
-	// muestra en ningún país (cambiado 2026-08-14).
-	if ( $pais ) {
-		$tax_query[] = array(
-			'taxonomy' => 'pais',
-			'field'    => 'slug',
-			'terms'    => array( $pais ),
-		);
-		if ( function_exists( 'jb3_geo_canales_visibles' ) ) {
-			$tax_query[] = array(
-				'relation' => 'OR',
-				array( 'taxonomy' => 'canales', 'operator' => 'NOT EXISTS' ),
-				array( 'taxonomy' => 'canales', 'field' => 'term_id', 'terms' => jb3_geo_canales_visibles( $pais ) ),
-			);
-		}
+	// Mismo geo-targeting que el resto del sitio — match estricto: sin país
+	// tildado, NO se muestra en ningún país (cambiado 2026-08-14). Cláusulas
+	// compartidas — ver jb3_geo_tax_query_pais() en jb3-geo-targeting.php.
+	if ( $pais && function_exists( 'jb3_geo_tax_query_pais' ) ) {
+		$tax_query = array_merge( $tax_query, jb3_geo_tax_query_pais( $pais ) );
 	}
 
 	$query = new WP_Query( array(

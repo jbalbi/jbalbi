@@ -9,7 +9,7 @@
  * único automático es el logo (viene del propio término de "canales", así
  * no hay que volver a subirlo en cada página) y el 404 por país, que ya lo
  * resuelve jb3-geo-targeting mirando el campo ACF "canal" de esta página
- * (ver jb3_geo_page_vinculo_canal_visible()) antes de llegar acá.
+ * (ver jb3_geo_page_canal_visible()) antes de llegar acá.
  *
  * El editor arma el resto del contenido con bloques normales, incluyendo
  * el shortcode [jb3_modulo canal="slug-del-canal" ...] tantas veces como
