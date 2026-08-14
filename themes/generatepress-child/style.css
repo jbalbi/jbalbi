@@ -1764,15 +1764,26 @@ body {
                      viewport — para una "isla" de contenido standalone
                      (ej. un formulario).
      - jb3-a-right:  el borde DERECHO del bloque queda en el borde real del
-                     viewport (espejo de jb3-a-left). */
+                     viewport (espejo de jb3-a-left).
+   min(var(--jb3-mw), 100vw), no var(--jb3-mw) a secas: en mobile el ancho
+   REAL del bloque no es el max-width (ej. 900px) sino el 100vw de la regla
+   base (más chico) — el navegador ya lo recorta solo por las dudas. Si la
+   fórmula de acá usa el max-width fijo sin importar cuál de los dos ganó,
+   el corrimiento queda calculado para un ancho que el bloque en realidad
+   no tiene, y se va afuera de la pantalla (bug real 2026-08-14: un
+   formulario con jb3-mw-900px jb3-a-center quedaba con la mayor parte
+   fuera de la pantalla en mobile). min() hace que la cuenta siempre use
+   el ancho que el bloque realmente terminó teniendo. */
 .jb3-a-center {
-    margin-left: calc(-1 * var(--jb3-mw) / 2);
-    padding-left: 0;
-    padding-right: 0;
+    margin-left: calc(-1 * min( var(--jb3-mw), 100vw ) / 2);
+    /* Hereda el padding lateral (80/40/20 según pantalla) de la regla base
+       de arriba — antes se lo sacaba pensando que una "isla" centrada no
+       lo necesitaba, pero sin eso el contenido queda pegado al borde de
+       la pantalla en mobile, sin nada de aire. */
 }
 
 .jb3-a-right {
-    margin-left: calc(50vw - var(--jb3-mw));
+    margin-left: calc(50vw - min( var(--jb3-mw), 100vw ));
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
