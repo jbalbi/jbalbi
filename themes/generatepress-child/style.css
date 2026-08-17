@@ -1702,33 +1702,12 @@ body {
      dejarlo tal cual) con ".jb3-contenedor" en el bloque que lo contiene.
    Ver ".jb3-contenedor" más abajo para el motor real.
    ═══════════════════════════════════════════════════════════════════════════ */
-/* Espacio arriba de un módulo cuando NO es el primer hijo DENTRO DE UN
-   GRUPO jb3-contenedor — cubre un módulo al lado de OTRO módulo (ej.
-   Grupo jb3-contenedor > "Op. Comerciales" + "Integraciones"), o un
-   módulo debajo de cualquier OTRO tipo de contenido (un texto, un
-   Encabezado) dentro del mismo Grupo. Adentro de un Grupo, el padding de
-   arriba/abajo del jb3-contenedor solo separa el CONJUNTO del resto de
-   la página — no separa un hijo del siguiente, por eso hace falta esto.
-   :not(:first-child) evita que el PRIMER hijo de un Grupo sume este
-   margen de más (ya le alcanza con el padding-top del jb3-contenedor).
-
-   A PROPÓSITO acotado a ".jb3-contenedor .jb3-modulo" (no ".jb3-modulo" a
-   secas): un módulo insertado SUELTO, como hijo directo de
-   .entry-content (sin ningún Grupo alrededor), YA recibe su propio
-   padding-top de la regla genérica de "bloque suelto" de más abajo —
-   sumarle además este margin-top duplicaba el espacio (80px en vez de
-   40px). Bug real detectado 2026-08-14 al medir con Playwright. Tampoco
-   toca páginas con espaciado afinado a mano como
-   single-op_comerciales.php (no usan jb3-contenedor con esta estructura).
-   Selector DESCENDIENTE (espacio), no de hijo directo (">"): Gutenberg
-   envuelve el contenido real de un bloque Grupo en un
-   ".wp-block-group__inner-container" extra — con ">" el selector nunca
-   llegaba a matchear nada, porque .jb3-modulo termina siendo NIETO de
-   .jb3-contenedor, no hijo directo. Bug real detectado 2026-08-14 al
-   confirmar el HTML real con curl. */
-.jb3-contenedor .jb3-modulo:not(:first-child) {
-    margin-top: 40px;
-}
+/* El espacio entre un módulo y su hermano (adentro de un jb3-contenedor, o
+   de cualquier Grupo) ya NO se resuelve acá — pasó a ser una regla única y
+   general, la misma para cualquier tipo de bloque, en cualquier contexto.
+   Ver "ESPACIO ENTRE HERMANOS" más abajo (después de la regla de "bloque
+   suelto") — ahí está la explicación completa de por qué existía esta
+   regla puntual y por qué se unificó (2026-08-17). */
 
 /* ═══════════════════════════════════════════════════════════════════════════
    ANCHO POR DEFECTO DE UN BLOQUE SUELTO (sin ".jb3-contenedor" a mano)
@@ -1759,8 +1738,28 @@ body {
    texto de alrededor la rodee (float, no requiere ninguna clase nuestra)
    — si esta regla les forzaba width:100vw, el float se rompía de raíz (una
    imagen "flotante" a pantalla completa no tiene espacio al lado para que
-   nada la rodee). */
-.entry-content > *:not(.jb3-contenedor):not(.jb3-hero):not(.jb3-subnav):not(.alignfull):not(.alignwide):not(.alignleft):not(.alignright) {
+   nada la rodee).
+   SOLO padding LATERAL acá (2026-08-17, antes también traía padding
+   arriba/abajo): el espacio VERTICAL entre bloques ya no es trabajo de
+   esta regla — lo resuelve, con un solo valor, la regla "ESPACIO ENTRE
+   HERMANOS" de más abajo. Mezclar los dos acá era la causa de raíz de que
+   dos bloques sueltos consecutivos quedaran separados por 80px (40 de
+   cada uno) en vez de 40. El espacio antes/después del PRIMER/ÚLTIMO
+   bloque de la página lo pone el padding-top/bottom de ".entry-content"
+   mismo (ver ahí abajo), no cada bloque.
+   ".jb3-a-center"/".jb3-a-right" SÍ están excluidas (2026-08-17): esas dos
+   clases centran/alinean con "margin:auto" puro, asumiendo que NADA más
+   les toca la posición — pero esta regla les forzaba SU PROPIO
+   margin:-50vw (con !important de los dos lados, gana la que tenga más
+   especificidad: esta regla, con siete ":not()", le ganaba a la clase
+   simple) y además "left:50%", así que un Grupo suelto con
+   "jb3-mw-900px jb3-a-center" (sin envolver en jb3-contenedor) quedaba
+   pegado al borde izquierdo en vez de centrado. Bug real confirmado
+   2026-08-17 en la página de Perfil. Sin esta regla encima, estos dos
+   quedan en el flujo normal del documento — ".entry-content" (ancho
+   completo forzado, ver _init_layout.php) ya les da un ancho real contra
+   el que centrarse con margin:auto, sin necesitar ningún truco de vw. */
+.entry-content > *:not(.jb3-contenedor):not(.jb3-hero):not(.jb3-subnav):not(.alignfull):not(.alignwide):not(.alignleft):not(.alignright):not(.jb3-a-center):not(.jb3-a-right) {
     box-sizing: border-box;
     width: 100vw;
     max-width: 100vw;
@@ -1776,7 +1775,56 @@ body {
        del iframe: computed margin-left daba 0px en vez de -50vw. */
     margin-left: -50vw !important;
     margin-right: -50vw !important;
-    padding: 40px var(--jb3-modulo-padding-x);
+    padding-left: var(--jb3-modulo-padding-x);
+    padding-right: var(--jb3-modulo-padding-x);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ESPACIO ENTRE HERMANOS — sistema único (2026-08-17)
+   Antes había TRES comportamientos de espaciado vertical distintos según
+   dónde estuviera el contenido: bloques sueltos en .entry-content sumaban
+   80px entre sí (40+40, cada uno con su propio padding); dentro de un
+   jb3-contenedor había una regla aparte que evitaba esa suma pero SOLO
+   para ".jb3-modulo"; y dentro de un Grupo simple (sin jb3-contenedor) NO
+   había ninguna regla — el espacio quedaba librado a las sobras de margin
+   que cada componente tuviera de casualidad (a veces 12px, a veces 0).
+   Bug real confirmado 2026-08-17 en la página de Aventura Gastronómica:
+   "HOST" (Título y Bajada) + 2 "Tarjeta" de video, las tres sueltas
+   adentro de un Grupo simple — el primer video quedaba a 12px del título
+   (el margen propio que le quedaba al título, no un espacio pensado) y el
+   segundo video pegado al primero, sin nada de por medio.
+
+   Ahora es UNA sola regla, mismo valor (40px), sin importar el contexto:
+   bloques sueltos en .entry-content, agrupados en un Grupo simple, o
+   agrupados en un jb3-contenedor — todos usan el mismo selector "hermano
+   siguiente" (* + *), que de por sí NUNCA aplica al primero de la lista
+   (no tiene hermano anterior) — por eso ya no hace falta ":not(:first-
+   child)" en ningún lado ni pensar caso por caso.
+
+   EXCLUYE a propósito los contenedores de GRILLA (jb3-cols-*,
+   jb3-grid-posters, jb3-grid-thumbs): esos separan sus celdas con "gap"
+   de CSS Grid, en fila, no en columna — sumarles este margin-top además
+   del gap correría hacia abajo a las celdas que no son la primera de cada
+   fila, rompiendo el alineado de la grilla.
+
+   El espacio ANTES del primer bloque NO es incondicional (2026-08-17,
+   bug real confirmado en la Home): si el primer hijo es el Hero o la
+   Subnav, esos dos se posicionan solos — el Hero en particular usa un
+   margin-top NEGATIVO calibrado para meterse detrás del header (ver
+   ".jb3-hero" más arriba), calculado asumiendo que no hay padding antes.
+   Un padding-top incondicional en .entry-content corría ese cálculo de
+   más, y el hero dejaba de tocar el borde real de la pantalla. */
+.entry-content {
+    padding-bottom: 40px;
+}
+
+.entry-content > *:first-child:not(.jb3-hero):not(.jb3-subnav) {
+    margin-top: 40px;
+}
+
+.entry-content > * + *,
+.wp-block-group:not([class*="jb3-cols-"]) > .wp-block-group__inner-container > * + * {
+    margin-top: 40px;
 }
 
 /* Utilidad genérica de ancho máximo — SOLO max-width, ninguna otra
@@ -1931,8 +1979,13 @@ body.error404 .inside-article .search-form {
     justify-content: center;
 }
 
+/* Mismo valor en los dos (2026-08-17, antes 12px/20px distintos): título→
+   bajada y bajada→contenido (grilla, imagen de Programación, etc.) son las
+   dos la misma clase de espacio — partes de UN módulo, no bloques
+   independientes — así que tienen que verse igual de separadas entre sí,
+   no una más apretada que la otra. */
 .jb3-modulo__titulo {
-    margin: 0 0 12px;
+    margin: 0 0 20px;
 }
 
 .jb3-modulo__bajada {
@@ -1972,7 +2025,7 @@ body.error404 .inside-article .search-form {
 .jb3-grid-posters,
 .jb3-grid-thumbs {
     display: grid;
-    gap: 20px;
+    gap: 40px;
 }
 
 /* --jb3-grid-cols: cantidad de columnas en desktop — inline, solo cuando
@@ -2018,7 +2071,7 @@ body.error404 .inside-article .search-form {
    do_blocks() y mirando el HTML real, 2026-08-16. */
 [class*="jb3-cols-"] > .wp-block-group__inner-container {
     display: grid;
-    gap: 20px;
+    gap: 40px;
 }
 
 .jb3-cols-2 > .wp-block-group__inner-container { grid-template-columns: repeat(2, 1fr); }
@@ -2034,11 +2087,22 @@ body.error404 .inside-article .search-form {
     .jb3-cols-8 > .wp-block-group__inner-container { grid-template-columns: repeat(4, 1fr); }
 }
 
+/* gap:20px acá (en vez de los 40px de desktop/tablet): en mobile hay menos
+   ancho para repartir, y jb3-grid-posters/jb3-cols-2 siguen mostrando 2
+   columnas a este tamaño — con 40px de gap les queda poco espacio real a
+   los contenidos. Pedido explícito 2026-08-17. */
 @media (max-width: 767px) {
-    [class*="jb3-cols-"] > .wp-block-group__inner-container { grid-template-columns: repeat(1, 1fr); }
+    [class*="jb3-cols-"] > .wp-block-group__inner-container {
+        grid-template-columns: repeat(1, 1fr);
+        gap: 20px;
+    }
 }
 
 @media (max-width: 767px) {
+    .jb3-grid-posters,
+    .jb3-grid-thumbs {
+        gap: 20px;
+    }
     .jb3-grid-posters { grid-template-columns: repeat(2, 1fr); }
     .jb3-grid-thumbs  { grid-template-columns: repeat(1, 1fr); }
 }

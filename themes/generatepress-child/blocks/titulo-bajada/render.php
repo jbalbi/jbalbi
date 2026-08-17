@@ -38,8 +38,10 @@ if ( $is_preview ) {
 	return;
 }
 
+$id = '';
 if ( $titulo && function_exists( 'jb3_subnav_id_unico' ) && function_exists( 'jb3_subnav_register' ) ) {
-	jb3_subnav_register( $titulo, jb3_subnav_id_unico( $titulo ) );
+	$id = jb3_subnav_id_unico( $titulo );
+	jb3_subnav_register( $titulo, $id );
 }
 ?>
 <?php // Sin ".jb3-contenedor" acá: bloque ACF insertable en cualquier
@@ -47,7 +49,7 @@ if ( $titulo && function_exists( 'jb3_subnav_id_unico' ) && function_exists( 'jb
 // bloques ACF del sitio (ver _init_modulo.php). ?>
 <section class="jb3-modulo">
 	<?php if ( $titulo ) : ?>
-		<h2 class="jb3-modulo__titulo"><?php echo esc_html( $titulo ); ?></h2>
+		<h2 class="jb3-modulo__titulo"<?php echo $id ? ' id="' . esc_attr( $id ) . '"' : ''; ?>><?php echo esc_html( $titulo ); ?></h2>
 	<?php endif; ?>
 	<?php if ( $bajada ) : ?>
 		<div class="jb3-modulo__bajada"><?php echo wp_kses_post( $bajada ); ?></div>

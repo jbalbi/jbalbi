@@ -49,8 +49,10 @@ if ( $is_preview ) {
 	return;
 }
 
+$id = '';
 if ( $titulo && function_exists( 'jb3_subnav_id_unico' ) && function_exists( 'jb3_subnav_register' ) ) {
-	jb3_subnav_register( $titulo, jb3_subnav_id_unico( $titulo ) );
+	$id = jb3_subnav_id_unico( $titulo );
+	jb3_subnav_register( $titulo, $id );
 }
 
 $style = $columnas > 0 ? ' style="--jb3-grid-cols:' . (int) $columnas . ';"' : '';
@@ -60,7 +62,7 @@ $style = $columnas > 0 ? ' style="--jb3-grid-cols:' . (int) $columnas . ';"' : '
 // (ver _init_modulo.php). ?>
 <section class="jb3-modulo">
 	<?php if ( $titulo ) : ?>
-		<h2 class="jb3-modulo__titulo"><?php echo esc_html( $titulo ); ?></h2>
+		<h2 class="jb3-modulo__titulo"<?php echo $id ? ' id="' . esc_attr( $id ) . '"' : ''; ?>><?php echo esc_html( $titulo ); ?></h2>
 	<?php endif; ?>
 	<?php if ( $bajada ) : ?>
 		<div class="jb3-modulo__bajada"><?php echo wp_kses_post( $bajada ); ?></div>
