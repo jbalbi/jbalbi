@@ -141,4 +141,5 @@ require_once __DIR__ . '/_init_etiquetas.php';          // jb3_etiquetas_auto():
 require_once __DIR__ . '/_init_pdf_viewer.php';          // jb3_pdf_viewer(): visor de PDF propio (PDF.js autohospedado), sin controles nativos ni de extensiones
 require_once __DIR__ . '/_init_pdf_preview_admin.php';   // Genera la imagen destacada sola desde la página 1 del PDF (PDF.js en el navegador del editor)
 require_once __DIR__ . '/_init_video_modal.php';        // Modal de video (YouTube/Vimeo/archivo propio) para [data-jb3-video]
+require_once __DIR__ . '/_init_page_modal.php';          // Modal de página: trae el contenido de una Página real por AJAX, sin header/footer, para [data-jb3-page-modal]
 require_once __DIR__ . '/_init_acf_blocks.php';          // Bloque ACF "Módulo de Contenido" (jb3/modulo-contenido): reemplaza a [jb3_modulo] escrito a mano

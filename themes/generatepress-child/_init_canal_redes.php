@@ -42,20 +42,28 @@ function jb3_red_social_nombre( string $red ): string {
 /**
  * Motor genérico: dibuja una fila de íconos a partir de filas {red, url}.
  * No sabe nada de canal, host, ni de dónde salió la lista — cualquier
- * feature que tenga su propio Repeater con sub-campos "red"/"url" puede
- * usar esta misma función.
+ * feature que tenga su propio Repeater con sub-campos "red"/"url" (+
+ * "texto" opcional) puede usar esta misma función.
+ *
+ * $con_texto = false (default, uso de Canales — sin tocar): fila
+ * horizontal, solo íconos, sin importar si la fila trae "texto" cargado.
+ * $con_texto = true (uso del bloque genérico "Redes Sociales", ej. redes de
+ * un invitado/host): lista vertical, ícono + el handle/texto de esa fila.
  */
-function jb3_redes_sociales_html( array $filas ): string {
+function jb3_redes_sociales_html( array $filas, bool $con_texto = false ): string {
 	if ( empty( $filas ) ) {
 		return '';
 	}
 
+	$clase = 'jb3-canal-redes' . ( $con_texto ? ' jb3-canal-redes--lista' : '' );
+
 	ob_start();
 	?>
-	<div class="jb3-canal-redes">
+	<div class="<?php echo esc_attr( $clase ); ?>">
 		<?php foreach ( $filas as $fila ) :
-			$red = $fila['red'] ?? '';
-			$url = $fila['url'] ?? '';
+			$red   = $fila['red'] ?? '';
+			$url   = $fila['url'] ?? '';
+			$texto = (string) ( $fila['texto'] ?? '' );
 			if ( ! $red || ! $url ) {
 				continue;
 			}
@@ -66,6 +74,9 @@ function jb3_redes_sociales_html( array $filas ): string {
 			?>
 			<a class="jb3-canal-redes__item" href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener" aria-label="<?php echo esc_attr( jb3_red_social_nombre( $red ) ); ?>">
 				<?php echo $icono; ?>
+				<?php if ( $con_texto && $texto ) : ?>
+					<span class="jb3-canal-redes__texto"><?php echo esc_html( $texto ); ?></span>
+				<?php endif; ?>
 			</a>
 		<?php endforeach; ?>
 	</div>

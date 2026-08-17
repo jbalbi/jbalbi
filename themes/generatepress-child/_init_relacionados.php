@@ -56,7 +56,10 @@ function jb3_relacionados_modulo( string $tipo, array $posts, string $titulo, st
 		return '';
 	}
 
-	$id = $id ?: ( 'relacionados-' . $tipo );
+	// ID a partir del título visible (jb3_subnav_id_unico(), _init_subnav.php)
+	// en vez del post_type interno — así un link a esta sección se ve como
+	// "#peliculas-relacionadas", no "#relacionados-op_comerciales".
+	$id = $id ?: ( function_exists( 'jb3_subnav_id_unico' ) ? jb3_subnav_id_unico( $titulo ) : sanitize_title( $titulo ) );
 	if ( function_exists( 'jb3_subnav_register' ) ) {
 		jb3_subnav_register( $titulo, $id );
 	}

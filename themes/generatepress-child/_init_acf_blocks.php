@@ -88,6 +88,9 @@ function jb3_resolver_titulo_bajada_pais( string $titulo_generico, string $bajad
 //   mc_limite       (Number, opcional — 0 o vacío = sin límite)
 //   mc_boton_texto  (Text, opcional)
 //   mc_boton_link   (Text/URL, opcional)
+//   mc_columnas     (Number, opcional — 0 o vacío = default, 5 posters / 3
+//                     thumbs en desktop; tablet/mobile no cambian según
+//                     esto. Ej. 8 para una fila de 8 posters.)
 add_action( 'acf/init', function () {
 	if ( ! function_exists( 'acf_register_block_type' ) ) {
 		return;
@@ -187,6 +190,156 @@ add_action( 'acf/init', function () {
 		'category'        => 'jb3',
 		'icon'            => 'schedule',
 		'keywords'        => array( 'programacion', 'grilla', 'imagen', 'canal' ),
+		'mode'            => 'preview',
+		'api_version'     => 3, // ver comentario largo en "modulo-contenido" más arriba.
+		'supports'        => array(
+			'align'           => false,
+			'customClassName' => false,
+			'anchor'          => false,
+		),
+	) );
+
+	// Filas de imágenes puramente visuales, SIN post real detrás (sin link,
+	// sin datos que listar en ningún otro lado del sitio) — ej. una página
+	// armada a mano tipo "Seasonalities", con varias filas curadas de
+	// carteles. Si la imagen SÍ es contenido real del catálogo (Películas,
+	// Series...), usar "Módulo de Contenido" en su lugar, no este.
+	// Reutiliza jb3-grid-posters / --jb3-grid-cols (mismo motor que
+	// jb3_grid_posters(), ver _init_grids.php) — mismo look que el resto
+	// del sitio, sin CSS nuevo.
+	//
+	// Grupo de campos ACF ("Grilla de Imágenes", Location: Block == Grilla
+	// de Imágenes), campos sueltos:
+	//   gi_titulo    (Text, opcional — SOLO para un título real de sección
+	//                 (ej. "SEASONALITIES"): con contenido, entra a la
+	//                 subnav; vacío, no entra. Para un subtítulo puramente
+	//                 visual que NO tiene que verse en el menú (ej. "VERANO
+	//                 / ÉXITOS EN TAQUILLA"), usar gi_bajada en su lugar.
+	//   gi_bajada    (Wysiwyg, opcional — nunca entra a la subnav, tenga o
+	//                 no contenido.)
+	//   gi_imagenes  (Gallery, requerido)
+	//   gi_columnas  (Number, opcional — 0 o vacío = default, 5 en
+	//                 desktop; tablet/mobile no cambian según esto — mismo
+	//                 criterio que mc_columnas del Módulo de Contenido.)
+	acf_register_block_type( array(
+		'name'            => 'grilla-imagenes',
+		'title'           => 'Grilla de Imágenes',
+		'description'     => 'Fila de imágenes sueltas (sin link, sin post real detrás) — ej. carteles curados a mano para una página puntual.',
+		'render_template' => __DIR__ . '/blocks/grilla-imagenes/render.php',
+		'category'        => 'jb3',
+		'icon'            => 'format-gallery',
+		'keywords'        => array( 'grilla', 'imagenes', 'galeria', 'seasonalities', 'posters' ),
+		'mode'            => 'preview',
+		'api_version'     => 3, // ver comentario largo en "modulo-contenido" más arriba.
+		'supports'        => array(
+			'align'           => false,
+			'customClassName' => false,
+			'anchor'          => false,
+		),
+	) );
+
+	// Sección de texto suelta (título + bajada), insertable en CUALQUIER
+	// lugar del contenido, incluso adentro de otro bloque (ej. una columna
+	// de Columnas) — versión en bloque del shortcode [jb3_subnav_anchor]
+	// (_init_subnav.php), para no tener que escribirlo a mano. Misma regla
+	// simétrica que "Grilla de Imágenes": título con contenido = rayita +
+	// entra a la subnav; vacío = no se ve, no entra (aunque haya bajada).
+	//
+	// Grupo de campos ACF ("Título y Bajada", Location: Block == Título y
+	// Bajada), campos sueltos:
+	//   tb_titulo  (Text, opcional — con contenido entra a la subnav; vacío,
+	//               no entra.)
+	//   tb_bajada  (Wysiwyg, opcional — nunca entra a la subnav.)
+	acf_register_block_type( array(
+		'name'            => 'titulo-bajada',
+		'title'           => 'Título y Bajada',
+		'description'     => 'Sección de texto suelta (título + bajada) para insertar en cualquier parte del contenido — con la misma rayita y entrada en la subnav que el resto de los módulos.',
+		'render_template' => __DIR__ . '/blocks/titulo-bajada/render.php',
+		'category'        => 'jb3',
+		'icon'            => 'editor-textcolor',
+		'keywords'        => array( 'titulo', 'bajada', 'subtitulo', 'seccion', 'subnav', 'anchor' ),
+		'mode'            => 'preview',
+		'api_version'     => 3, // ver comentario largo en "modulo-contenido" más arriba.
+		'supports'        => array(
+			'align'           => false,
+			'customClassName' => false,
+			'anchor'          => false,
+		),
+	) );
+
+	// N tarjetas (imagen + título + texto), sin post real detrás — ej. una
+	// sección de "Posibilidades Infinitas" con 3 beneficios. Reutiliza el
+	// mismo contenedor y los mismos breakpoints que .jb3-grid-thumbs (3/2/1
+	// responsive en desktop/tablet/mobile — ver _init_grids.php/style.css)
+	// A PROPÓSITO, en vez de que cada página arme esto a mano con el
+	// bloque nativo "Columnas": Columnas nativo pasa de 3 a 1 columna de
+	// una sola vez al llegar a mobile (sin paso intermedio en tablet),
+	// distinto del resto de las grillas del sitio — con este bloque el
+	// comportamiento responsive queda idéntico en todos lados.
+	//
+	// Grupo de campos ACF ("Grilla de Tarjetas", Location: Block == Grilla
+	// de Tarjetas), campos sueltos:
+	//   gt_columnas (Number, opcional — 0 o vacío = default, 3 en desktop;
+	//                mismo criterio que mc_columnas/gi_columnas.)
+	//   gt_items    (Repeater, requerido) sub-campos:
+	//                  imagen (Image, requerido)
+	//                  titulo (Text, requerido)
+	//                  texto  (Textarea, opcional)
+	acf_register_block_type( array(
+		'name'            => 'grilla-tarjetas',
+		'title'           => 'Grilla de Tarjetas',
+		'description'     => 'N tarjetas con imagen, título y texto — ej. una sección de beneficios/posibilidades, sin post real detrás.',
+		'render_template' => __DIR__ . '/blocks/grilla-tarjetas/render.php',
+		'category'        => 'jb3',
+		'icon'            => 'layout',
+		'keywords'        => array( 'tarjetas', 'grilla', 'beneficios', 'posibilidades', 'columnas' ),
+		'mode'            => 'preview',
+		'api_version'     => 3, // ver comentario largo en "modulo-contenido" más arriba.
+		'supports'        => array(
+			'align'           => false,
+			'customClassName' => false,
+			'anchor'          => false,
+		),
+	) );
+
+	// Ítem suelto (imagen + título + texto + link, todos opcionales salvo
+	// la imagen) — SIN saber nada de grilla ni columnas, para insertar
+	// adentro de lo que sea: un Grupo con jb3-cols-N (ver style.css), un
+	// Grupo con jb3-grid-thumbs/posters, Columnas nativo, donde haga falta,
+	// tantas veces como se necesite. Reemplaza, para contenido NUEVO, tanto
+	// a "Grilla de Imágenes" (con solo imagen) como a "Grilla de Tarjetas"
+	// (con título+texto) — esos dos bloques quedan sin tocar para lo que ya
+	// los usa, no hace falta migrar nada existente.
+	// Sin proporción de imagen forzada a propósito: tiene que servir tanto
+	// para posters verticales como para tarjetas horizontales.
+	//
+	// Grupo de campos ACF ("Tarjeta", Location: Block == Tarjeta), campos
+	// sueltos:
+	//   t_imagen (Image, requerido)
+	//   t_titulo (Text, opcional)
+	//   t_texto  (Textarea, opcional)
+	//   t_link   (URL, opcional — con link, la tarjeta entera es clickeable.)
+	//   t_modal  (True/False, opcional — "Abrir en modal": el link abre el
+	//             contenido de esa Página en un modal (_init_page_modal.php)
+	//             en vez de navegar. t_link tiene que ser una Página del
+	//             sitio para que esto funcione (se resuelve por URL); si no
+	//             se puede resolver, se cae solo al comportamiento normal
+	//             (navega, abre en pestaña nueva). Sin marcar, t_link se
+	//             comporta como un link normal (interno o externo).)
+	//   t_video  (URL, opcional — TIENE PRIORIDAD sobre Link/Modal. Con
+	//             contenido, la tarjeta muestra el ícono de play y abre a
+	//             pantalla completa con el modal de video del sitio
+	//             (_init_video_modal.php) — YouTube, Vimeo o archivo de la
+	//             Biblioteca de Medios, igual que Videos/Integraciones
+	//             reales.)
+	acf_register_block_type( array(
+		'name'            => 'tarjeta',
+		'title'           => 'Tarjeta',
+		'description'     => 'Ítem suelto (imagen + título + texto + link opcionales) para insertar adentro de cualquier contenedor — una grilla, columnas, donde haga falta.',
+		'render_template' => __DIR__ . '/blocks/tarjeta/render.php',
+		'category'        => 'jb3',
+		'icon'            => 'id-alt',
+		'keywords'        => array( 'tarjeta', 'imagen', 'poster', 'item', 'card' ),
 		'mode'            => 'preview',
 		'api_version'     => 3, // ver comentario largo en "modulo-contenido" más arriba.
 		'supports'        => array(

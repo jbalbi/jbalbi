@@ -30,6 +30,27 @@ function jb3_subnav_items(): array {
 	return $GLOBALS['jb3_subnav_items'];
 }
 
+/**
+ * ID legible para un ancla/entrada de subnav, a partir del texto visible —
+ * mismo criterio que ya usaba [jb3_subnav_anchor] (sanitize_title(): saca
+ * tildes, pasa a minúscula, cambia espacios por guiones) — para que un link
+ * a esta sección nunca exponga post_type ni term_id internos (ej.
+ * "modulo-peliculas-28"), solo el texto que el editor ya ve en la subnav
+ * (ej. "peliculas"). Si dos secciones de la misma página terminan con el
+ * mismo texto (mismo título, dos canales distintos, etc.), se le suma un
+ * sufijo -2, -3... para no repetir el mismo id en el HTML.
+ */
+function jb3_subnav_id_unico( string $texto ): string {
+	$base = sanitize_title( $texto ) ?: 'seccion';
+	$id   = $base;
+	$n    = 2;
+	while ( in_array( $id, wp_list_pluck( $GLOBALS['jb3_subnav_items'], 'id' ), true ) ) {
+		$id = $base . '-' . $n;
+		$n++;
+	}
+	return $id;
+}
+
 function jb3_subnav_render( array $items ): string {
 	if ( empty( $items ) ) {
 		return '';
@@ -75,7 +96,11 @@ add_shortcode( 'jb3_subnav', function () {
 // una sola llamada resuelve las dos cosas.
 // visible="0" para volver al comportamiento viejo (solo ancla, sin título
 // impreso) por si hace falta en algún caso puntual.
-add_shortcode( 'jb3_subnav_anchor', function ( $atts ) {
+// El contenido encerrado (opcional, con HTML) se imprime como bajada debajo
+// del título — mismo trato visual que la bajada de "Módulo de Contenido"
+// (.jb3-modulo__bajada, sin la rayita vertical del título):
+// [jb3_subnav_anchor titulo="Seasonalities"]<p>Bajada con <strong>HTML</strong></p>[/jb3_subnav_anchor]
+add_shortcode( 'jb3_subnav_anchor', function ( $atts, $content = null ) {
 	$atts = shortcode_atts( [
 		'titulo'  => '',
 		'id'      => '',
@@ -94,5 +119,15 @@ add_shortcode( 'jb3_subnav_anchor', function ( $atts ) {
 		return '<span id="' . esc_attr( $id ) . '" class="jb3-subnav-anchor"></span>';
 	}
 
-	return '<h2 id="' . esc_attr( $id ) . '" class="jb3-modulo__titulo jb3-subnav-anchor">' . esc_html( $titulo ) . '</h2>';
+	$html = '<h2 id="' . esc_attr( $id ) . '" class="jb3-modulo__titulo jb3-subnav-anchor">' . esc_html( $titulo ) . '</h2>';
+
+	// trim(): mismo motivo que en [jb3_modulo] — sin esto, la indentación/
+	// salto de línea que deja el editor entre las etiquetas del shortcode
+	// queda pegada a la bajada.
+	$bajada = $content ? trim( $content ) : '';
+	if ( $bajada ) {
+		$html .= '<div class="jb3-modulo__bajada">' . wp_kses_post( do_shortcode( $bajada ) ) . '</div>';
+	}
+
+	return $html;
 } );

@@ -84,5 +84,7 @@ echo jb3_modulo_render(
 	$bajada,
 	(int) get_field( 'mc_limite' ),
 	(string) get_field( 'mc_boton_texto' ),
-	(string) get_field( 'mc_boton_link' )
+	(string) get_field( 'mc_boton_link' ),
+	0,
+	(int) get_field( 'mc_columnas' )
 );

@@ -84,6 +84,10 @@ function jb3_modulo_query( array $tipos, array $canal_term_ids = [], int $limite
 	return $query->posts;
 }
 
+// $columnas > 0: cantidad de columnas en DESKTOP para la grilla de este
+// módulo (ver jb3_grid_posters()/jb3_grid_thumbs() en _init_grids.php) — 0
+// (default) deja el valor de siempre (5 posters / 3 thumbs). Tablet/mobile
+// no cambian según este parámetro, quedan con los valores ya ajustados.
 function jb3_modulo_render(
 	array $tipos,
 	array $canal_term_ids,
@@ -92,7 +96,8 @@ function jb3_modulo_render(
 	int $limite = 0,
 	string $boton_texto = '',
 	string $boton_link = '',
-	int $excluir_id = 0
+	int $excluir_id = 0,
+	int $columnas = 0
 ): string {
 	// Se separan los tipos pedidos en las dos familias de grilla — si el
 	// módulo mezcla Películas (poster) con Videos (thumb), o directamente
@@ -121,7 +126,10 @@ function jb3_modulo_render(
 		}
 	}
 
-	$id = 'modulo-' . implode( '-', $tipos ) . ( $canal_term_ids ? '-' . implode( '-', $canal_term_ids ) : '' );
+	// ID a partir del título visible (jb3_subnav_id_unico(), _init_subnav.php)
+	// en vez de post_type+term_id internos — así un link a esta sección se ve
+	// como "#peliculas", no "#modulo-peliculas-28".
+	$id = jb3_subnav_id_unico( $titulo );
 	jb3_subnav_register( $titulo, $id );
 
 	// El ícono de play (si corresponde) lo decide jb3_grid_thumbs() solo,
@@ -145,10 +153,10 @@ function jb3_modulo_render(
 			<div class="jb3-modulo__bajada"><?php echo wp_kses_post( $bajada ); ?></div>
 		<?php endif; ?>
 		<?php if ( $posts_poster ) : ?>
-			<?php echo jb3_grid_posters( $posts_poster ); ?>
+			<?php echo jb3_grid_posters( $posts_poster, $columnas ); ?>
 		<?php endif; ?>
 		<?php if ( $posts_thumb ) : ?>
-			<?php echo jb3_grid_thumbs( $posts_thumb ); ?>
+			<?php echo jb3_grid_thumbs( $posts_thumb, $columnas ); ?>
 		<?php endif; ?>
 		<?php if ( $hay_mas && $boton_texto && $boton_link ) : ?>
 			<p class="jb3-modulo__ver-mas">
@@ -210,16 +218,18 @@ add_shortcode( 'jb3_modulo_override', function ( $atts, $content = null ) {
 // vaciándose. Bug real detectado 2026-08-10: el hueco debajo de la bajada
 // crecía un <br> por cada [jb3_modulo_override] agregado, en cualquier país
 // que no matcheara ninguno de los definidos.
-// Se evita de raíz: para bloques de shortcode que contengan [jb3_modulo,
-// se salta el wpautop() del bloque y se corre do_shortcode() directo sobre
-// el texto realmente crudo — que es lo que jb3_modulo_render() ya espera
-// (el editor escribe sus propios <p> a mano en la bajada).
+// Se evita de raíz: para bloques de shortcode que contengan [jb3_modulo o
+// [jb3_subnav_anchor (este último ganó el mismo riesgo cuando aprendió a
+// aceptar bajada como contenido encerrado, ver _init_subnav.php), se salta
+// el wpautop() del bloque y se corre do_shortcode() directo sobre el texto
+// realmente crudo — que es lo que ambos shortcodes ya esperan (el editor
+// escribe sus propios <p> a mano en la bajada).
 add_filter( 'pre_render_block', function ( $pre_render, $parsed_block ) {
 	if ( ( $parsed_block['blockName'] ?? '' ) !== 'core/shortcode' ) {
 		return $pre_render;
 	}
 	$raw = $parsed_block['innerHTML'] ?? '';
-	if ( ! str_contains( $raw, '[jb3_modulo' ) ) {
+	if ( ! str_contains( $raw, '[jb3_modulo' ) && ! str_contains( $raw, '[jb3_subnav_anchor' ) ) {
 		return $pre_render;
 	}
 	return do_shortcode( $raw );
@@ -238,6 +248,8 @@ add_filter( 'pre_render_block', function ( $pre_render, $parsed_block ) {
 // La bajada (opcional, con HTML) va como contenido encerrado, no como
 // atributo — así se puede escribir HTML normal entre las etiquetas:
 // [jb3_modulo tipo="videos" titulo="Videos"]<p>Bajada con <strong>HTML</strong></p>[/jb3_modulo]
+// columnas es opcional (0 o vacío = default, 5 posters / 3 thumbs en
+// desktop) — ej. columnas="8" para una fila de 8 posters.
 add_shortcode( 'jb3_modulo', function ( $atts, $content = null ) {
 	$atts = shortcode_atts( [
 		'tipo'        => '',
@@ -246,6 +258,7 @@ add_shortcode( 'jb3_modulo', function ( $atts, $content = null ) {
 		'limite'      => '0',
 		'boton_texto' => '',
 		'boton_link'  => '',
+		'columnas'    => '0',
 	], $atts );
 
 	if ( ! $atts['titulo'] ) {
@@ -309,6 +322,8 @@ add_shortcode( 'jb3_modulo', function ( $atts, $content = null ) {
 		$bajada,
 		(int) $atts['limite'],
 		$atts['boton_texto'],
-		$atts['boton_link']
+		$atts['boton_link'],
+		0,
+		(int) $atts['columnas']
 	);
 } );

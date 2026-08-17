@@ -1459,6 +1459,37 @@ body {
     height: 100%;
 }
 
+/* Modificador para el bloque genérico "Redes Sociales" (jb3/redes-sociales)
+   usado suelto en cualquier página, ej. redes de un invitado/host — a
+   diferencia de la fila horizontal de solo íconos que usan los Canales
+   (arriba, sin tocar), acá va en lista vertical con el texto/handle de
+   cada fila al lado del ícono. */
+.jb3-canal-redes--lista {
+    flex-direction: column;
+    align-items: flex-start;
+    align-self: flex-start;
+    gap: 12px;
+    padding: 0;
+    margin-right: auto;
+}
+
+.jb3-canal-redes--lista .jb3-canal-redes__item {
+    width: auto;
+    height: auto;
+    justify-content: flex-start;
+    gap: 10px;
+}
+
+.jb3-canal-redes--lista .jb3-canal-redes__item svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.jb3-canal-redes__texto {
+    font-size: 15px;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    SLIDER "NUESTRAS MARCAS" (_init_canales_slider.php)
    Mismo padding lateral (80/40/20) que el resto de los módulos. Caja de
@@ -1722,8 +1753,14 @@ body {
    quedaba sin padding de ningún lado (ni el propio, que ya no tiene; ni
    este, por estar excluido) y terminaba pegado al borde real de la
    pantalla. El max-width de jb3-mw-*px tiene !important puntualmente
-   para ganarle al max-width:100vw de acá abajo (ver esa regla). */
-.entry-content > *:not(.jb3-contenedor):not(.jb3-hero):not(.jb3-subnav):not(.alignfull):not(.alignwide) {
+   para ganarle al max-width:100vw de acá abajo (ver esa regla).
+   ".alignleft"/".alignright" SÍ están excluidas (2026-08-16): son el
+   mecanismo nativo de Gutenberg para que una Imagen quede flotante y el
+   texto de alrededor la rodee (float, no requiere ninguna clase nuestra)
+   — si esta regla les forzaba width:100vw, el float se rompía de raíz (una
+   imagen "flotante" a pantalla completa no tiene espacio al lado para que
+   nada la rodee). */
+.entry-content > *:not(.jb3-contenedor):not(.jb3-hero):not(.jb3-subnav):not(.alignfull):not(.alignwide):not(.alignleft):not(.alignright) {
     box-sizing: border-box;
     width: 100vw;
     max-width: 100vw;
@@ -1751,13 +1788,15 @@ body {
    del sitio, envolverlo en un Grupo con la clase "jb3-contenedor" (ver
    más abajo) y poner jb3-mw-*px en el bloque de ADENTRO — cada clase
    hace una sola cosa, se combinan según haga falta.
-   Nomenclatura: jb3-mw-{valor en px}. Se aplica en el editor:
-   seleccionar el bloque → panel derecho → Avanzado → "Clases CSS
-   adicionales" → escribir jb3-mw-600px / -900px / -1200px.
+   Nomenclatura: jb3-mw-{valor en px} para un ancho fijo, jb3-mw-{valor sin
+   unidad} para un porcentaje del contenedor (ver más abajo). Se aplica en
+   el editor: seleccionar el bloque → panel derecho → Avanzado → "Clases
+   CSS adicionales" → escribir jb3-mw-600px / -900px / -1200px / -25 / -40
+   / -50 / -60.
    El selector [class*="jb3-mw-"] de la regla de "bloque suelto" más
    arriba matchea CUALQUIER clase que empiece así, así que agregar un
-   ancho nuevo a futuro no requiere tocar esa exclusión, solo sumarlo
-   acá abajo. */
+   ancho nuevo a futuro (fijo o porcentual) no requiere tocar esa
+   exclusión, solo sumarlo acá abajo. */
 /* !important: la regla genérica de "bloque suelto" de arriba ya no
    excluye a jb3-mw-*, así que cuando ambas matchean el mismo elemento
    (un jb3-mw-900px suelto, hijo directo de .entry-content), hay dos
@@ -1773,6 +1812,29 @@ body {
 
 .jb3-mw-1200px {
     max-width: 1200px !important;
+}
+
+/* Mismo patrón que las de arriba, pero relativo al contenedor en vez de un
+   valor fijo (ej. "la mitad del contenedor" en vez de "900px siempre").
+   Nomenclatura: con "px" al final = valor fijo en píxeles (jb3-mw-900px);
+   sin "px" = porcentaje (jb3-mw-50 = max-width:50%) — el mismo selector
+   [class*="jb3-mw-"] de la regla de "bloque suelto" de arriba cubre a las
+   dos formas por igual, así que agregar un porcentaje nuevo a futuro
+   tampoco requiere tocar esa exclusión. */
+.jb3-mw-25 {
+    max-width: 25% !important;
+}
+
+.jb3-mw-40 {
+    max-width: 40% !important;
+}
+
+.jb3-mw-50 {
+    max-width: 50% !important;
+}
+
+.jb3-mw-60 {
+    max-width: 60% !important;
 }
 
 /* Modificadores de alineación horizontal — para un bloque con jb3-mw-*px
@@ -1913,17 +1975,67 @@ body.error404 .inside-article .search-form {
     gap: 20px;
 }
 
+/* --jb3-grid-cols: cantidad de columnas en desktop — inline, solo cuando
+   jb3_grid_posters()/jb3_grid_thumbs() reciben un $columnas explícito (ver
+   _init_grids.php); el fallback de var() de acá abajo es EL MISMO valor que
+   ya estaba a mano antes de esto (5 posters / 3 thumbs), así que una grilla
+   sin $columnas se ve idéntica a como se veía siempre. Tablet/mobile no
+   dependen de esta variable a propósito — quedan fijos (ver breakpoints). */
 .jb3-grid-posters {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(var(--jb3-grid-cols, 5), 1fr);
 }
 
 .jb3-grid-thumbs {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(var(--jb3-grid-cols, 3), 1fr);
 }
 
 @media (max-width: 1023px) {
     .jb3-grid-posters { grid-template-columns: repeat(3, 1fr); }
     .jb3-grid-thumbs  { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COLUMNAS RESPONSIVE GENÉRICAS (jb3-cols-N)
+   Para cualquier Grupo nativo de Gutenberg que necesite varias columnas con
+   el MISMO quiebre responsive que el resto del sitio (arriba) — sirve tanto
+   para una grilla de ítems repetidos (varios bloques "Tarjeta" adentro)
+   como para columnas de contenido LIBRE y distinto entre sí (ej. una imagen
+   en una celda, un párrafo en la otra — el caso "Host: imagen + bio"). A
+   diferencia del bloque nativo "Columnas" (arma sus columnas con flexbox y
+   un solo quiebre fijo a 600px, sin paso intermedio en tablet — el bug que
+   motivó esto), acá cada hijo directo del Grupo es una celda de CSS Grid,
+   sin importar qué bloques tenga adentro cada una.
+   Se aplica en el editor: seleccionar el bloque Grupo → Avanzado → "Clases
+   CSS adicionales" → jb3-cols-2 / -3 / -4 / -6 / -8.
+   Quiebres pensados como punto de partida (mitad en tablet, 1 en mobile) —
+   fáciles de ajustar acá si algún caso puntual necesita otra densidad.
+   ">.wp-block-group__inner-container", no la clase directa: el bloque
+   Grupo de Gutenberg envuelve sus hijos reales en ese div extra (mismo
+   motivo que ".jb3-contenedor .jb3-modulo" más abajo usa selector
+   descendiente en vez de hijo directo) — el display:grid tiene que vivir
+   ahí, si no el Grupo tiene un solo hijo (el inner-container) y las
+   columnas nunca se ven. Confirmado armando el bloque a mano con
+   do_blocks() y mirando el HTML real, 2026-08-16. */
+[class*="jb3-cols-"] > .wp-block-group__inner-container {
+    display: grid;
+    gap: 20px;
+}
+
+.jb3-cols-2 > .wp-block-group__inner-container { grid-template-columns: repeat(2, 1fr); }
+.jb3-cols-3 > .wp-block-group__inner-container { grid-template-columns: repeat(3, 1fr); }
+.jb3-cols-4 > .wp-block-group__inner-container { grid-template-columns: repeat(4, 1fr); }
+.jb3-cols-6 > .wp-block-group__inner-container { grid-template-columns: repeat(6, 1fr); }
+.jb3-cols-8 > .wp-block-group__inner-container { grid-template-columns: repeat(8, 1fr); }
+
+@media (max-width: 1023px) {
+    .jb3-cols-3 > .wp-block-group__inner-container { grid-template-columns: repeat(2, 1fr); }
+    .jb3-cols-4 > .wp-block-group__inner-container { grid-template-columns: repeat(2, 1fr); }
+    .jb3-cols-6 > .wp-block-group__inner-container { grid-template-columns: repeat(3, 1fr); }
+    .jb3-cols-8 > .wp-block-group__inner-container { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (max-width: 767px) {
+    [class*="jb3-cols-"] > .wp-block-group__inner-container { grid-template-columns: repeat(1, 1fr); }
 }
 
 @media (max-width: 767px) {
@@ -2021,6 +2133,75 @@ body.error404 .inside-article .search-form {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   TARJETAS — dos usos de la misma clase base ".jb3-tarjeta":
+   1) bloque "Grilla de Tarjetas" (blocks/grilla-tarjetas): usa el
+      contenedor/breakpoints/imagen de .jb3-grid-thumbs (arriba) para SU
+      propia imagen (proporción 3/2 fija).
+   2) bloque genérico "Tarjeta" (blocks/tarjeta): ítem suelto, sin
+      contenedor propio (se inserta adentro de lo que sea — ver
+      jb3-cols-N más arriba) — usa ".jb3-tarjeta__media" acá abajo, SIN
+      proporción forzada (tiene que servir tanto para posters verticales
+      como para imágenes horizontales).
+   Los dos comparten título/texto (mismo estilo) y, si hay link, el
+   pequeño zoom al pasar el mouse.
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* !important: la regla global "a { color: var(--link-color) !important }"
+   (sección COLORES GLOBALES) le gana a cualquier color sin !important acá,
+   sin importar la especificidad de la clase — mismo motivo que ya usan
+   .jb3-grid-posters__item/.jb3-canal-redes__item para este mismo caso
+   (una tarjeta que a veces es un <a>, sin verse como link). */
+.jb3-tarjeta {
+    display: block;
+    color: var(--body-text) !important;
+    text-decoration: none !important;
+}
+
+.jb3-tarjeta__media {
+    display: block;
+    position: relative; /* ancla al ícono de play (.jb3-grid-thumbs__play, inset:0) cuando hay video */
+    overflow: hidden;
+}
+
+/* Hover del ícono de play reusado — .jb3-grid-thumbs__item:hover ya lo
+   agranda (ver arriba), pero esta tarjeta no lleva esa clase (no es un
+   ítem de esa grilla), así que necesita su propio disparador de hover. */
+a.jb3-tarjeta:hover .jb3-grid-thumbs__play {
+    transform: scale(1.03);
+}
+
+a.jb3-tarjeta:hover .jb3-grid-thumbs__play svg {
+    transform: scale(1.15);
+}
+
+.jb3-tarjeta__media img {
+    display: block;
+    width: 100%;
+    height: auto;
+    transition: transform .3s ease;
+}
+
+a.jb3-tarjeta:hover .jb3-tarjeta__media img {
+    transform: scale(1.03);
+}
+
+.jb3-tarjeta__titulo {
+    display: block;
+    margin-top: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+}
+
+.jb3-tarjeta__texto {
+    display: block;
+    margin: 6px 0 0;
+    font-size: 14px;
+    line-height: 1.5;
+    opacity: .75;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    MODAL DE VIDEO (_init_video_modal.php)
    Un solo modal reusado por toda la página, para cualquier [data-jb3-video].
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -2078,4 +2259,95 @@ body.error404 .inside-article .search-form {
     inset: 0;
     width: 100%;
     height: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODAL DE PÁGINA (_init_page_modal.php)
+   Mismo patrón que el modal de video (overlay + diálogo + cerrar), pero
+   pensado para leer contenido en vez de reproducir un video: diálogo con
+   ancho/alto acotados (no pantalla completa) y scroll propio si el
+   contenido no entra. El HTML de adentro (.jb3-page-modal__contenido) es
+   literalmente el de la Página real (the_content ya filtrado) — hereda los
+   estilos normales del sitio (jb3-modulo__titulo, jb3-cols-*, etc.), así
+   que la Página se puede armar con los mismos bloques de siempre.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-page-modal[hidden] {
+    display: none;
+}
+
+.jb3-page-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.jb3-page-modal__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .85);
+}
+
+/* El diálogo en sí NO scrollea — su tamaño queda fijo (hasta max-height) y
+   es ".jb3-page-modal__contenido" el que scrollea adentro. Así el botón de
+   cerrar, posicionado contra el diálogo (no contra el contenido), queda
+   siempre visible en la esquina sin importar cuánto scroll tenga el texto. */
+.jb3-page-modal__dialog {
+    position: relative;
+    width: 100%;
+    max-width: 1100px;
+    max-height: 90vh;
+    background: var(--body-bg, #000000);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.jb3-page-modal__close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 1;
+    background: rgba(0, 0, 0, .4);
+    border: 0;
+    border-radius: 50%;
+    color: var(--body-text);
+    cursor: pointer;
+    padding: 8px;
+}
+
+.jb3-page-modal__contenido {
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 48px;
+}
+
+.jb3-page-modal__cargando {
+    text-align: center;
+    opacity: .7;
+}
+
+/* ".jb3-contenedor" hace su truco de "romper" al ancho real del viewport
+   (100vw + margin-left:-50vw) asumiendo que está en el flujo normal de la
+   página — ACÁ NO: vive adentro de un diálogo ya acotado (max-width,
+   centrado, con su propio padding), así que ese mismo truco lo saca
+   disparado fuera del modal en vez de contenerlo. Si la Página usada como
+   modal tiene algún Grupo con esta clase, se neutraliza a un contenedor
+   normal (ancho/posición del propio padre, sin vw). El resto de las clases
+   del sitio (jb3-modulo, jb3-mw-*, jb3-cols-*, jb3-tarjeta...) no hacen
+   este truco, así que no necesitan este reset. */
+.jb3-page-modal__contenido .jb3-contenedor {
+    width: auto;
+    position: static;
+    left: auto;
+    margin-left: 0 !important;
+    padding: 0;
+}
+
+@media (max-width: 767px) {
+    .jb3-page-modal__contenido {
+        padding: 32px 20px;
+    }
 }

@@ -14,14 +14,22 @@ defined( 'ABSPATH' ) || exit;
 // el alto de la imagen, no el de imagen+título juntos — si no, el zoom
 // crece libre hacia abajo (ahí hay más alto que la imagen sola) y tapa el
 // título en vez de cortarse parejo por los 4 lados.
+//
+// $columnas (ambas funciones): cantidad de columnas en DESKTOP — 0 (default)
+// deja el valor de siempre puesto a mano en style.css (5 posters / 3 thumbs).
+// Tablet/mobile NO se tocan por este parámetro: siguen con los valores ya
+// ajustados (3/2 posters, 2/1 thumbs) sin importar cuántas columnas se pidan
+// en desktop, para no tener que pensar cascada completa cada vez que un
+// módulo puntual necesita, por ejemplo, 8 posters por fila en vez de 5.
 
-function jb3_grid_posters( array $posts ): string {
+function jb3_grid_posters( array $posts, int $columnas = 0 ): string {
 	if ( empty( $posts ) ) {
 		return '';
 	}
+	$style = $columnas > 0 ? ' style="--jb3-grid-cols:' . (int) $columnas . ';"' : '';
 	ob_start();
 	?>
-	<div class="jb3-grid-posters">
+	<div class="jb3-grid-posters"<?php echo $style; ?>>
 		<?php foreach ( $posts as $item ) : $post = get_post( $item ); if ( ! $post ) continue; ?>
 			<a class="jb3-grid-posters__item" href="<?php echo esc_url( get_permalink( $post ) ); ?>">
 				<span class="jb3-grid-posters__media">
@@ -42,13 +50,14 @@ function jb3_grid_posters( array $posts ): string {
 // Si el post lo tiene cargado, se ve el ícono Y el link abre el modal (ver
 // _init_video_modal.php) en vez de ir a su página; si no lo tiene, es un
 // link normal, sin ícono. Nada de esto depende de quien arma el módulo.
-function jb3_grid_thumbs( array $posts ): string {
+function jb3_grid_thumbs( array $posts, int $columnas = 0 ): string {
 	if ( empty( $posts ) ) {
 		return '';
 	}
+	$style = $columnas > 0 ? ' style="--jb3-grid-cols:' . (int) $columnas . ';"' : '';
 	ob_start();
 	?>
-	<div class="jb3-grid-thumbs">
+	<div class="jb3-grid-thumbs"<?php echo $style; ?>>
 		<?php foreach ( $posts as $item ) :
 			$post      = get_post( $item );
 			if ( ! $post ) continue;
