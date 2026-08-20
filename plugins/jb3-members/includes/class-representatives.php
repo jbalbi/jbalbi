@@ -175,6 +175,7 @@ class JB3_Representatives {
             'email'            => sanitize_email( $data['email'] ?? '' ),
             'phone'            => jb3_sanitize_phone( $data['phone'] ?? '' ),
             'whatsapp'         => jb3_sanitize_phone( $data['whatsapp'] ?? '' ),
+            'photo_id'         => isset( $data['photo_id'] ) ? absint( $data['photo_id'] ) : 0,
             'is_default'       => isset( $data['is_default'] ) ? (int) (bool) $data['is_default'] : 0,
             'visible'          => isset( $data['visible'] ) ? (int) (bool) $data['visible'] : 0,
             'notify_downloads' => isset( $data['notify_downloads'] ) ? (int) (bool) $data['notify_downloads'] : 0,
@@ -182,7 +183,7 @@ class JB3_Representatives {
     }
 
     private static function formats() {
-        return [ '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d' ];
+        return [ '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d' ];
     }
 
     /** Replaces the full set of countries for a representative. Codes not in jb3_countries() are dropped silently. */
@@ -248,8 +249,16 @@ class JB3_Representatives {
             <h2 class="jb3-modulo__titulo jb3-representantes__pais"><?php echo esc_html( $heading ); ?></h2>
             <?php foreach ( $reps as $rep ) : ?>
                 <div class="jb3-representante">
-                    <span class="jb3-representante__nombre">
-                        <?php echo esc_html( trim( $rep->first_name . ' ' . $rep->last_name ) ); ?>
+                    <span class="jb3-representante__info">
+                        <?php if ( ! empty( $rep->photo_id ) ) : ?>
+                            <span class="jb3-representante__foto">
+                                <?php echo wp_get_attachment_image( (int) $rep->photo_id, 'thumbnail', false, [ 'alt' => trim( $rep->first_name . ' ' . $rep->last_name ) ] ); ?>
+                            </span>
+                        <?php endif; ?>
+
+                        <span class="jb3-representante__nombre">
+                            <?php echo esc_html( trim( $rep->first_name . ' ' . $rep->last_name ) ); ?>
+                        </span>
                     </span>
 
                     <span class="jb3-representante__contacto">

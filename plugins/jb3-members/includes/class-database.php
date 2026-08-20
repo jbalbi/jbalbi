@@ -5,7 +5,7 @@ class JB3_Database {
 
     const TABLE           = 'jb3_representatives';
     const TABLE_COUNTRIES = 'jb3_representative_countries';
-    const DB_VER          = '1.1';
+    const DB_VER          = '1.2';
 
     /**
      * Runs on every admin request (cheap: one autoloaded option compare).
@@ -33,6 +33,7 @@ class JB3_Database {
             email            VARCHAR(150)        NOT NULL DEFAULT '',
             phone            VARCHAR(50)         NOT NULL DEFAULT '',
             whatsapp         VARCHAR(50)         NOT NULL DEFAULT '',
+            photo_id         BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
             is_default       TINYINT(1)          NOT NULL DEFAULT 0,
             visible          TINYINT(1)          NOT NULL DEFAULT 1,
             notify_downloads TINYINT(1)          NOT NULL DEFAULT 1,

@@ -348,4 +348,92 @@ add_action( 'acf/init', function () {
 			'anchor'          => false,
 		),
 	) );
+
+	// Carrusel de imágenes (Swiper) — para filas de fotos que necesitan
+	// deslizarse, no una grilla fija (ej. backstage/grabaciones). Gutenberg
+	// no tiene bloque nativo de carrusel, así que esto sí justifica algo
+	// propio (a diferencia de una grilla común, ya cubierta por "Grilla de
+	// Imágenes"). Reutiliza Swiper autohospedado (jb3_enqueue_swiper(),
+	// mismo motor que el slider de Home y el de Canales).
+	//
+	// Grupo de campos ACF ("Galería con Slider", Location: Block ==
+	// Galería con Slider), campos sueltos:
+	//   gs_titulo   (Text, opcional — con contenido entra a la subnav)
+	//   gs_bajada   (Wysiwyg, opcional — nunca entra a la subnav)
+	//   gs_imagenes (Gallery, requerido)
+	//   gs_paises   (Taxonomy, taxonomy=pais, Checkbox, opcional — CERRADO
+	//               por defecto: vacío = no se ve para nadie, hay que
+	//               marcar los países que sí la pueden ver.)
+	acf_register_block_type( array(
+		'name'            => 'galeria-slider',
+		'title'           => 'Galería con Slider',
+		'description'     => 'Carrusel de imágenes (Swiper) con flechas y paginación — para fotos que necesitan deslizarse, no una grilla fija.',
+		'render_template' => __DIR__ . '/blocks/galeria-slider/render.php',
+		'category'        => 'jb3',
+		'icon'            => 'images-alt2',
+		'keywords'        => array( 'galeria', 'slider', 'carrusel', 'swiper', 'fotos', 'grabaciones' ),
+		'mode'            => 'preview',
+		'api_version'     => 3, // ver comentario largo en "modulo-contenido" más arriba.
+		'supports'        => array(
+			'align'           => false,
+			'customClassName' => false,
+			'anchor'          => false,
+		),
+	) );
+
+	// Envoltorio genérico para restringir CUALQUIER contenido por país — en
+	// vez de agregarle un campo "países" a cada bloque nuevo (Banner,
+	// Galería, etc.) uno por uno, este bloque contiene otros adentro
+	// (InnerBlocks, soporte nativo de ACF Pro — ver <InnerBlocks /> en el
+	// render) y aplica el filtro una sola vez, en un solo lugar. Si el país
+	// del visitante no está entre los marcados, no se imprime NADA del
+	// contenido de adentro (ni siquiera un contenedor vacío).
+	// Sin div propio en el front (acf/blocks/wrap_frontend_innerblocks
+	// filtrado a false más abajo): el contenido de adentro queda como si no
+	// hubiera ningún envoltorio — mismo criterio de "insertable en cualquier
+	// lado, sin asumir nada" que el resto de los bloques del sitio.
+	//
+	// Grupo de campos ACF ("Contenido por País", Location: Block ==
+	// Contenido por País), campo suelto:
+	//   cp_paises (Taxonomy, taxonomy=pais, Checkbox, opcional — CERRADO por
+	//              defecto: vacío = no se ve para nadie, hay que marcar los
+	//              países que sí lo pueden ver.)
+	acf_register_block_type( array(
+		'name'              => 'contenido-por-pais',
+		'title'             => 'Contenido por País',
+		'description'       => 'Envuelve cualquier otro bloque y lo muestra solo en los países marcados — vacío no restringe nada.',
+		'render_template'   => __DIR__ . '/blocks/contenido-por-pais/render.php',
+		'category'          => 'jb3',
+		'icon'              => 'admin-site-alt3',
+		'keywords'          => array( 'pais', 'geo', 'geotargeting', 'region', 'restriccion' ),
+		'mode'              => 'preview',
+		'api_version'       => 3, // ver comentario largo en "modulo-contenido" más arriba.
+		// Sin esto, un bloque registrado por PHP (sin block.json) queda en
+		// "ACF Block Version 1" — la variante vieja, que no soporta un área
+		// de InnerBlocks real dentro del editor (el bloque quedaba roto,
+		// "An error occurred when loading the block in edit mode"). Este
+		// bloque es el único del sitio que necesita InnerBlocks, así que es
+		// el único que pide la versión 3 (la 2 no soporta InnerBlocks).
+		// El campo "Países" no se guardaba antes con la versión 3 — la
+		// causa real NO era la versión del bloque, sino una key de campo
+		// duplicada en la base (dos posts acf-field con el mismo
+		// post_name, uno de ellos basura creado sin querer por un
+		// acf_update_field() con el array incompleto — ver la
+		// conversación 2026-08-18). Ya limpiado, la versión 3 es segura.
+		'acf_block_version' => 3,
+		'supports'          => array(
+			'align'           => false,
+			'customClassName' => false,
+			'anchor'          => false,
+		),
+	) );
+
+	// Ver comentario del bloque más arriba: sin este filtro, ACF envuelve el
+	// InnerBlocks del front en un <div class="acf-innerblocks-container">
+	// propio — un nivel de DOM extra que rompería la cascada de espaciado
+	// unificado (".entry-content > * + *" no llega hasta ahí) para lo que
+	// sea que se ponga adentro.
+	add_filter( 'acf/blocks/wrap_frontend_innerblocks', function ( $wrap, $block_name ) {
+		return 'acf/contenido-por-pais' === $block_name ? false : $wrap;
+	}, 10, 2 );
 } );

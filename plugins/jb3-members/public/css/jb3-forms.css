@@ -266,6 +266,20 @@
     }
 }
 
+.jb3-representante__info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.jb3-representante__foto img {
+    width: 90px;
+    height: 90px;
+    border-radius: 12px;
+    object-fit: cover;
+    display: block;
+}
+
 .jb3-representante__nombre {
     font-weight: 500;
     font-size: 1.3rem;

@@ -133,6 +133,11 @@ class JB3_Admin {
             return;
         }
         wp_enqueue_style( 'jb3-admin', JB3_URL . 'public/css/jb3-forms.css', [], jb3_asset_ver( 'public/css/jb3-forms.css' ) );
+
+        $action = sanitize_text_field( wp_unslash( $_GET['action'] ?? '' ) );
+        if ( 'toplevel_page_jb3-members' === $hook && in_array( $action, [ 'add', 'edit' ], true ) ) {
+            wp_enqueue_media();
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -203,6 +208,7 @@ class JB3_Admin {
                 'email'            => sanitize_email(      wp_unslash( $_POST['email']      ?? '' ) ),
                 'phone'            => jb3_sanitize_phone( wp_unslash( $_POST['phone']       ?? '' ) ),
                 'whatsapp'         => jb3_sanitize_phone( wp_unslash( $_POST['whatsapp']    ?? '' ) ),
+                'photo_id'         => absint( $_POST['photo_id'] ?? 0 ),
                 'is_default'       => ! empty( $_POST['is_default'] )       ? 1 : 0,
                 'visible'          => ! empty( $_POST['visible'] )          ? 1 : 0,
                 'notify_downloads' => ! empty( $_POST['notify_downloads'] ) ? 1 : 0,
@@ -317,7 +323,7 @@ class JB3_Admin {
         } elseif ( 'add' === $action && ! empty( $old_data ) ) {
             $rep = (object) array_merge( [
                 'id' => 0, 'country_codes' => [], 'first_name' => '', 'last_name' => '',
-                'email' => '', 'phone' => '', 'whatsapp' => '', 'is_default' => 0,
+                'email' => '', 'phone' => '', 'whatsapp' => '', 'photo_id' => 0, 'is_default' => 0,
                 'visible' => 1, 'notify_downloads' => 1,
             ], $old_data );
         }
@@ -418,6 +424,50 @@ class JB3_Admin {
                     <td><input type="tel" id="nb_whatsapp" name="whatsapp" value="<?php echo esc_attr( $rep->whatsapp ?? '' ); ?>" class="regular-text"></td>
                 </tr>
                 <tr>
+                    <th><label for="nb_photo_select"><?php esc_html_e( 'Foto', 'jb3-members' ); ?></label></th>
+                    <td>
+                        <input type="hidden" id="nb_photo_id" name="photo_id" value="<?php echo (int) ( $rep->photo_id ?? 0 ); ?>">
+                        <div id="nb_photo_preview" style="margin-bottom:8px;">
+                            <?php if ( ! empty( $rep->photo_id ) ) : ?>
+                                <?php echo wp_get_attachment_image( (int) $rep->photo_id, [ 100, 100 ], false, [ 'style' => 'border-radius:50%;object-fit:cover;' ] ); ?>
+                            <?php endif; ?>
+                        </div>
+                        <button type="button" class="button" id="nb_photo_select"><?php esc_html_e( 'Elegir foto', 'jb3-members' ); ?></button>
+                        <button type="button" class="button" id="nb_photo_remove" <?php echo empty( $rep->photo_id ) ? 'style="display:none;"' : ''; ?>><?php esc_html_e( 'Quitar foto', 'jb3-members' ); ?></button>
+                        <script>
+                        jQuery( function ( $ ) {
+                            var frame;
+                            $( '#nb_photo_select' ).on( 'click', function ( e ) {
+                                e.preventDefault();
+                                if ( frame ) {
+                                    frame.open();
+                                    return;
+                                }
+                                frame = wp.media( {
+                                    title: <?php echo wp_json_encode( __( 'Elegir foto del representante', 'jb3-members' ) ); ?>,
+                                    multiple: false,
+                                    library: { type: 'image' }
+                                } );
+                                frame.on( 'select', function () {
+                                    var att = frame.state().get( 'selection' ).first().toJSON();
+                                    var url = ( att.sizes && att.sizes.thumbnail ) ? att.sizes.thumbnail.url : att.url;
+                                    $( '#nb_photo_id' ).val( att.id );
+                                    $( '#nb_photo_preview' ).html( $( '<img>' ).attr( 'src', url ).css( { width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover' } ) );
+                                    $( '#nb_photo_remove' ).show();
+                                } );
+                                frame.open();
+                            } );
+                            $( '#nb_photo_remove' ).on( 'click', function ( e ) {
+                                e.preventDefault();
+                                $( '#nb_photo_id' ).val( '' );
+                                $( '#nb_photo_preview' ).empty();
+                                $( this ).hide();
+                            } );
+                        } );
+                        </script>
+                    </td>
+                </tr>
+                <tr>
                     <th><?php esc_html_e( 'Países', 'jb3-members' ); ?></th>
                     <td>
                         <div class="jb3-checkboxes">
@@ -496,6 +546,7 @@ class JB3_Admin {
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
+                    <th><?php esc_html_e( 'Foto', 'jb3-members' ); ?></th>
                     <th><?php esc_html_e( 'Países', 'jb3-members' ); ?></th>
                     <th><?php esc_html_e( 'Nombre', 'jb3-members' ); ?></th>
                     <th><?php esc_html_e( 'Apellido', 'jb3-members' ); ?></th>
@@ -509,7 +560,7 @@ class JB3_Admin {
             </thead>
             <tbody>
                 <?php if ( empty( $reps ) ) : ?>
-                    <tr><td colspan="9"><?php esc_html_e( 'No hay representantes cargados.', 'jb3-members' ); ?></td></tr>
+                    <tr><td colspan="10"><?php esc_html_e( 'No hay representantes cargados.', 'jb3-members' ); ?></td></tr>
                 <?php else : ?>
                     <?php foreach ( $reps as $rep ) : ?>
                         <?php
@@ -519,6 +570,11 @@ class JB3_Admin {
                         );
                         ?>
                         <tr>
+                            <td>
+                                <?php if ( ! empty( $rep->photo_id ) ) : ?>
+                                    <?php echo wp_get_attachment_image( (int) $rep->photo_id, [ 40, 40 ], false, [ 'style' => 'border-radius:50%;object-fit:cover;' ] ); ?>
+                                <?php endif; ?>
+                            </td>
                             <td>
                                 <?php if ( $rep_country_names ) : ?>
                                     <?php echo esc_html( implode( ', ', $rep_country_names ) ); ?>

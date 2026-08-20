@@ -1152,22 +1152,38 @@ body.admin-bar .jb3-home-slider-wrap {
     --swiper-navigation-size: 22px;
 }
 
+/* Mismo estilo de flechas para los tres sliders del sitio (Home, Canales,
+   Galería) — antes repetido idéntico en cada uno, consolidado acá cuando
+   apareció el tercero (2026-08-17). */
 .jb3-home-slider .swiper-button-prev,
-.jb3-home-slider .swiper-button-next {
+.jb3-home-slider .swiper-button-next,
+.jb3-canales-slider .swiper-button-prev,
+.jb3-canales-slider .swiper-button-next,
+.jb3-galeria-slider .swiper-button-prev,
+.jb3-galeria-slider .swiper-button-next {
     color: #ffffff;
 }
 
 .jb3-home-slider .swiper-button-prev:hover,
-.jb3-home-slider .swiper-button-next:hover {
+.jb3-home-slider .swiper-button-next:hover,
+.jb3-canales-slider .swiper-button-prev:hover,
+.jb3-canales-slider .swiper-button-next:hover,
+.jb3-galeria-slider .swiper-button-prev:hover,
+.jb3-galeria-slider .swiper-button-next:hover {
     color: var(--color-secondary);
 }
 
 /* En mobile/tablet se navega deslizando con el dedo — las flechas no hacen
    falta. Mismo breakpoint que ya usa el nav para pasar a modo hamburguesa
-   (touch), para no sumar un tercer punto de corte distinto en el sitio. */
+   (touch), para no sumar un tercer punto de corte distinto en el sitio.
+   Home y Canales usan Swiper de verdad (soporta swipe); la Galería usa un
+   carrusel propio sin gestos táctiles todavía, así que ahí las flechas se
+   dejan visibles siempre — es la única forma de navegar en mobile. */
 @media (max-width: 1279px) {
     .jb3-home-slider .swiper-button-prev,
-    .jb3-home-slider .swiper-button-next {
+    .jb3-home-slider .swiper-button-next,
+    .jb3-canales-slider .swiper-button-prev,
+    .jb3-canales-slider .swiper-button-next {
         display: none;
     }
 }
@@ -1533,24 +1549,8 @@ body {
     --swiper-navigation-size: 22px;
 }
 
-.jb3-canales-slider .swiper-button-prev,
-.jb3-canales-slider .swiper-button-next {
-    color: #ffffff;
-}
-
-.jb3-canales-slider .swiper-button-prev:hover,
-.jb3-canales-slider .swiper-button-next:hover {
-    color: var(--color-secondary);
-}
-
-/* Mismo breakpoint que el header slider para ocultar flechas: en
-   mobile/tablet se navega deslizando con el dedo. */
-@media (max-width: 1279px) {
-    .jb3-canales-slider .swiper-button-prev,
-    .jb3-canales-slider .swiper-button-next {
-        display: none;
-    }
-}
+/* Estilo de flechas: ver la regla consolidada de los 3 sliders del sitio
+   (Home/Canales/Galería) más arriba, junto a ".jb3-home-slider". */
 
 /* Ancho del slide: ya NO se fija acá — slidesPerView es numérico (ver
    _init_canales_slider.php), Swiper reparte el ancho del contenedor exacto
@@ -2308,6 +2308,9 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
     color: #ffffff;
     cursor: pointer;
     padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .jb3-video-modal__frame {
@@ -2380,6 +2383,9 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
     color: var(--body-text);
     cursor: pointer;
     padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .jb3-page-modal__contenido {
@@ -2414,4 +2420,159 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
     .jb3-page-modal__contenido {
         padding: 32px 20px;
     }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GALERÍA CON SLIDER (bloque "Galería con Slider", blocks/galeria-slider)
+   Carrusel centrado con "peek" (se ve un pedacito del slide anterior/
+   siguiente, mismo lenguaje visual que la referencia que pasó el usuario,
+   ej. "Brand 100 Chile") — el estilo de flechas ya está cubierto por la
+   regla consolidada de los 3 sliders del sitio, ver ".jb3-home-slider" más
+   arriba. Acá solo lo propio: tamaño de imagen y la paginación en forma
+   de rayitas (no puntos redondos — Swiper trae bullets circulares por
+   default) para marcar cuántas imágenes tiene el slider.
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* Carrusel propio (JS vanilla, ver blocks/galeria-slider/render.php) — solo
+   reusa de Swiper el CSS de flechas/rayitas (cargado igual por
+   jb3_enqueue_swiper(), para el ícono de fuente de las flechas), no la
+   librería en sí. ".jb3-galeria-slider__container" hace de contexto
+   posicionado para las flechas (position:absolute, igual que antes cuando
+   ese contexto lo daba la propia clase ".swiper" de la librería). */
+.jb3-galeria-slider__container {
+    position: relative;
+    --swiper-navigation-size: 22px;
+}
+
+.jb3-galeria-slider__wrap {
+    overflow: hidden;
+    /* pan-y: el navegador sigue interpretando el gesto vertical como scroll
+       de la página — solo el horizontal lo toma el JS (swipe del carrusel). */
+    touch-action: pan-y;
+    cursor: grab;
+}
+
+.jb3-galeria-slider__wrap:active {
+    cursor: grabbing;
+}
+
+.jb3-galeria-slider__track {
+    display: flex;
+    gap: 20px;
+}
+
+.jb3-galeria-slider__track img {
+    -webkit-user-drag: none;
+    user-select: none;
+}
+
+/* Alto fijo (sin importar el formato de origen) para que todas las fotos
+   midan lo mismo en el carrusel, pero SIN recortar: el ancho del slide se
+   deja "auto" y sigue el ancho natural que le toca a la imagen a esa
+   altura — una foto vertical queda angosta, una horizontal queda ancha,
+   pero ambas se ven completas. */
+.jb3-galeria-slider__slide {
+    flex: 0 0 auto;
+    height: 420px;
+}
+
+.jb3-galeria-slider__slide img {
+    display: block;
+    width: auto;
+    height: 100%;
+    cursor: pointer;
+}
+
+@media (max-width: 1023px) {
+    .jb3-galeria-slider__slide {
+        height: 320px;
+    }
+}
+
+@media (max-width: 767px) {
+    .jb3-galeria-slider__slide {
+        height: 220px;
+    }
+}
+
+/* La paginación vive AFUERA de ".jb3-galeria-slider__wrap" (ver
+   blocks/galeria-slider/render.php) para no superponerse nunca a las fotos
+   — position:static la deja en su lugar natural, debajo del carrusel. */
+.jb3-galeria-slider__container .swiper-pagination {
+    position: static;
+    margin-top: 20px;
+    text-align: center;
+}
+
+.jb3-galeria-slider__container .swiper-pagination-bullet {
+    width: 24px;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, .3);
+    opacity: 1;
+    transition: background .2s ease;
+}
+
+.jb3-galeria-slider__container .swiper-pagination-bullet-active {
+    background: var(--color-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODAL DE IMAGEN (_init_image_modal.php)
+   Un solo modal reusado por toda la página, para cualquier [data-jb3-image]
+   — mismo patrón que el modal de video (arriba). Usado desde la Galería con
+   Slider para abrir cada foto a tamaño original.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-image-modal[hidden] {
+    display: none;
+}
+
+.jb3-image-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jb3-image-modal__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .9);
+}
+
+/* Pantalla completa (mismo criterio que .jb3-video-modal__dialog): la
+   proporción de la foto nunca se deforma (max-width/max-height + auto), lo
+   único que cambia respecto a una caja chica es cuánto aire oscuro queda
+   alrededor cuando la foto no es panorámica. */
+.jb3-image-modal__dialog {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jb3-image-modal__close {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100001;
+    background: none;
+    border: 0;
+    color: #ffffff;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jb3-image-modal__img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
 }

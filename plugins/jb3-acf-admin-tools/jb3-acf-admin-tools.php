@@ -69,9 +69,9 @@ add_action( 'acf/input/admin_footer', function () {
 		function crearGrupoBotones( aplicar ) {
 			var $grupo = $( '<div class="jb3-acf-botones"></div>' );
 			[
-				{ texto: 'Invertir selección', modo: 'invertir' },
-				{ texto: 'Seleccionar todo', modo: 'todo' },
-				{ texto: 'Borrar selección', modo: 'ninguno' }
+				{ texto: 'Invertir', modo: 'invertir' },
+				{ texto: 'Todos', modo: 'todo' },
+				{ texto: 'Limpiar', modo: 'ninguno' }
 			].forEach( function ( accion ) {
 				var $btn = $( '<button type="button" class="button button-small jb3-acf-invertir"></button>' ).text( accion.texto );
 				$btn.on( 'click', function ( e ) {
@@ -195,6 +195,17 @@ add_action( 'acf/input/admin_footer', function () {
 		width: auto;
 		margin: 0;
 	}
+	/* Excepción al flujo en columnas de arriba: el panel de ajustes de un
+	   bloque (".block-editor-block-inspector") es angosto y de ancho fijo,
+	   no variable como una pantalla de admin — ahí 2 columnas quedan
+	   apretadas/salpicadas en vez de ahorrar espacio de verdad. Una sola
+	   columna se ve prolija sin importar cuántos países haya. */
+	.block-editor-block-inspector ul.acf-checkbox-list {
+		display: block;
+	}
+	.block-editor-block-inspector ul.acf-checkbox-list > li {
+		width: 100%;
+	}
 	.jb3-acf-invertir-wrap {
 		list-style: none;
 		margin: 0 0 8px !important;
@@ -211,6 +222,20 @@ add_action( 'acf/input/admin_footer', function () {
 	}
 	button.jb3-acf-invertir {
 		font-size: 12px !important;
+	}
+	/* El panel nativo de taxonomías del editor de bloques agrega un buscador
+	   arriba de la lista de checkboxes — útil para Etiquetas (decenas de
+	   términos), pero de más en Países/Canales: son pocos y ya conocidos de
+	   memoria, el buscador solo ocupa espacio. Se apunta puntual a esas dos
+	   (por aria-label, que Gutenberg pone con el nombre de la taxonomía) sin
+	   tocar Etiquetas ni ninguna otra. :has() con selector de hermano
+	   siguiente: "el buscador que tiene inmediatamente después la lista de
+	   Países/Canales" — soportado en navegadores actuales (Chrome/Edge).
+	   El buscador y la lista son hermanos, no hay una clase común más
+	   específica para agarrar solo el buscador de memoria. */
+	.components-search-control:has( + .editor-post-taxonomies__hierarchical-terms-list[aria-label="Países"] ),
+	.components-search-control:has( + .editor-post-taxonomies__hierarchical-terms-list[aria-label="Canales"] ) {
+		display: none;
 	}
 	</style>
 	<?php

@@ -52,6 +52,35 @@ function jb3_geo_visitor_country(): string {
 	return $codigo;
 }
 
+// ─── COOKIE DE VARY PARA EL CACHÉ DE PÁGINA (LiteSpeed) ─────────────────────
+// El caché de página completa sirve la MISMA respuesta HTML a todos los
+// visitantes de una URL — sin esto, un visitante de un país vería el HTML
+// (hasta un 404) que le tocó a otro país, porque nada de este archivo vuelve
+// a correr en un cache hit. Esta cookie hace que LiteSpeed guarde una copia
+// de caché separada por país en vez de una sola compartida — hacen falta LAS
+// DOS registraciones de abajo (litespeed_vary_cookies Y
+// litespeed_vary_curr_cookies); con una sola, LiteSpeed sigue marcando la
+// página entera como no cacheable por el simple hecho de hacer setcookie().
+const JB3_GEO_VARY_COOKIE = 'jb3_pais';
+
+add_action( 'init', function () {
+	if ( is_admin() ) {
+		return;
+	}
+
+	$pais = jb3_geo_visitor_country();
+	if ( ( $_COOKIE[ JB3_GEO_VARY_COOKIE ] ?? '' ) !== $pais ) {
+		setcookie( JB3_GEO_VARY_COOKIE, $pais, time() + DAY_IN_SECONDS, COOKIEPATH, COOKIE_DOMAIN );
+	}
+} );
+
+function jb3_geo_vary_cookies( array $cookies ): array {
+	$cookies[] = JB3_GEO_VARY_COOKIE;
+	return $cookies;
+}
+add_filter( 'litespeed_vary_cookies', 'jb3_geo_vary_cookies' );
+add_filter( 'litespeed_vary_curr_cookies', 'jb3_geo_vary_cookies' );
+
 // ─── PAÍSES PERMITIDOS DE UN CANAL ──────────────────────────────────────────
 // Lee el campo ACF "paises_permitidos" (Taxonomy → pais, checkbox, return
 // format "Term ID") del término de "canales". Vacío = SIN países tildados,
