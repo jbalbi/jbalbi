@@ -104,7 +104,7 @@ class JB3_Op_Comerciales_Tracking {
 
 		nocache_headers();
 		header( 'Content-Type: application/pdf' );
-		header( 'Content-Disposition: inline; filename="' . basename( $file_path ) . '"' );
+		header( 'Content-Disposition: attachment; filename="' . basename( $file_path ) . '"' );
 		header( 'Content-Length: ' . filesize( $file_path ) );
 		header( 'X-Content-Type-Options: nosniff' );
 		readfile( $file_path );
