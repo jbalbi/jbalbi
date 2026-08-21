@@ -119,10 +119,21 @@ class JB3_Email {
 
     // ─── Internals ────────────────────────────────────────────────────────────
 
+    /**
+     * Remitente configurable (Configuración → Email) — necesario porque el
+     * admin_email de WordPress suele ser una casilla personal (Gmail/Outlook)
+     * sin SPF/DKIM propio; Gmail en particular rechaza mails que digan venir
+     * de "@gmail.com" pero no hayan salido de los servidores de Google. Cae
+     * a admin_email/nombre del sitio solo si todavía no se cargó nada en
+     * Configuración, para no romper en un sitio recién instalado.
+     */
     private static function headers() {
+        $from_email = get_option( 'jb3_email_from' ) ?: get_option( 'admin_email' );
+        $from_name  = get_option( 'jb3_email_from_name' ) ?: get_bloginfo( 'name' );
+
         return [
             'Content-Type: text/html; charset=UTF-8',
-            'From: ' . get_bloginfo( 'name' ) . ' <' . get_option( 'admin_email' ) . '>',
+            'From: ' . $from_name . ' <' . $from_email . '>',
         ];
     }
 

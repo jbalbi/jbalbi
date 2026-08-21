@@ -81,11 +81,6 @@ $site_name   = get_bloginfo( 'name' );
             <a href="<?php echo esc_url( $approve_url ); ?>" style="color:#0073aa;word-break:break-all;"><?php echo esc_url( $approve_url ); ?></a>
         </p>
     </td></tr>
-
-    <!-- Footer -->
-    <tr><td style="background:#f4f4f4;padding:16px 32px;text-align:center;font-size:12px;color:#999;border-top:1px solid #e0e0e0;">
-        <?php echo esc_html( $site_name ); ?> &mdash; <?php echo esc_html( home_url() ); ?>
-    </td></tr>
 </table>
 </td></tr>
 </table>

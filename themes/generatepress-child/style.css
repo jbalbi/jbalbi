@@ -1147,14 +1147,20 @@ body.admin-bar .jb3-home-slider-wrap {
 /* Flechas de Swiper con la paleta del sitio en vez del negro default, y más
    chicas que el tamaño default (44px) para que no interfieran con el
    texto — --swiper-navigation-size es la variable oficial de Swiper para
-   esto (controla el tamaño del ícono ::after). */
+   esto (controla el tamaño del ícono ::after Y el cálculo de centrado
+   vertical del botón, que Swiper arma solo a partir de esta variable — por
+   eso alcanza con tocar esto para achicar la flecha, sin pisar width/
+   height/margin-top a mano). */
 .jb3-home-slider {
-    --swiper-navigation-size: 22px;
+    --swiper-navigation-size: 16px;
 }
 
 /* Mismo estilo de flechas para los tres sliders del sitio (Home, Canales,
    Galería) — antes repetido idéntico en cada uno, consolidado acá cuando
-   apareció el tercero (2026-08-17). */
+   apareció el tercero (2026-08-17). Probamos un círculo de fondo atrás de
+   la flecha, pero el glifo de Swiper no queda centrado adentro (problema
+   del ícono en sí, no del CSS) — vuelto a la flecha sola, sin fondo
+   (2026-08-20). */
 .jb3-home-slider .swiper-button-prev,
 .jb3-home-slider .swiper-button-next,
 .jb3-canales-slider .swiper-button-prev,
@@ -1546,7 +1552,7 @@ body {
        tamaño de los slides; volverlo flex crea una dependencia circular y
        el cálculo puede explotar a un tamaño absurdo. */
     overflow: hidden;
-    --swiper-navigation-size: 22px;
+    --swiper-navigation-size: 16px;
 }
 
 /* Estilo de flechas: ver la regla consolidada de los 3 sliders del sitio
@@ -1946,6 +1952,21 @@ body {
        más arriba, mismo motivo acá. */
     margin-left: -50vw !important;
     padding: 40px var(--jb3-modulo-padding-x);
+}
+
+/* Bug real confirmado 2026-08-20 en single-peliculas.php (y cualquier otro
+   single-{cpt}.php con el mismo patrón): "Oportunidades Comerciales"
+   (jb3_relacionados_auto()) y "Etiquetas" se imprimen DESPUÉS del
+   <article>, pero AFUERA de .entry-content (hermanos, no hijos) — el
+   sistema de espaciado unificado de arriba (.entry-content > * + *) no los
+   alcanza, y en cambio se suma el padding-bottom de .entry-content (40px)
+   con el padding-top propio de .jb3-contenedor (40px más) = 80px, el doble
+   de lo que usa el resto del sitio. Se saca el padding-top SOLO acá (el
+   primer módulo pegado al <article>), sin tocar .jb3-contenedor en
+   cualquier otro lugar donde se usa (page-canal.php, etc.), que sigue
+   necesitando su espacio completo cuando no viene después de un <article>. */
+#jb3-main-content > article + .jb3-contenedor {
+    padding-top: 0;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -2440,7 +2461,7 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
    ese contexto lo daba la propia clase ".swiper" de la librería). */
 .jb3-galeria-slider__container {
     position: relative;
-    --swiper-navigation-size: 22px;
+    --swiper-navigation-size: 16px;
 }
 
 .jb3-galeria-slider__wrap {

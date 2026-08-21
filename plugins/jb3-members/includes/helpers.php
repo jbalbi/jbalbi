@@ -139,6 +139,37 @@ function jb3_asset_ver( $relative_path ) {
     return file_exists( $file ) ? (string) filemtime( $file ) : JB3_VERSION;
 }
 
+// ─── Detección de bots (best-effort) ────────────────────────────────────────
+// Escáneres de seguridad de correo (Microsoft Safe Links, Mimecast,
+// Proofpoint, Barracuda, etc.) abren los links de un mail automáticamente
+// para revisarlos antes de que el destinatario real los vea. NO hay forma
+// 100% confiable de detectar esto del lado del servidor — es una lista de
+// firmas de User-Agent conocidas, best-effort, no exhaustiva. Compartida
+// entre el tracking de vistas/descargas (class-op-comerciales-tracking.php,
+// donde solo se usa para marcar "posible bot" a mano en la planilla) y los
+// magic links (class-magic-link.php, donde además evita que un escáner
+// gaste el token de un solo uso antes de que lo use la persona real) —
+// antes vivía duplicada solo en el primero.
+const JB3_BOT_UA_SIGNATURES = [
+	'ips-agent', 'safelinks', 'microsoft office', 'outlook-safelinks',
+	'barracuda', 'mimecast', 'proofpoint', 'symantec', 'trendmicro',
+	'fortinet', 'fortimail', 'mcafee', 'zscaler', 'cisco security',
+	'googleimageproxy', 'bot', 'crawler', 'spider', 'scanner', 'preview',
+];
+
+function jb3_es_posible_bot( string $user_agent ): bool {
+	if ( '' === trim( $user_agent ) ) {
+		return true;
+	}
+	$ua_lower = strtolower( $user_agent );
+	foreach ( JB3_BOT_UA_SIGNATURES as $signature ) {
+		if ( false !== strpos( $ua_lower, $signature ) ) {
+			return true;
+		}
+	}
+	return false;
+}
+
 /**
  * Rate limit compartido por email — mismo criterio que ya usaba
  * class-login.php a mano (ahora factorizado acá para que la entrada

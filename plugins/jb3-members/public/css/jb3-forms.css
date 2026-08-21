@@ -223,28 +223,66 @@
 
 /* ─── Directorio de representantes [jb3_representantes] ─────────────────── */
 
-/* Tarjetas de a 2 por fila (~50% de ancho cada una) — una sola columna en
-   mobile, mismo corte de 767px que usa el resto del sitio. */
+/* Columna izquierda (nombre de país + tarjetas apiladas) + columna derecha
+   (mapa), 50/50 en desktop — en mobile el mapa se oculta y las tarjetas
+   ocupan todo el ancho. */
 .jb3-representantes {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    align-items: stretch;
+    gap: 2rem;
+}
+
+.jb3-representantes__col-izq {
+    flex: 1 1 50%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
     gap: 1.2rem;
 }
 
 @media (max-width: 767px) {
     .jb3-representantes {
-        grid-template-columns: 1fr;
+        flex-direction: column;
     }
 }
 
 /* El look visual del título (tipografía, tamaño, barrita) lo da
    jb3-modulo__titulo (tema, style.css) — la misma clase que usan los
-   títulos de [jb3_modulo], para que se vea idéntico. grid-column:1/-1 —
-   ocupa las 2 columnas de arriba, es hijo directo del grid junto con las
-   tarjetas. */
+   títulos de [jb3_modulo], para que se vea idéntico. */
 .jb3-representantes__pais {
-    grid-column: 1 / -1;
     margin-bottom: .4rem;
+}
+
+/* Tarjetas apiladas verticalmente, una por fila. */
+.jb3-representantes__lista {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+/* Columna del mapa: ocupa el resto del ancho y estira a la altura de la
+   columna izquierda (align-items:stretch en el padre .jb3-representantes),
+   el mapa se acomoda adentro sin superar esa altura. */
+.jb3-representantes__col-der {
+    flex: 1 1 50%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jb3-representantes__mapa {
+    width: 50%;
+    max-height: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+@media (max-width: 767px) {
+    /* Sin mapa en mobile — las tarjetas ocupan todo el ancho. */
+    .jb3-representantes__col-der {
+        display: none;
+    }
 }
 
 /* Tarjeta: nombre a la izquierda, WhatsApp/teléfono/email apilados a la

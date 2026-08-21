@@ -148,6 +148,8 @@ class JB3_Admin {
         register_setting( 'jb3_settings', 'jb3_login_page_id',        [ 'type' => 'integer', 'sanitize_callback' => 'absint' ] );
         register_setting( 'jb3_settings', 'jb3_profile_page_id',      [ 'type' => 'integer', 'sanitize_callback' => 'absint' ] );
         register_setting( 'jb3_settings', 'jb3_dashboard_page_id',    [ 'type' => 'integer', 'sanitize_callback' => 'absint' ] );
+        register_setting( 'jb3_settings', 'jb3_email_from',      [ 'type' => 'string', 'sanitize_callback' => 'sanitize_email' ] );
+        register_setting( 'jb3_settings', 'jb3_email_from_name', [ 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ] );
         register_setting( 'jb3_settings', 'jb3_mc_api_key',  [ 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ] );
         register_setting( 'jb3_settings', 'jb3_mc_list_id', [ 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ] );
         register_setting( 'jb3_settings', 'jb3_gsheets_id', [ 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ] );
@@ -666,6 +668,27 @@ class JB3_Admin {
                         </td>
                     </tr>
                     <?php endforeach; ?>
+                </table>
+
+                <!-- Email -->
+                <hr>
+                <h2><?php esc_html_e( 'Email', 'jb3-members' ); ?></h2>
+                <p class="description" style="max-width:600px;margin-bottom:12px;">
+                    <?php esc_html_e( 'Remitente de los mails de registro, login (magic link) y avisos de descarga. Tiene que ser una dirección de un dominio propio, autenticado en el servicio de envío (SPF/DKIM) — un Gmail/Outlook/Yahoo personal no funciona: esos proveedores rechazan mails que digan venir de ellos pero que no hayan salido de sus propios servidores.', 'jb3-members' ); ?>
+                </p>
+                <table class="form-table">
+                    <tr>
+                        <th><label for="jb3_email_from"><?php esc_html_e( 'Email remitente', 'jb3-members' ); ?></label></th>
+                        <td>
+                            <input type="email" id="jb3_email_from" name="jb3_email_from" value="<?php echo esc_attr( get_option( 'jb3_email_from' ) ); ?>" class="regular-text" placeholder="notificaciones@tudominio.com">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="jb3_email_from_name"><?php esc_html_e( 'Nombre remitente', 'jb3-members' ); ?></label></th>
+                        <td>
+                            <input type="text" id="jb3_email_from_name" name="jb3_email_from_name" value="<?php echo esc_attr( get_option( 'jb3_email_from_name' ) ); ?>" class="regular-text" placeholder="JB3 Members">
+                        </td>
+                    </tr>
                 </table>
 
                 <!-- Shortcodes (informativo, sin campos) -->

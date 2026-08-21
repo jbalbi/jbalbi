@@ -88,6 +88,20 @@ class JB3_Magic_Link {
             return;
         }
 
+        // Un escáner de seguridad de correo (Safe Links, Mimecast, etc.) que
+        // abre el link automáticamente para revisarlo ANTES de que la
+        // persona real lo clickee gastaría el token de un solo uso — acá no
+        // hay "reintentar", el usuario se queda afuera sin saber por qué.
+        // Mismo criterio best-effort que ya usa el tracking de vistas/
+        // descargas (jb3_es_posible_bot(), helpers.php): si el User-Agent
+        // matchea una firma conocida, no seguimos — se ignora el parámetro
+        // y la página de login se muestra normal, como si no tuviera token,
+        // dejando el token intacto para cuando lo abra la persona real.
+        $ua = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
+        if ( function_exists( 'jb3_es_posible_bot' ) && jb3_es_posible_bot( $ua ) ) {
+            return;
+        }
+
         $token = sanitize_text_field( wp_unslash( $_GET['jb3_magic'] ) );
         $user  = self::validate_token( $token );
 

@@ -33,14 +33,6 @@ class JB3_Op_Comerciales_Tracking {
 	const HOJA_VISTAS     = 'oportunidades vistas';
 	const HOJA_DESCARGAS  = 'oportunidades descargadas';
 
-	/** Firmas de User-Agent de escáneres/bots de mail y seguridad conocidos — lista best-effort, no exhaustiva. */
-	const BOT_UA_SIGNATURES = [
-		'ips-agent', 'safelinks', 'microsoft office', 'outlook-safelinks',
-		'barracuda', 'mimecast', 'proofpoint', 'symantec', 'trendmicro',
-		'fortinet', 'fortimail', 'mcafee', 'zscaler', 'cisco security',
-		'googleimageproxy', 'bot', 'crawler', 'spider', 'scanner', 'preview',
-	];
-
 	public static function init() {
 		add_action( 'template_redirect', [ __CLASS__, 'track_view' ] );
 		add_action( 'init', [ __CLASS__, 'handle_download' ] );
@@ -151,7 +143,7 @@ class JB3_Op_Comerciales_Tracking {
 				$countries[ $pais_ip ] ?? $pais_ip,
 				$ip,
 				$ua,
-				self::es_posible_bot( $ua ) ? 'Sí' : 'No',
+				jb3_es_posible_bot( $ua ) ? 'Sí' : 'No',
 			],
 			[
 				'Fecha y hora', 'Nombre', 'Email', 'Empresa', 'Teléfono',
@@ -190,17 +182,4 @@ class JB3_Op_Comerciales_Tracking {
 		return isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
 	}
 
-	/** Heurística best-effort — ver comentario de clase. No es una detección certera. */
-	private static function es_posible_bot( string $user_agent ): bool {
-		if ( '' === trim( $user_agent ) ) {
-			return true;
-		}
-		$ua_lower = strtolower( $user_agent );
-		foreach ( self::BOT_UA_SIGNATURES as $signature ) {
-			if ( false !== strpos( $ua_lower, $signature ) ) {
-				return true;
-			}
-		}
-		return false;
-	}
 }

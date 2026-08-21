@@ -235,57 +235,87 @@ class JB3_Representatives {
         }
 
         $countries = jb3_countries();
-        $heading   = ( $country_code && isset( $countries[ $country_code ] ) )
+        $con_pais  = ( $country_code && isset( $countries[ $country_code ] ) );
+        $heading   = $con_pais
             ? sprintf(
                 /* translators: %s: country name */
-                _n( 'Representante en %s', 'Representantes en %s', count( $reps ), 'jb3-members' ),
+                __( 'Nuestros representantes en %s', 'jb3-members' ),
                 $countries[ $country_code ]
             )
-            : __( 'Representantes', 'jb3-members' );
+            : __( 'Nuestros representantes', 'jb3-members' );
+
+        $mapa_url = $con_pais ? self::pais_asset_url( 'mapa', $country_code ) : '';
 
         ob_start();
         ?>
         <div class="jb3-representantes">
-            <h2 class="jb3-modulo__titulo jb3-representantes__pais"><?php echo esc_html( $heading ); ?></h2>
-            <?php foreach ( $reps as $rep ) : ?>
-                <div class="jb3-representante">
-                    <span class="jb3-representante__info">
-                        <?php if ( ! empty( $rep->photo_id ) ) : ?>
-                            <span class="jb3-representante__foto">
-                                <?php echo wp_get_attachment_image( (int) $rep->photo_id, 'thumbnail', false, [ 'alt' => trim( $rep->first_name . ' ' . $rep->last_name ) ] ); ?>
-                            </span>
-                        <?php endif; ?>
+            <div class="jb3-representantes__col-izq">
+                <h2 class="jb3-modulo__titulo jb3-representantes__pais"><?php echo esc_html( $heading ); ?></h2>
 
-                        <span class="jb3-representante__nombre">
-                            <?php echo esc_html( trim( $rep->first_name . ' ' . $rep->last_name ) ); ?>
-                        </span>
-                    </span>
+                <div class="jb3-representantes__lista">
+                    <?php foreach ( $reps as $rep ) : ?>
+                        <div class="jb3-representante">
+                            <span class="jb3-representante__info">
+                                <?php if ( ! empty( $rep->photo_id ) ) : ?>
+                                    <span class="jb3-representante__foto">
+                                        <?php echo wp_get_attachment_image( (int) $rep->photo_id, 'thumbnail', false, [ 'alt' => trim( $rep->first_name . ' ' . $rep->last_name ) ] ); ?>
+                                    </span>
+                                <?php endif; ?>
 
-                    <span class="jb3-representante__contacto">
-                        <?php if ( $rep->whatsapp ) : ?>
-                            <a class="jb3-representante__dato" href="https://wa.me/<?php echo esc_attr( preg_replace( '/[^0-9]/', '', $rep->whatsapp ) ); ?>" target="_blank" rel="noopener">
-                                <?php echo self::icono( 'whatsapp' ); ?>
-                                <?php echo esc_html( $rep->whatsapp ); ?>
-                            </a>
-                        <?php endif; ?>
-                        <?php if ( $rep->phone ) : ?>
-                            <span class="jb3-representante__dato">
-                                <?php echo self::icono( 'phone' ); ?>
-                                <?php echo esc_html( $rep->phone ); ?>
+                                <span class="jb3-representante__nombre">
+                                    <?php echo esc_html( trim( $rep->first_name . ' ' . $rep->last_name ) ); ?>
+                                </span>
                             </span>
-                        <?php endif; ?>
-                        <?php if ( $rep->email ) : ?>
-                            <a class="jb3-representante__dato" href="mailto:<?php echo esc_attr( $rep->email ); ?>">
-                                <?php echo self::icono( 'mail' ); ?>
-                                <?php echo esc_html( $rep->email ); ?>
-                            </a>
-                        <?php endif; ?>
-                    </span>
+
+                            <span class="jb3-representante__contacto">
+                                <?php if ( $rep->whatsapp ) : ?>
+                                    <a class="jb3-representante__dato" href="https://wa.me/<?php echo esc_attr( preg_replace( '/[^0-9]/', '', $rep->whatsapp ) ); ?>" target="_blank" rel="noopener">
+                                        <?php echo self::icono( 'whatsapp' ); ?>
+                                        <?php echo esc_html( $rep->whatsapp ); ?>
+                                    </a>
+                                <?php endif; ?>
+                                <?php if ( $rep->phone ) : ?>
+                                    <span class="jb3-representante__dato">
+                                        <?php echo self::icono( 'phone' ); ?>
+                                        <?php echo esc_html( $rep->phone ); ?>
+                                    </span>
+                                <?php endif; ?>
+                                <?php if ( $rep->email ) : ?>
+                                    <a class="jb3-representante__dato" href="mailto:<?php echo esc_attr( $rep->email ); ?>">
+                                        <?php echo self::icono( 'mail' ); ?>
+                                        <?php echo esc_html( $rep->email ); ?>
+                                    </a>
+                                <?php endif; ?>
+                            </span>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
-            <?php endforeach; ?>
+            </div>
+
+            <?php if ( $mapa_url ) : ?>
+                <div class="jb3-representantes__col-der">
+                    <img class="jb3-representantes__mapa" src="<?php echo esc_url( $mapa_url ); ?>" alt="">
+                </div>
+            <?php endif; ?>
         </div>
         <?php
         return ob_get_clean();
+    }
+
+    /**
+     * URL de wp-content/uploads/paises/{tipo}_{CODE}.svg (ej. flag_AR.svg,
+     * mapa_AR.svg) — '' si el archivo no está ahí, para no romper el diseño
+     * con una imagen caída si falta subir alguno.
+     */
+    private static function pais_asset_url( string $tipo, string $code ): string {
+        $upload_dir = wp_get_upload_dir();
+        $filename   = $tipo . '_' . strtoupper( $code ) . '.svg';
+
+        if ( ! file_exists( $upload_dir['basedir'] . '/paises/' . $filename ) ) {
+            return '';
+        }
+
+        return $upload_dir['baseurl'] . '/paises/' . $filename;
     }
 
     /** Iconos rellenos e inline (sin librería externa) para WhatsApp/teléfono/email. */
