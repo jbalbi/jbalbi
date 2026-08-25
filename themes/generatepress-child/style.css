@@ -64,9 +64,10 @@ Text Domain: generatepress-child
     --nav-cta-text:       var(--btn-text);
     --nav-cta-text-hover: var(--btn-text-hover);
     --nav-cta-margin-left: 20px;
-    --nav-font-size:        11px;
-    --nav-font-size-mobile: 16px;
-    --nav-font-weight:      700;
+    --nav-font-size:          11px;
+    --nav-font-size-mobile:   26px;
+    --nav-font-weight:        700;
+    --nav-font-weight-mobile: 400;
     /* line-height normal (no un px fijo) para que las líneas de un ítem que
        hace wrap (ej. "Conéctate con nosotros" en dos líneas) no queden
        separadas por un espacio enorme; la altura del botón la da el padding
@@ -86,12 +87,13 @@ Text Domain: generatepress-child
     --dropdown-text-hover: var(--color-secondary);
     --dropdown-current-bg: #f0f0f01a;
 
-    /* Íconos del header (LinkedIn, perfil, buscador) — mismo fondo para que
-       se vean como un set de botones consistente. */
-    --icon-color:      var(--nav-text);
-    --icon-hover:      var(--color-primary);
+    /* Íconos del header (LinkedIn, perfil, buscador) — blancos, sin fondo;
+       en hover solo cambian de color, sin cuadrado atrás (probado y
+       descartado 2026-08-24). */
+    --icon-color:      #ffffff;
+    --icon-hover:      var(--color-secondary);
     --icon-bg:         transparent;
-    --icon-radius:     6px;
+    --icon-radius:     0;
 
     /* Footer */
     --footer-bg:            #17002d;
@@ -171,9 +173,14 @@ Text Domain: generatepress-child
 @media (max-width: 1279px) {
     :root {
         --nav-font-size: var(--nav-font-size-mobile);
+        --nav-font-weight: var(--nav-font-weight-mobile);
         /* Padding vertical del header (logo + buscador + hamburguesa) lo más
            chico posible en mobile. */
         --header-padding-y: 5px;
+        /* Ítems del panel mobile más juntos entre sí (menos aire vertical
+           que en desktop) para que una tipografía más grande siga entrando
+           cómoda en pantalla — ver diseño de referencia 2026-08-25. */
+        --nav-item-padding-y: 6px;
     }
 }
 
@@ -271,7 +278,7 @@ a:focus {
 .button,
 a.button,
 .wp-block-button__link,
-button,
+button:not(.site-header-account__toggle):not(.menu-toggle),
 html input[type="button"],
 input[type="reset"],
 input[type="submit"] {
@@ -281,17 +288,23 @@ input[type="submit"] {
     text-transform: uppercase !important;
 }
 
+/* :not(.site-header-account__toggle):not(.menu-toggle) en los "button"
+   sueltos de acá abajo: el ícono de perfil del header y el botón del menú
+   hamburguesa son técnicamente <button>, así que sin esta exclusión el
+   fondo rosa "de fábrica" de los botones del sitio le ganaba al fondo
+   transparente que se armó a propósito para los 3 íconos
+   del header (LinkedIn/perfil/buscador) — bug real confirmado 2026-08-24. */
 .button:hover,
 a.button:hover,
 .wp-block-button__link:hover,
-button:hover,
+button:not(.site-header-account__toggle):not(.menu-toggle):hover,
 html input[type="button"]:hover,
 input[type="reset"]:hover,
 input[type="submit"]:hover,
 .button:focus,
 a.button:focus,
 .wp-block-button__link:focus,
-button:focus,
+button:not(.site-header-account__toggle):not(.menu-toggle):focus,
 html input[type="button"]:focus,
 input[type="reset"]:focus,
 input[type="submit"]:focus {
@@ -433,12 +446,50 @@ body.admin-bar .site-header {
     color: var(--nav-text) !important;
 }
 
+/* Botón hamburguesa: blanco, sin fondo ni borde (mismo criterio "sin
+   cuadrado de color" que los 3 íconos del header — ver --icon-bg), con
+   hover en el color secundario del sitio. */
+.main-navigation .menu-toggle {
+    background-color: transparent !important;
+    border: none !important;
+}
+
+/* :focus-visible en vez de :focus: un <button> nativo queda enfocado
+   después del click (no solo con teclado), así que con :focus el ícono se
+   quedaba "pegado" en el color secundario después de cerrar el menú en vez
+   de volver a blanco. :focus-visible solo se activa con navegación por
+   teclado, que es justo cuando conviene mostrar el estado de foco.
+
+   @media (hover: hover) en el :hover: en touch (celular, o el modo
+   responsive de Chrome con emulación táctil) no hay mouse que se "aleje"
+   para sacar el :hover después de tocar — queda pegado en el color
+   secundario indefinidamente. Escondiendo el :hover en dispositivos sin
+   mouse de verdad evita que se quede pegado ahí. */
+@media (hover: hover) {
+    .main-navigation .menu-toggle:hover {
+        color: var(--nav-hover) !important;
+    }
+}
+
+.main-navigation .menu-toggle:focus-visible {
+    color: var(--nav-hover) !important;
+}
+
 /* Padding del header completo (logo + nav + íconos en desktop). */
 .inside-header {
     padding-top: var(--header-padding-y) !important;
     padding-bottom: var(--header-padding-y) !important;
     padding-left: var(--header-padding-x) !important;
     padding-right: var(--header-padding-x) !important;
+}
+
+/* Lupa del menú hamburguesa (.menu-bar-item > a, agregada por GP vía
+   generate_inside_mobile_menu_control_wrapper): sin esta regla, el
+   selector global "a { color: var(--link-color) !important; }" (más abajo
+   en este archivo) le gana al color heredado de .menu-bar-items, y el
+   ícono queda con el color de link genérico en vez de blanco. */
+.main-navigation .menu-bar-item > a {
+    color: var(--nav-text) !important;
 }
 
 .main-navigation .main-nav > ul > li:not([class*="current-menu-"]):not(.nav-cta):hover > a,
@@ -563,6 +614,22 @@ button, input, select, textarea,
         background-color: transparent !important;
     }
 
+    /* ─── CTA sin cuadro de color ─────────────────────────────────────────
+       "Conéctate con nosotros" se ve como botón destacado en desktop, pero
+       en el panel mobile a pantalla completa queda como un ítem más de la
+       lista (mismo blanco y mismo tamaño que el resto) — ver diseño de
+       referencia 2026-08-25. */
+    .main-navigation.toggled .nav-cta > a {
+        background-color: transparent !important;
+        color: var(--nav-text) !important;
+    }
+
+    .main-navigation.toggled .nav-cta:hover > a,
+    .main-navigation.toggled .nav-cta:focus > a {
+        background-color: transparent !important;
+        color: var(--nav-hover) !important;
+    }
+
     /* ─── Barra hamburguesa/buscador ──────────────────────────────────────
        .mobile-menu-control-wrapper (botón de búsqueda + hamburguesa, franja
        de arriba) es un botón fijo en pantalla todo el tiempo, no hace
@@ -570,9 +637,35 @@ button, input, select, textarea,
        CSS (wp-content/themes/generatepress/assets/css/main.css) — eso
        manda más que el padding, así que se pisa explícito acá, junto con
        cualquier alto mínimo y el tamaño del ícono (que por defecto es
-       1em, ligado al font-size heredado). */
+       1em, ligado al font-size heredado).
+
+       display:flex + align-items:center acá también (no solo confiar en el
+       "align-items:center" que trae GP por defecto en .mobile-menu-control-
+       wrapper): la lupa (<a>) y el hamburguesa (<button>) son elementos
+       distintos con line-box/baseline propios, así que sin alinearlos
+       manualmente por flex quedaban a distinta altura entre sí. */
+    #mobile-menu-control-wrapper {
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    /* La lupa va anidada #mobile-menu-control-wrapper > .menu-bar-items >
+       .menu-bar-item > a > svg — GP solo pone display:flex en
+       .menu-bar-items (el div contenedor), pero .menu-bar-item (el <span>
+       de adentro) se queda sin flex propio, así que su contenido no queda
+       centrado verticalmente como el <a> del botón hamburguesa, que no
+       tiene ese nivel de anidación extra. Sin este display:flex acá, la
+       lupa quedaba más arriba que las líneas del hamburguesa. */
+    #mobile-menu-control-wrapper .menu-bar-items,
+    #mobile-menu-control-wrapper .menu-bar-item {
+        display: flex !important;
+        align-items: center !important;
+    }
+
     #mobile-menu-control-wrapper .menu-toggle,
     #mobile-menu-control-wrapper .menu-bar-item > a {
+        display: flex !important;
+        align-items: center !important;
         padding: 8px !important;
         line-height: 1 !important;
         min-height: 0 !important;
@@ -582,6 +675,22 @@ button, input, select, textarea,
     #mobile-menu-control-wrapper .gp-icon svg {
         width: 18px !important;
         height: 18px !important;
+    }
+
+    /* Lupa a 15px acá también (mismo criterio óptico que en desktop — ver
+       .site-header-icons__search svg), más chica que el hamburguesa.
+
+       margin-top: el propio dibujo del SVG de la lupa (el de GeneratePress)
+       no está centrado dentro de su viewBox de 512x512 — dejando aire vacío
+       abajo, no arriba —, así que aunque la caja esté bien centrada por
+       flex, el trazo visible queda corrido hacia arriba respecto al
+       hamburguesa (que sí es simétrico). Es un ajuste óptico a mano, no un
+       tema de alineación por CSS — si hace falta afinar más, tocar este
+       valor nomás. */
+    #mobile-menu-control-wrapper .menu-bar-item svg {
+        width: 15px !important;
+        height: 15px !important;
+        margin-top: 3px !important;
     }
 
     /* ─── Bloque de íconos (LinkedIn / cuenta / registro) ────────────────
@@ -644,11 +753,25 @@ button, input, select, textarea,
 
 /* ═══════════════════════════════════════════════════════════════════════════
    OVERLAY DEL MENÚ MÓVIL
-   GeneratePress agrega la clase "mobile-menu-open" al <html> cuando el
-   hamburguesa está activo (ver menu.js).
-   ═══════════════════════════════════════════════════════════════════════════ */
+   nav.js agrega la clase "mobile-menu-open" al <html> cuando el
+   hamburguesa está activo (ver _init_navigation.php).
+
+   Bug real confirmado 2026-08-24: "overflow:hidden" para bloquear el scroll
+   de fondo rompe el "position:sticky" de .site-header (limitación conocida
+   de CSS — un ancestro con overflow distinto de "visible" desengancha el
+   sticky). Si abrís el menú habiendo scrolleado, el header (y los links de
+   adentro) saltaban a su posición NATURAL en el documento — arriba de
+   todo la página, fuera de la pantalla visible — en vez de quedarse pegado
+   donde estabas mirando. Reemplazado por la técnica estándar de
+   "congelar" la página con position:fixed + un offset negativo igual al
+   scroll actual (ver mobile-menu-scroll-lock.js, que calcula ese offset y
+   lo restaura al cerrar) — no le pide nada a la propiedad "overflow", así
+   que el sticky del header no se ve afectado. */
 html.mobile-menu-open {
-    overflow: hidden;
+    position: fixed;
+    left: 0;
+    right: 0;
+    width: 100%;
 }
 
 html.mobile-menu-open body::after {
@@ -656,7 +779,7 @@ html.mobile-menu-open body::after {
     position: fixed;
     inset: 0;
     z-index: 99;
-    background: rgba(0, 0, 0, 0.6);
+    background: #000000;
 }
 
 /* .main-navigation y el control-wrapper del hamburguesa son position:static
@@ -761,9 +884,34 @@ html.mobile-menu-open .mobile-menu-control-wrapper {
 }
 
 /* Sin display:block los SVG quedan inline y suman unos px de espacio
-   fantasma abajo (por el baseline), desalineándolos entre sí. */
+   fantasma abajo (por el baseline), desalineándolos entre sí. width/height
+   fijos con !important: el de perfil viene inline a 20x20
+   (_init_header.php), pero el de la lupa lo genera GeneratePress con
+   ".gp-icon svg { width:1em; height:1em }" (main.css) — mismo selector,
+   misma especificidad, pero sin !important esa regla podía ganar por orden
+   de carga y la lupa quedaba con un tamaño distinto a los otros dos. */
 .site-header-icons svg {
     display: block;
+    width: 20px !important;
+    height: 20px !important;
+}
+
+/* Compensación de tamaño ÓPTICO: con los 3 SVG ya forzados a la misma caja
+   de 20x20 (arriba), la lupa (dibujo de GP, viewBox 512x512 con el trazo
+   llegando casi hasta el borde) y el ícono de perfil (viewBox 24x24, trazo
+   también bastante ajustado al borde) igual se ven más grandes que el de
+   LinkedIn (mismo viewBox 24x24 pero con más aire interno) — no es un
+   problema de la caja, es cuánto ocupa el dibujo adentro de su propio
+   viewBox. Achicamos la caja de estos dos un toque para igualar el peso
+   visual; si hace falta afinar más, tocar estos dos valores nomás. */
+.site-header-icons__search svg {
+    width: 15px !important;
+    height: 15px !important;
+}
+
+.site-header-account__toggle svg {
+    width: 18px !important;
+    height: 18px !important;
 }
 
 /* Estilo "botón" para los 3 íconos (LinkedIn, perfil, buscador) — fondo,
@@ -784,8 +932,7 @@ html.mobile-menu-open .mobile-menu-control-wrapper {
 .site-header-icons .header-widget a:hover,
 .site-header-icons__search:hover,
 .site-header-account__toggle:hover {
-    background-color: var(--icon-hover) !important;
-    color: #ffffff !important;
+    color: var(--icon-hover) !important;
 }
 
 /* Flechita de "abrir submenú": el texto del ítem también dispara el

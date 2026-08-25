@@ -286,9 +286,20 @@
 }
 
 /* Tarjeta: nombre a la izquierda, WhatsApp/teléfono/email apilados a la
-   derecha. En mobile se apila todo: nombre arriba, datos abajo. */
+   derecha. En mobile se apila todo: nombre arriba, datos abajo.
+
+   flex-wrap: el breakpoint de 767px de acá abajo mira el ancho de la
+   PANTALLA, pero esta tarjeta vive en la columna izquierda al 50% del
+   ancho (compitiendo con el mapa) — con pantallas de ~1000-1300px esa
+   columna ya es angosta aunque la pantalla no sea "mobile" para el resto
+   del sitio. Sin wrap, el nombre se quedaba sin espacio y partía cada
+   palabra en su propia línea ("JUAN / JOSE / BALBI"). Con wrap, si
+   .jb3-representante__info (foto+nombre) y __contacto no entran juntos en
+   la fila, el bloque de contacto baja solo a una segunda línea — sin
+   depender de ningún ancho de pantalla puntual. */
 .jb3-representante {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
@@ -304,10 +315,18 @@
     }
 }
 
+/* flex-shrink:0 (no shrink:1 por default): foto+nombre nunca se aprietan
+   entre sí — es .jb3-representante__contacto el que baja de línea si no
+   entra (ver flex-wrap en .jb3-representante). */
 .jb3-representante__info {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     gap: 1rem;
+}
+
+.jb3-representante__foto {
+    flex-shrink: 0;
 }
 
 .jb3-representante__foto img {

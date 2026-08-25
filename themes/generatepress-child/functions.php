@@ -124,6 +124,7 @@ add_filter( 'wp_headers', function ( $headers ) {
 require_once __DIR__ . '/_init_taxonomias.php';         // Taxonomías personalizadas
 require_once __DIR__ . '/_init_custom_post_types.php';  // Custom Post Types
 require_once __DIR__ . '/_init_menu.php';               // Breakpoint del menú hamburguesa
+require_once __DIR__ . '/_init_navigation.php';         // jb3_navigation(): <nav> + hamburguesa propios (reemplaza generate_navigation_position())
 require_once __DIR__ . '/_init_header.php';             // Header custom: preheader, logo+nav, buscador/cuenta/LinkedIn
 require_once __DIR__ . '/_init_layout.php';             // Layout forzado: sin sidebar, sin footer widgets, full-width
 require_once __DIR__ . '/_init_sliders.php';             // jb3_enqueue_swiper(): loader reutilizable para cualquier slider

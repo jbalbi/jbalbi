@@ -75,7 +75,7 @@ function jb3_custom_header() {
             do_action( 'generate_before_header_content' );
             ?>
 
-            <?php generate_navigation_position(); // <nav> principal + control del hamburguesa ?>
+            <?php jb3_navigation(); // <nav> principal + control del hamburguesa (propio, ver _init_navigation.php) ?>
 
             <div class="site-header-icons">
                 <?php generate_construct_header_widget(); // LinkedIn, desde el widget "Header" ?>
@@ -131,6 +131,20 @@ function jb3_enqueue_header_height_script() {
     wp_enqueue_script(
         'jb3-header-height',
         get_stylesheet_directory_uri() . '/assets/js/header-height.js',
+        [],
+        file_exists( $path ) ? filemtime( $path ) : false,
+        true
+    );
+}
+
+// ─── BLOQUEO DE SCROLL DEL MENÚ MOBILE (sin romper el sticky del header) ────
+// Ver comentario largo en style.css, sección "OVERLAY DEL MENÚ MÓVIL".
+add_action( 'wp_enqueue_scripts', 'jb3_enqueue_mobile_menu_scroll_lock_script' );
+function jb3_enqueue_mobile_menu_scroll_lock_script() {
+    $path = get_stylesheet_directory() . '/assets/js/mobile-menu-scroll-lock.js';
+    wp_enqueue_script(
+        'jb3-mobile-menu-scroll-lock',
+        get_stylesheet_directory_uri() . '/assets/js/mobile-menu-scroll-lock.js',
         [],
         file_exists( $path ) ? filemtime( $path ) : false,
         true
