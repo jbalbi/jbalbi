@@ -176,11 +176,13 @@ class JB3_Mailchimp {
 
         if ( 'unsubscribe' === $type || 'cleaned' === $type ) {
             update_user_meta( $user->ID, 'jb3_newsletter', 0 );
+            jb3_sync_newsletter_countries( $user->ID, false );
             self::archive_contact( $email );
         }
 
         if ( 'subscribe' === $type ) {
             update_user_meta( $user->ID, 'jb3_newsletter', 1 );
+            jb3_sync_newsletter_countries( $user->ID, true );
         }
 
         if ( 'profile' === $type ) {

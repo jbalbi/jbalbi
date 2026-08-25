@@ -94,7 +94,7 @@ Text Domain: generatepress-child
     --icon-radius:     6px;
 
     /* Footer */
-    --footer-bg:            #333;
+    --footer-bg:            #17002d;
     --footer-text:          #f6f6f6;
     --footer-heading-color: var(--color-secondary);
     --footer-link-color:    #cccccc;
@@ -149,6 +149,23 @@ Text Domain: generatepress-child
         --slider-logo-width:     180px;
         --slider-logo-height:    65px;
     }
+}
+
+/* Base general de tamaño de headings en mobile — el sitio no traía ningún
+   control de esto, así que cualquier h1-h6 sin una regla más específica
+   propia (la mayoría del contenido cargado a mano vía WYSIWYG en los
+   distintos bloques) heredaba el tamaño nativo del navegador y quedaba
+   gigante, con palabras largas cortándose en su propio renglón (ej.
+   "PROGRAMACIÓN"). Estas son solo el piso — cualquier clase con su propio
+   font-size (como .jb3-modulo__titulo más abajo) le sigue ganando por
+   especificidad, esto no las pisa. */
+@media (max-width: 767px) {
+    h1 { font-size: 28px; }
+    h2 { font-size: 24px; }
+    h3 { font-size: 20px; }
+    h4 { font-size: 18px; }
+    h5 { font-size: 16px; }
+    h6 { font-size: 14px; }
 }
 
 @media (max-width: 1279px) {
@@ -767,7 +784,8 @@ html.mobile-menu-open .mobile-menu-control-wrapper {
 .site-header-icons .header-widget a:hover,
 .site-header-icons__search:hover,
 .site-header-account__toggle:hover {
-    color: var(--icon-hover) !important;
+    background-color: var(--icon-hover) !important;
+    color: #ffffff !important;
 }
 
 /* Flechita de "abrir submenú": el texto del ítem también dispara el
@@ -1536,6 +1554,17 @@ body {
     letter-spacing: .02em;
 }
 
+/* Sin font-size propio, hereda el tamaño nativo de <h2> del navegador — en
+   mobile queda grande y palabras largas (ej. "PROGRAMACIÓN") no entran en
+   una línea y se ven cortadas. Mismo breakpoint mobile que el resto del
+   sitio. */
+@media (max-width: 767px) {
+    .jb3-canales-slider__titulo,
+    .jb3-modulo__titulo {
+        font-size: 22px;
+    }
+}
+
 .jb3-canales-slider__titulo {
     margin: 0 0 20px;
 }
@@ -1824,8 +1853,13 @@ body {
     padding-bottom: 40px;
 }
 
+/* Espacio entre el header/nav y el primer bloque de contenido de la página
+   — a propósito SEPARADO del espacio entre bloques hermanos de más abajo
+   (.entry-content > * + *, sigue en 40px): pedido explícito 2026-08-24 de
+   que este espacio inicial sea mayor, sin agrandar la separación entre
+   módulos ya establecida en el resto de la página. */
 .entry-content > *:first-child:not(.jb3-hero):not(.jb3-subnav) {
-    margin-top: 40px;
+    margin-top: 64px;
 }
 
 .entry-content > * + *,
@@ -2013,6 +2047,23 @@ body.error404 .inside-article .search-form {
     margin: 0 0 20px;
 }
 
+/* El contenido real del WYSIWYG (h1-h6/p, ej. el <h4><strong> de "Sony
+   Channel") queda ANIDADO adentro de este div, no en el div mismo — un
+   font-size acá no le pega al heading de adentro, que tiene su propio
+   tamaño nativo del navegador (más específico que heredar del padre). En
+   mobile ese tamaño nativo queda enorme y tapa el header. */
+@media (max-width: 767px) {
+    .jb3-modulo__bajada h1,
+    .jb3-modulo__bajada h2,
+    .jb3-modulo__bajada h3,
+    .jb3-modulo__bajada h4,
+    .jb3-modulo__bajada h5,
+    .jb3-modulo__bajada h6,
+    .jb3-modulo__bajada p {
+        font-size: 16px;
+    }
+}
+
 /* Imagen full-bleed del bloque "Programación" (blocks/programacion) — mismo
    truco de ancho completo que .jb3-contenedor. */
 .jb3-programacion__imagen {
@@ -2181,6 +2232,40 @@ body.error404 .inside-article .search-form {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: .03em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESULTADOS DE BÚSQUEDA (search.php)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-search-sin-resultados {
+    padding: 20px 0 40px;
+    opacity: .8;
+}
+
+.jb3-search-pagination {
+    margin-top: 40px;
+}
+
+.jb3-search-pagination .page-numbers {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    margin-right: 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, .06);
+    color: #ffffff !important;
+    text-decoration: none !important;
+}
+
+.jb3-search-pagination .page-numbers.current {
+    background: var(--color-primary);
+}
+
+.jb3-search-pagination .page-numbers:hover:not(.current) {
+    background: rgba(255, 255, 255, .14);
 }
 
 .jb3-grid-thumbs__play {

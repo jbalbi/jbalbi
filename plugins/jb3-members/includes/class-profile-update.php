@@ -103,6 +103,11 @@ class JB3_Profile_Update {
             return [ $errors, false ];
         }
 
+        // Valor viejo ANTES de pisarlo — hace falta para saber si esto es una
+        // transición real de suscripción (recién se tilda/destilda el
+        // checkbox) o el usuario simplemente reguardó su perfil sin tocarlo.
+        $old_newsletter = (bool) get_user_meta( $user_id, 'jb3_newsletter', true );
+
         // — Update WP user ——————————————————————————————————————————
         wp_update_user( [
             'ID'           => $user_id,
@@ -119,6 +124,13 @@ class JB3_Profile_Update {
         update_user_meta( $user_id, 'jb3_sector',     $sector );
         update_user_meta( $user_id, 'jb3_newsletter', $newsletter );
         update_user_meta( $user_id, 'jb3_interests',  $interests );
+
+        // Solo en la transición real (ver comentario de jb3_sync_newsletter_countries,
+        // helpers.php) — si el usuario ya estaba suscripto y solo cambió el
+        // teléfono, esto no toca su selección de países.
+        if ( (bool) $newsletter !== $old_newsletter ) {
+            jb3_sync_newsletter_countries( $user_id, (bool) $newsletter );
+        }
 
         do_action( 'jb3_after_profile_save', $user_id );
 

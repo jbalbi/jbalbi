@@ -72,7 +72,13 @@ $post_url     = get_permalink( $post_id );
         </td></tr></table>
 
         <p style="margin-top:24px;font-size:12px;color:#999;">
-            <?php esc_html_e( 'Podés responderle directo a este usuario escribiendo a su email de arriba.', 'jb3-members' ); ?>
+            <?php
+            printf(
+                /* translators: %s: mailto link with the user's email */
+                esc_html__( 'Podés responderle directo a este usuario escribiendo a %s.', 'jb3-members' ),
+                '<a href="mailto:' . esc_attr( $user->user_email ) . '" style="color:#730687;">' . esc_html( $user->user_email ) . '</a>'
+            );
+            ?>
         </p>
     </td></tr>
 </table>

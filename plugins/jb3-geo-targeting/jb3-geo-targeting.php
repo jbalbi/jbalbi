@@ -305,6 +305,27 @@ add_action( 'pre_get_posts', function ( WP_Query $query ) {
 	$query->set( 'tax_query', $tax_query );
 } );
 
+// ─── BÚSQUEDA NATIVA: filtrar resultados por país después de la consulta ────
+// Bug real confirmado 2026-08-21: el comentario del filtro de arriba asumía
+// que la búsqueda nativa de WordPress solo busca en Páginas/Entradas por
+// defecto — falso, "peliculas" (y el resto de los CPT) no tienen
+// exclude_from_search seteado, así que quedan incluidos igual y ese filtro
+// nunca se aplicaba a la búsqueda (post_type sin declarar → cae en el
+// ['post'] de arriba → early return). Se resuelve DESPUÉS de la consulta,
+// no extendiendo el tax_query de arriba: ese tax_query exige la taxonomía
+// "pais" a rajatabla, y Páginas/Entradas están a propósito exceptuadas de
+// esa exigencia en TODO el resto del sitio (nunca usaron esa taxonomía) —
+// replicar mal esa excepción acá rompería la búsqueda de contenido
+// institucional. jb3_geo_post_visible() ya tiene esa excepción bien
+// resuelta (es la misma función que usa el 404 de arriba), así que se
+// reusa tal cual en vez de duplicar la lógica en un tax_query nuevo.
+add_filter( 'the_posts', function ( array $posts, WP_Query $query ) {
+	if ( is_admin() || ! $query->is_search() || ! $query->is_main_query() ) {
+		return $posts;
+	}
+	return array_values( array_filter( $posts, fn( WP_Post $post ) => jb3_geo_post_visible( $post->ID ) ) );
+}, 10, 2 );
+
 // ─── BARRA DE ADMIN: previsualizar el sitio como otro país ──────────────────
 add_action( 'admin_bar_menu', function ( WP_Admin_Bar $admin_bar ) {
 	if ( ! current_user_can( 'manage_options' ) ) {

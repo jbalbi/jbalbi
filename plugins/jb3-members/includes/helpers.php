@@ -81,6 +81,45 @@ function jb3_interests() {
     return JB3_Mailchimp::get_cached_interests();
 }
 
+/**
+ * Mantiene "Newsletter por País" (jb3_newsletter_countries, IDs de interés
+ * de Mailchimp) coherente con el estado de suscripción — se llama SOLO en
+ * la transición de jb3_newsletter (pasa a suscripto o pasa a desuscripto),
+ * nunca en cada guardado, para no pisar una selección manual del admin
+ * mientras el usuario sigue en el mismo estado:
+ *   - Al SUSCRIBIRSE: tilda ÚNICAMENTE el interés del país propio del
+ *     usuario (jb3_country) — pisa cualquier selección vieja.
+ *   - Al DESUSCRIBIRSE: borra TODOS los países tildados — así una
+ *     resuscripción futura arranca limpia (solo el país propio), en vez de
+ *     resucitar una selección vieja que nadie volvió a revisar.
+ */
+function jb3_sync_newsletter_countries( int $user_id, bool $newsletter ): void {
+    if ( ! $newsletter ) {
+        delete_user_meta( $user_id, 'jb3_newsletter_countries' );
+        return;
+    }
+
+    $country_code = strtoupper( (string) get_user_meta( $user_id, 'jb3_country', true ) );
+    if ( ! $country_code ) {
+        delete_user_meta( $user_id, 'jb3_newsletter_countries' );
+        return;
+    }
+
+    $mc_id = null;
+    foreach ( JB3_Mailchimp::get_newsletter_interests() as $id => $name ) {
+        if ( strtoupper( $name ) === $country_code ) {
+            $mc_id = $id;
+            break;
+        }
+    }
+
+    if ( $mc_id ) {
+        update_user_meta( $user_id, 'jb3_newsletter_countries', [ $mc_id ] );
+    } else {
+        delete_user_meta( $user_id, 'jb3_newsletter_countries' );
+    }
+}
+
 // ─── User helpers ─────────────────────────────────────────────────────────────
 
 function jb3_is_member( $user_id ) {

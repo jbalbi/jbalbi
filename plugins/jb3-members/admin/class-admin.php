@@ -13,6 +13,16 @@ class JB3_Admin {
         // CSV export — must run at admin_init before any output.
         add_action( 'admin_init', [ __CLASS__, 'handle_export' ] );
 
+        // Backfill de alias faltantes — must run at admin_init before any output.
+        add_action( 'admin_init', [ __CLASS__, 'handle_fix_nicknames' ] );
+
+        // El sitio entero está protegido con Basic Auth (contraseña de
+        // Hostinger) — WordPress detecta el conflicto con Contraseñas de
+        // aplicación (comparten el header Authorization) y muestra un aviso
+        // en CADA perfil de usuario. No se usa esta función en el proyecto,
+        // así que se desactiva entera en vez de convivir con el aviso.
+        add_filter( 'wp_is_application_passwords_available', '__return_false' );
+
         // Users list – custom columns.
         add_filter( 'manage_users_columns',          [ __CLASS__, 'user_columns' ] );
         add_filter( 'manage_users_custom_column',    [ __CLASS__, 'user_column_value' ], 10, 3 );
@@ -1068,11 +1078,11 @@ class JB3_Admin {
                 </td>
             </tr>
             <tr>
-                <th><?php esc_html_e( 'Newsletter', 'jb3-members' ); ?></th>
+                <th><?php esc_html_e( 'Suscripto al newsletter', 'jb3-members' ); ?></th>
                 <td>
                     <label>
                         <input type="checkbox" name="jb3_newsletter" value="1" <?php checked( $newsletter ); ?>>
-                        <?php esc_html_e( 'Suscripto al newsletter', 'jb3-members' ); ?>
+                        <?php esc_html_e( 'Sí', 'jb3-members' ); ?>
                     </label>
                 </td>
             </tr>
@@ -1081,7 +1091,7 @@ class JB3_Admin {
             if ( ! empty( $nl_interests ) ) :
             ?>
             <tr>
-                <th><?php esc_html_e( 'Newsletters por País', 'jb3-members' ); ?></th>
+                <th><?php esc_html_e( 'Newsletters que recibe el usuario', 'jb3-members' ); ?></th>
                 <td>
                     <?php foreach ( $nl_interests as $id => $name ) : ?>
                         <label style="display:inline-block;margin-right:20px;margin-bottom:6px;">
@@ -1089,7 +1099,7 @@ class JB3_Admin {
                             <?php echo esc_html( $name ); ?>
                         </label>
                     <?php endforeach; ?>
-                    <p class="description"><?php esc_html_e( 'Solo asignable por el admin.', 'jb3-members' ); ?></p>
+                    <p class="description"><?php esc_html_e( 'Se completa solo con el país del usuario al suscribirse, y se vacía al desuscribirse — esta selección manual solo se respeta si el estado de "Suscripto al newsletter" no cambia en este guardado.', 'jb3-members' ); ?></p>
                 </td>
             </tr>
             <?php endif; ?>
@@ -1144,7 +1154,8 @@ class JB3_Admin {
             return;
         }
 
-        $old_status = get_user_meta( $user_id, 'jb3_status', true ) ?: 'pending';
+        $old_status     = get_user_meta( $user_id, 'jb3_status', true ) ?: 'pending';
+        $old_newsletter = (bool) get_user_meta( $user_id, 'jb3_newsletter', true );
         $status     = in_array( $_POST['jb3_status'] ?? '', [ 'pending', 'approved' ], true )
                      ? $_POST['jb3_status'] : 'pending';
         $company   = sanitize_text_field( wp_unslash( $_POST['jb3_company']   ?? '' ) );
@@ -1180,9 +1191,18 @@ class JB3_Admin {
             update_user_meta( $user_id, 'jb3_interests', $interests );
         }
 
-        delete_user_meta( $user_id, 'jb3_newsletter_countries' );
-        if ( ! empty( $nl_countries ) ) {
-            update_user_meta( $user_id, 'jb3_newsletter_countries', $nl_countries );
+        // Solo en la transición real de suscripción se pisa "Newsletter por
+        // País" con la regla automática (país propio al suscribir, vacío al
+        // desuscribir — ver jb3_sync_newsletter_countries(), helpers.php).
+        // Si el estado de suscripción no cambió en este guardado, se respeta
+        // lo que el admin haya tildado a mano en el formulario.
+        if ( (bool) $newsletter !== $old_newsletter ) {
+            jb3_sync_newsletter_countries( $user_id, (bool) $newsletter );
+        } else {
+            delete_user_meta( $user_id, 'jb3_newsletter_countries' );
+            if ( ! empty( $nl_countries ) ) {
+                update_user_meta( $user_id, 'jb3_newsletter_countries', $nl_countries );
+            }
         }
 
         if ( $status === 'approved' && ! get_user_meta( $user_id, 'jb3_approved_at', true ) ) {
@@ -1279,6 +1299,55 @@ class JB3_Admin {
 
         fclose( $out );
         exit;
+    }
+
+    // -------------------------------------------------------------------------
+    // Backfill: alias (nickname) faltante
+    // -------------------------------------------------------------------------
+
+    /**
+     * Los usuarios creados por importación CSV vía $wpdb->insert() directo
+     * (más abajo, en ajax_import_chunk) se saltean wp_insert_user() por
+     * velocidad — y con eso, también la lógica nativa de WordPress que le
+     * pone "nickname" = user_login por defecto a todo usuario nuevo. Sin
+     * ese meta, WordPress rechaza cualquier guardado de la ficha desde el
+     * admin nativo con "tenés que ingresar un alias". Este backfill corre
+     * una sola vez (o las veces que haga falta, es idempotente) y completa
+     * SOLO a quien no lo tenga — no pisa un alias que alguien ya haya
+     * puesto a mano.
+     */
+    public static function handle_fix_nicknames() {
+        if ( empty( $_GET['page'] ) || 'jb3-import' !== $_GET['page'] ) {
+            return;
+        }
+        if ( empty( $_GET['action'] ) || 'jb3_fix_nicknames' !== $_GET['action'] ) {
+            return;
+        }
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Sin permiso.', 'jb3-members' ) );
+        }
+
+        check_admin_referer( 'jb3_fix_nicknames' );
+
+        $fixed = self::backfill_missing_nicknames();
+
+        wp_safe_redirect( add_query_arg( [ 'page' => 'jb3-import', 'nicknames_fixed' => $fixed ], admin_url( 'admin.php' ) ) );
+        exit;
+    }
+
+    private static function backfill_missing_nicknames(): int {
+        global $wpdb;
+        // INSERT ... SELECT ... LEFT JOIN ... IS NULL: agrega nickname = user_login
+        // solo para quien no tenga ya esa fila de usermeta — un solo query,
+        // sin importar cuántos usuarios haya.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.NotPrepared
+        return (int) $wpdb->query(
+            "INSERT INTO {$wpdb->usermeta} (user_id, meta_key, meta_value)
+             SELECT u.ID, 'nickname', u.user_login
+             FROM {$wpdb->users} u
+             LEFT JOIN {$wpdb->usermeta} um ON um.user_id = u.ID AND um.meta_key = 'nickname'
+             WHERE um.user_id IS NULL"
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -1697,6 +1766,12 @@ class JB3_Admin {
                 }
 
                 // Queue meta for batch INSERT (avoids 10+ individual queries per user).
+                // nickname: wp_insert_user() lo completa solo con el user_login por
+                // defecto — como acá se inserta directo a la tabla (se saltea esa
+                // lógica a propósito, por velocidad), hay que ponerlo a mano. Sin
+                // esto, WordPress rechaza cualquier guardado de la ficha desde el
+                // admin nativo con "tenés que ingresar un alias".
+                $new_user_metas[] = [ $user_id, 'nickname', $user_login ];
                 if ( ! empty( $wp_fields['first_name'] ) ) {
                     $new_user_metas[] = [ $user_id, 'first_name', $wp_fields['first_name'] ];
                 }
@@ -2130,6 +2205,27 @@ class JB3_Admin {
         ?>
         <div class="wrap">
             <h1><?php esc_html_e( 'Importar Usuarios', 'jb3-members' ); ?></h1>
+
+            <?php if ( isset( $_GET['nicknames_fixed'] ) ) : ?>
+                <div class="notice notice-success is-dismissible">
+                    <p>
+                        <?php
+                        printf(
+                            /* translators: %d: cantidad de usuarios arreglados */
+                            esc_html__( 'Alias completado para %d usuario(s) que no lo tenían.', 'jb3-members' ),
+                            (int) $_GET['nicknames_fixed']
+                        );
+                        ?>
+                    </p>
+                </div>
+            <?php endif; ?>
+
+            <p>
+                <a href="<?php echo esc_url( wp_nonce_url( add_query_arg( [ 'page' => 'jb3-import', 'action' => 'jb3_fix_nicknames' ], admin_url( 'admin.php' ) ), 'jb3_fix_nicknames' ) ); ?>" class="button">
+                    <?php esc_html_e( 'Completar alias faltantes', 'jb3-members' ); ?>
+                </a>
+                <span class="description"> <?php esc_html_e( '— arregla el error "tenés que ingresar un alias" en usuarios importados antes de este fix.', 'jb3-members' ); ?></span>
+            </p>
 
             <!-- Upload form — hidden while import runs -->
             <div id="jb3im-upload"<?php echo $existing_state ? ' style="display:none"' : ''; ?>>

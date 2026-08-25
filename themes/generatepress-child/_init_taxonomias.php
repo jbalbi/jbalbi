@@ -120,6 +120,24 @@ add_action( 'admin_head', function() {
     </style>';
 } );
 
+// ─── CAMPO GALERÍA (ACF): solo agregar/quitar, nada más ────────────────────
+// El campo de galería usado en "Las fotos del carrusel" (galeria-slider,
+// etc.) trae de fábrica un desplegable de "Bulk actions" (ordenar por
+// fecha/título) y un panel lateral con Título/Leyenda/Alt/Descripción que
+// se abre al hacer click en una imagen — pedido explícito: solo hacen falta
+// los botones de agregar y quitar imágenes, nada de eso. Quitar una imagen
+// puntual sigue funcionando igual (la "X" de acf-gallery-remove sobre cada
+// miniatura, que no es parte de ninguna de las dos cosas que se sacan acá).
+// .acf-gallery-side ya arranca en width:0 (colapsado) — forzarlo siempre a
+// 0 evita que el JS de ACF lo expanda al clickear una imagen, sin
+// necesidad de tocar el JS del plugin.
+add_action( 'admin_head', function() {
+    echo '<style>
+        .acf-gallery-sort { display: none !important; }
+        .acf-gallery-side { width: 0 !important; overflow: hidden !important; }
+    </style>';
+} );
+
 // ─── PÁGINAS DE CANAL: ocultar el panel nativo "Países" ─────────────────────
 // La restricción por país de un canal vive en el campo ACF "paises" del
 // TÉRMINO de "canales" (jb3_geo_page_canal_visible() en jb3-geo-targeting.php

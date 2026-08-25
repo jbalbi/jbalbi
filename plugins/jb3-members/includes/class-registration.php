@@ -136,6 +136,7 @@ class JB3_Registration {
         update_user_meta( $user_id, 'jb3_country',       $country );
         update_user_meta( $user_id, 'jb3_sector',        $sector );
         update_user_meta( $user_id, 'jb3_newsletter',    $newsletter );
+        jb3_sync_newsletter_countries( $user_id, (bool) $newsletter );
         update_user_meta( $user_id, 'jb3_interests',     $interests );
         update_user_meta( $user_id, 'jb3_status',        'pending' );
         update_user_meta( $user_id, 'jb3_registered_at', current_time( 'mysql' ) );

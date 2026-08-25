@@ -33,9 +33,9 @@ class JB3_Representatives {
 
     /**
      * Visible representatives for a given country — falls back to the
-     * visible default rep(s) when the country has none of its own, or
-     * when the country couldn't be determined (empty string). Used by
-     * the [jb3_representantes] contact-page shortcode.
+     * visible default rep(s) when the country has none of its own, so the
+     * visitor always sees at least someone to contact (decisión explícita
+     * 2026-08-21). Used by the [jb3_representantes] contact-page shortcode.
      */
     public static function get_visible_by_country( $country_code ) {
         $reps = self::get_by_country( $country_code );
@@ -53,12 +53,18 @@ class JB3_Representatives {
 
     /**
      * Representatives assigned to a given country, falling back to the
-     * default representative(s) when none are defined for that country.
-     * Used for the "new registration pending approval" email — ALL
-     * matching reps get it, regardless of the notify_downloads flag
-     * (that flag only gates the separate download-alert email below).
+     * default representative(s) when none are defined for that country —
+     * $fallback_to_default=false lo desactiva (usado por
+     * get_visible_by_country() para la página de Contacto pública).
+     * Con fallback (el caso por defecto): usado para la "new registration
+     * pending approval" email y el aviso de descarga — ALL matching reps
+     * get it, regardless of the notify_downloads flag (that flag only
+     * gates the separate download-alert email below). Siempre con
+     * fallback ahí a propósito: sin esto, un registro desde un país sin
+     * representante asignado no le llegaría a nadie y quedaría "pendiente"
+     * para siempre sin que nadie se entere de aprobarlo.
      */
-    public static function get_by_country( $country_code ) {
+    public static function get_by_country( $country_code, bool $fallback_to_default = true ) {
         global $wpdb;
         $country_code = strtoupper( sanitize_text_field( $country_code ) );
 
@@ -71,7 +77,7 @@ class JB3_Representatives {
         );
 
         if ( empty( $rep_ids ) ) {
-            return self::get_defaults();
+            return $fallback_to_default ? self::get_defaults() : [];
         }
 
         return self::get_by_ids( $rep_ids );
@@ -131,6 +137,9 @@ class JB3_Representatives {
         global $wpdb;
         $wpdb->insert( self::tbl(), self::prepare_data( $data ), self::formats() );
         $rep_id = (int) $wpdb->insert_id;
+        if ( ! empty( $data['is_default'] ) ) {
+            self::clear_other_defaults( $rep_id );
+        }
         self::save_countries( $rep_id, $data['country_codes'] ?? [] );
         return $rep_id;
     }
@@ -149,8 +158,27 @@ class JB3_Representatives {
         if ( false === $result ) {
             return new WP_Error( 'db_error', __( 'No se pudo guardar el representante.', 'jb3-members' ) );
         }
+        // Nunca puede haber más de un representante "por defecto" al mismo
+        // tiempo — bug real confirmado 2026-08-21: nada impedía tildar
+        // is_default en un segundo representante, y una vez que pasaba eso,
+        // la protección de arriba (no se le puede QUITAR el estado a quien
+        // ya lo tiene) dejaba el dato roto sin forma de arreglarlo desde el
+        // form normal — los dos terminaban apareciendo como fallback en
+        // cualquier país sin representante asignado.
+        if ( ! empty( $data['is_default'] ) ) {
+            self::clear_other_defaults( (int) $id );
+        }
         self::save_countries( (int) $id, $data['country_codes'] ?? [] );
         return $result;
+    }
+
+    /** Le saca is_default a cualquier representante que no sea $except_id — ver comentario en update(). */
+    private static function clear_other_defaults( int $except_id ): void {
+        global $wpdb;
+        $wpdb->query( $wpdb->prepare(
+            'UPDATE ' . self::tbl() . ' SET is_default = 0 WHERE id != %d',
+            $except_id
+        ) );
     }
 
     public static function delete( $id ) {

@@ -7,6 +7,20 @@ class JB3_Auth_Guard {
         add_action( 'template_redirect', [ __CLASS__, 'check_session' ], 1 );
         add_action( 'template_redirect', [ __CLASS__, 'enforce_complete_profile' ], 5 );
         add_action( 'admin_init',        [ __CLASS__, 'block_admin_access' ] );
+        add_filter( 'show_admin_bar',    [ __CLASS__, 'hide_admin_bar_for_members' ] );
+    }
+
+    // ─── Ocultar la barra de admin en el front para no-admins ──────────────────
+
+    /**
+     * Por defecto WordPress muestra la barra de admin arriba de TODO el sitio
+     * a cualquier usuario logueado, no solo a administradores — un jb3_member
+     * logueado por magic link la ve igual que un admin, exponiendo el look de
+     * WordPress a cualquier miembro común. Se oculta para todos salvo quien
+     * de verdad administra el sitio.
+     */
+    public static function hide_admin_bar_for_members( $show ) {
+        return current_user_can( 'manage_options' ) ? $show : false;
     }
 
     // ─── Block wp-admin for non-administrators ────────────────────────────────
