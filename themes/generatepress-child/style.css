@@ -475,6 +475,48 @@ body.admin-bar .site-header {
     color: var(--nav-hover) !important;
 }
 
+/* GeneratePress genera CSS propio a partir de "Punto de despliegue de
+   navegación" (Personalizar > Navegación principal) que pone .inside-header
+   en columna y le mete "margin:0 auto" a #site-navigation + margin-top al
+   logo/header-widget, pensado para SU layout de header apilado. Confirmado
+   2026-08-26: este bug NO depende del valor puntual de ese ajuste — pasa
+   en 999, en 1280, y en cualquier punto intermedio, cada uno rompiendo en
+   un rango de anchos distinto. En vez de perseguir "el valor correcto",
+   anulamos las 3 propiedades de forma incondicional (sin media query
+   propia) — así no importa qué tenga cargado el Personalizador, ni acá ni
+   en producción. Nuestro header es siempre una fila, nunca depende de
+   este mecanismo de GP para nada. */
+.inside-header {
+    flex-direction: row !important;
+}
+
+#site-navigation {
+    margin: 0 !important;
+}
+
+.site-logo,
+.site-branding,
+.header-widget {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* .site-header-icons SIEMPRE flex-row-nowrap y empujado al borde derecho,
+   sin depender de qué modo (mobile/desktop/toggled) esté técnicamente
+   activo — confirmado 2026-08-26 que dejarlo a mitad de camino entre
+   reglas por media query daba resultados inconsistentes (apilado, partido
+   en dos líneas, pegado al CTA en vez de ir al borde). Con esto la caja
+   siempre es una sola fila sin quebrar, empujada a la derecha; el
+   display:none del modo mobile (más abajo, con más especificidad real por
+   ser igual pero después en el archivo) sigue ganando cuando corresponde
+   ocultarla del todo. */
+.site-header-icons {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    margin-left: auto !important;
+}
+
 /* Padding del header completo (logo + nav + íconos en desktop). */
 .inside-header {
     padding-top: var(--header-padding-y) !important;
@@ -697,18 +739,24 @@ button, input, select, textarea,
        Oculto por default; el buscador de esta franja no se muestra porque
        el hamburguesa ya trae el suyo propio (.mobile-menu-control-wrapper).
        Se muestra en fila (no apilado) solo cuando el menú está desplegado,
-       con el mismo padding-left que el resto del texto del menú. */
+       con el mismo padding-left que el resto del texto del menú.
+
+       !important en el display: confirmado 2026-08-26 que justo en el
+       borde del breakpoint (1279px) .site-header-icons caía en
+       display:block por default del navegador (ni :none ni :flex
+       ganaban), y los 3 íconos quedaban apilados uno debajo del otro
+       pegados a la navegación en vez de ocultos o empujados a la derecha. */
     .site-header-icons {
-        display: none;
+        display: none !important;
     }
 
     .main-navigation.toggled ~ .site-header-icons,
     .main-navigation.toggled .site-header-icons {
-        display: flex;
+        display: flex !important;
         flex-direction: row;
         align-items: center;
         gap: 15px;
-        margin-left: 0;
+        margin-left: 0 !important;
         padding-top: 15px;
         padding-bottom: 15px;
         /* -6px: el ícono de LinkedIn (primer hijo) ya trae 6px de padding
@@ -720,7 +768,7 @@ button, input, select, textarea,
     }
 
     .site-header-icons__search {
-        display: none;
+        display: none !important;
     }
 
     /* ─── Dropdown de cuenta ──────────────────────────────────────────────
@@ -863,7 +911,7 @@ html.mobile-menu-open .mobile-menu-control-wrapper {
    con el menú cerrado. */
 @media (min-width: 1280px) {
     .site-header-icons {
-        display: flex;
+        display: flex !important;
         align-items: center;
         gap: var(--icon-gap);
         margin-left: auto;
