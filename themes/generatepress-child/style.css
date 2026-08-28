@@ -2436,40 +2436,46 @@ body.error404 .inside-article .search-form {
    ya resuelve el caso "posters + thumbs" separando en dos grillas prolijas,
    pero eso reordena el contenido por tipo; acá no se puede. Cada item
    conserva su propia proporción (afiche 2/3 o miniatura 3/2, ver
-   --poster/--thumb abajo) y la grilla es "masonry" por columnas CSS
-   (column-count, sin JS ni librería) en vez de filas parejas de igual
-   alto — así un afiche vertical al lado de una miniatura horizontal no
-   fuerza a ninguno de los dos a estirarse/recortarse para igualar al otro.
+   --poster/--thumb abajo) y la grilla es "masonry" real por CSS Grid: filas
+   muy finas (grid-auto-rows) + JS que le asigna a cada item el
+   grid-row-end:span según su alto real (ver
+   assets/js/grid-mixto-masonry.js) — así un afiche vertical al lado de una
+   miniatura horizontal no fuerza a ninguno de los dos a estirarse/
+   recortarse para igualar al otro, Y cada fila se completa según lo que
+   entre, sin dejar huecos. (Primer intento con column-count descartado
+   2026-08-28: ordena de arriba a abajo por columna y, cuando la cantidad
+   de items no cierra pareja, deja columnas más cortas que otras con un
+   hueco visible al lado — justo lo que se quería evitar.)
    Pedido explícito 2026-08-28: los resultados del buscador recortaban los
    afiches (Garfield, Peter Rabbit) al forzarlos al formato horizontal de
    jb3_grid_thumbs(), pensado para Op.Comerciales/Videos/Integraciones.
    ═══════════════════════════════════════════════════════════════════════════ */
 .jb3-grid-mixto {
-    column-count: var(--jb3-grid-cols, 4);
-    column-gap: 40px;
+    display: grid;
+    grid-template-columns: repeat(var(--jb3-grid-cols, 4), 1fr);
+    grid-auto-rows: 8px;
+    /* align-items:start es clave: sin esto, un item recién insertado (sin
+       su span todavía calculado por JS) se ESTIRA a la fila de 8px de
+       arranque y el script mide un alto falso (8px) en vez del natural —
+       con "start" el item mide su contenido real aunque desborde su celda
+       de grid hasta que el JS le asigne el span correcto. */
+    align-items: start;
+    gap: 40px;
 }
 
 @media (max-width: 1023px) {
-    .jb3-grid-mixto { column-count: 3; }
+    .jb3-grid-mixto { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 767px) {
-    .jb3-grid-mixto { column-count: 2; column-gap: 20px; }
+    .jb3-grid-mixto { grid-template-columns: repeat(2, 1fr); gap: 20px; }
 }
 
-/* break-inside:avoid — sin esto, un item alto (afiche) puede partirse
-   entre el final de una columna y el principio de la siguiente. */
 .jb3-grid-mixto__item {
     display: block;
     position: relative;
-    break-inside: avoid;
-    margin-bottom: 40px;
     color: var(--body-text) !important;
     text-decoration: none !important;
-}
-
-@media (max-width: 767px) {
-    .jb3-grid-mixto__item { margin-bottom: 20px; }
 }
 
 .jb3-grid-mixto__item:hover {
