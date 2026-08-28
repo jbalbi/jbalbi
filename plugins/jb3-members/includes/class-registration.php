@@ -108,12 +108,20 @@ class JB3_Registration {
         $valid_keys = array_keys( jb3_interests() );
         $interests  = array_values( array_filter( $interests, fn( $i ) => in_array( $i, $valid_keys, true ) ) );
 
-        if ( email_exists( $email ) ) {
-            $errors[] = __( 'Este email ya está registrado.', 'jb3-members' );
-        }
-
         if ( ! empty( $errors ) ) {
             return [ $errors, false ];
+        }
+
+        // Anti-enumeración (auditoría de seguridad 2026-08-28): si el email ya
+        // existe, respondemos EXACTAMENTE igual que un registro exitoso (mismo
+        // mensaje, sin error propio) en vez de avisar "este email ya está
+        // registrado" — decirlo le da a cualquiera, sin necesitar cuenta, un
+        // oráculo gratis para saber qué emails son usuarios de este sitio
+        // probando la lista que quiera. No se crea un usuario duplicado ni se
+        // notifica a los representantes; a ojos de quien completó el
+        // formulario, es indistinguible de un alta nueva.
+        if ( email_exists( $email ) ) {
+            return [ [], true ];
         }
 
         // — Create user ——————————————————————————————————————————————
