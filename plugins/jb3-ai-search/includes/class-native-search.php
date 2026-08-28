@@ -64,6 +64,16 @@ function jb3_aisearch_native_pre_get_posts( WP_Query $query ): void {
 		// tax_query solo decida.
 		$query->set( 's', $args['s'] );
 
+		// get_search_query() (usada en search.php para "Resultados de la
+		// búsqueda para: X") lee el MISMO "s" que acabamos de pisar arriba
+		// — sin este filtro, ese título mostraba las palabras clave de la
+		// IA (a veces vacío, ej. "cocina" se resuelve entero como etiqueta
+		// y "s" queda '') en vez de lo que el visitante escribió de
+		// verdad. Reportado en vivo 2026-08-28.
+		add_filter( 'get_search_query', function () use ( $pregunta ) {
+			return $pregunta;
+		} );
+
 		jb3_aisearch_debug_log( sprintf(
 			'[native] pregunta="%s" filtros=%s tax_query=%s post_type=%s',
 			$pregunta,
