@@ -10,9 +10,9 @@
  * navegador saltaría solo a scroll=0).
  *
  * Se engancha con un MutationObserver sobre la clase del <html> en vez de
- * escuchar el click del botón hamburguesa directamente: GeneratePress
- * (menu.js) es quien agrega/saca esa clase "mobile-menu-open", así que
- * reaccionar al cambio de clase funciona pase lo que pase del lado de GP.
+ * escuchar el click del botón hamburguesa directamente: nav.js (jb3-nav) es
+ * quien agrega/saca esa clase "mobile-menu-open", así que reaccionar al
+ * cambio de clase funciona pase lo que pase del lado de nav.js.
  */
 ( function () {
 	var html = document.documentElement;

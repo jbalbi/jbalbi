@@ -65,9 +65,14 @@ function jb3_modulo_query( array $tipos, array $canal_term_ids = [], int $limite
 	}
 
 	// Match estricto: sin país tildado, NO se muestra en ningún país (cambiado
-	// 2026-08-14). Cláusulas compartidas con el resto del sitio — ver
-	// jb3_geo_tax_query_pais() en jb3-geo-targeting.php.
-	if ( $pais && function_exists( 'jb3_geo_tax_query_pais' ) ) {
+	// 2026-08-14, reforzado a fail-closed 2026-08-26). Cláusulas compartidas
+	// con el resto del sitio — ver jb3_geo_tax_query_pais() en
+	// jb3-geo-targeting.php. OJO: la condición es solo function_exists(), NO
+	// "$pais &&" — jb3_geo_tax_query_pais('') ya devuelve la cláusula que no
+	// matchea nada (fail-closed); si acá se saltara la llamada cuando $pais
+	// está vacío, un visitante sin país detectado vería contenido restringido
+	// sin filtro alguno (bug real, corregido en la auditoría pre-producción).
+	if ( function_exists( 'jb3_geo_tax_query_pais' ) ) {
 		$tax_query = array_merge( $tax_query, jb3_geo_tax_query_pais( $pais ) );
 	}
 

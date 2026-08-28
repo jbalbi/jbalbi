@@ -27,11 +27,8 @@ defined( 'ABSPATH' ) || exit;
 
 // ─── [home_slider]: lee el repeater ACF "HOME HEADER SLIDER" de la Home ────
 //
-// VERSIÓN 1 (en construcción, a propósito acotada para debuggear de a
-// partes): solo imagen desktop/mobile responsive + filtro de vigencia por
-// fecha_in/fecha_out + flechas prev/next. El resto de los campos (texto,
-// botón, colores, canal, copyright) se suman después de confirmar que esto
-// se ve bien.
+// Imagen desktop/mobile responsive + filtro de vigencia por fecha_in/fecha_out
+// + flechas prev/next + texto/botón/color + logo de canal + copyright.
 // Normaliza lo que devuelva el campo Taxonomy "canal" (objeto, array de
 // objetos, slug, ID o array de cualquiera de esos, según cómo esté
 // configurado el campo en ACF — en este slider en particular guarda el

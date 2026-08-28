@@ -26,7 +26,8 @@ function jb3_geo_post_types(): array {
 // 3) detección real con el plugin Geolocation IP Detection.
 // Devuelve el código ISO en minúscula (coincide con los slugs de la
 // taxonomía "pais": ar, bo, cl...) o '' si no se pudo determinar — ese caso
-// se trata como "sin restricción" en jb3_geo_post_visible() (fail-open).
+// se trata como fail-closed (NO se muestra contenido restringido) en
+// jb3_geo_post_visible() y afines, decisión del cliente 2026-08-26.
 function jb3_geo_visitor_country(): string {
 	if ( current_user_can( 'manage_options' ) && ! empty( $_COOKIE[ JB3_GEO_COOKIE ] ) ) {
 		return sanitize_key( $_COOKIE[ JB3_GEO_COOKIE ] );
