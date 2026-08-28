@@ -2436,44 +2436,47 @@ body.error404 .inside-article .search-form {
    ya resuelve el caso "posters + thumbs" separando en dos grillas prolijas,
    pero eso reordena el contenido por tipo; acá no se puede. Cada item
    conserva su propia proporción (afiche 2/3 o miniatura 3/2, ver
-   --poster/--thumb abajo) y la grilla es "masonry" real por CSS Grid: filas
-   muy finas (grid-auto-rows) + JS que le asigna a cada item el
-   grid-row-end:span según su alto real (ver
-   assets/js/grid-mixto-masonry.js) — así un afiche vertical al lado de una
-   miniatura horizontal no fuerza a ninguno de los dos a estirarse/
-   recortarse para igualar al otro, Y cada fila se completa según lo que
-   entre, sin dejar huecos. (Primer intento con column-count descartado
-   2026-08-28: ordena de arriba a abajo por columna y, cuando la cantidad
-   de items no cierra pareja, deja columnas más cortas que otras con un
-   hueco visible al lado — justo lo que se quería evitar.)
+   --poster/--thumb abajo). Masonry real por JS (assets/js/grid-mixto-masonry.js):
+   cada item se coloca con position:absolute en la columna que en ESE
+   momento tiene menos altura acumulada — mismo algoritmo que usan
+   librerías tipo Masonry.js, sin depender de ninguna. Es el TERCER
+   intento (2026-08-28):
+   1) column-count: ordena de arriba a abajo por columna y, cuando la
+      cantidad de items no cierra pareja, deja columnas más cortas que
+      otras con un hueco visible al lado.
+   2) CSS Grid con grid-row-end:span calculado por JS: cuando dos columnas
+      de la misma fila terminaban a alturas ligeramente distintas, el
+      auto-posicionamiento de Grid mandaba el siguiente item a la primera
+      columna con hueco libre, no la que le tocaba en orden — se veía
+      desalineado, "en cualquier lado".
+   position:absolute con columna elegida a mano en JS no tiene ninguno de
+   los dos problemas: el orden y la columna de cada item son 100%
+   determinísticos.
    Pedido explícito 2026-08-28: los resultados del buscador recortaban los
    afiches (Garfield, Peter Rabbit) al forzarlos al formato horizontal de
    jb3_grid_thumbs(), pensado para Op.Comerciales/Videos/Integraciones.
    ═══════════════════════════════════════════════════════════════════════════ */
 .jb3-grid-mixto {
-    display: grid;
-    grid-template-columns: repeat(var(--jb3-grid-cols, 4), 1fr);
-    grid-auto-rows: 8px;
-    /* align-items:start es clave: sin esto, un item recién insertado (sin
-       su span todavía calculado por JS) se ESTIRA a la fila de 8px de
-       arranque y el script mide un alto falso (8px) en vez del natural —
-       con "start" el item mide su contenido real aunque desborde su celda
-       de grid hasta que el JS le asigne el span correcto. */
-    align-items: start;
-    gap: 40px;
+    position: relative; /* ancla a los items, que son position:absolute */
+    --jb3-mixto-cols: var(--jb3-grid-cols, 4);
+    --jb3-mixto-gap: 40px;
 }
 
 @media (max-width: 1023px) {
-    .jb3-grid-mixto { grid-template-columns: repeat(3, 1fr); }
+    .jb3-grid-mixto { --jb3-mixto-cols: 3; }
 }
 
 @media (max-width: 767px) {
-    .jb3-grid-mixto { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .jb3-grid-mixto { --jb3-mixto-cols: 2; --jb3-mixto-gap: 20px; }
 }
 
+/* left/top/width los pone grid-mixto-masonry.js — top:0 acá es solo el
+   valor inicial antes de que el script corra la primera vez. */
 .jb3-grid-mixto__item {
     display: block;
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     color: var(--body-text) !important;
     text-decoration: none !important;
 }
