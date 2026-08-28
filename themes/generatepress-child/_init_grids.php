@@ -1,25 +1,6 @@
 <?php
 defined( 'ABSPATH' ) || exit;
 
-// ─── MASONRY DE LA GRILLA MIXTA (ver .jb3-grid-mixto en style.css) ──────────
-// El alto real de cada item (afiche vertical vs miniatura horizontal) solo
-// se sabe en el navegador (depende del ancho de columna resuelto), así que
-// hace falta JS para asignarle su grid-row-end:span — ver el archivo para
-// el detalle. Encolado siempre (mismo criterio que header-account.js/
-// mobile-menu-scroll-lock.js): es liviano y no hace nada si la página no
-// tiene ninguna .jb3-grid-mixto.
-add_action( 'wp_enqueue_scripts', 'jb3_enqueue_grid_mixto_masonry_script' );
-function jb3_enqueue_grid_mixto_masonry_script() {
-	$path = get_stylesheet_directory() . '/assets/js/grid-mixto-masonry.js';
-	wp_enqueue_script(
-		'jb3-grid-mixto-masonry',
-		get_stylesheet_directory_uri() . '/assets/js/grid-mixto-masonry.js',
-		[],
-		file_exists( $path ) ? filemtime( $path ) : false,
-		true
-	);
-}
-
 // ─── GRILLAS DE CONTENIDO ────────────────────────────────────────────────────
 // Dos grillas reutilizables en cualquier página/módulo: posters (vertical,
 // hasta 4 en desktop — Películas/Series/Prod. Originales) y thumbs
