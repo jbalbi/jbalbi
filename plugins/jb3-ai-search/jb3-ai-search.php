@@ -106,3 +106,26 @@ function jb3_aisearch_api_key( string $proveedor ): string {
 	$key  = $proveedor . '_api_key';
 	return is_array( $data ) && ! empty( $data[ $key ] ) ? (string) $data[ $key ] : '';
 }
+
+/**
+ * Log propio del plugin, en vez de error_log()/WP_DEBUG_LOG — confirmado
+ * 2026-08-28: en el hosting (Hostinger) el mecanismo estándar de WordPress
+ * (que redirige error_log() a wp-content/debug.log solo cuando WP_DEBUG Y
+ * WP_DEBUG_LOG están los dos en true, vía ini_set('error_log', ...) en el
+ * arranque de WP) no estaba generando el archivo pese a tener ambas
+ * constantes bien puestas — puede ser una restricción del hosting sobre
+ * ini_set(), o un log_errors ya fijado por su propio php.ini/.user.ini que
+ * WordPress no puede pisar. Escribir directo con file_put_contents() a un
+ * archivo propio evita depender de esa cadena de configuración: solo
+ * necesita que WP_DEBUG_LOG esté en true (no hace falta WP_DEBUG) y que
+ * wp-content sea escribible, que ya lo es siempre (WordPress lo necesita
+ * para medios/uploads). El archivo queda protegido por el mismo
+ * .htaccess que ya bloquea cualquier "*.log" (ver wp-content/.htaccess).
+ */
+function jb3_aisearch_debug_log( string $mensaje ): void {
+	if ( ! defined( 'WP_DEBUG_LOG' ) || ! WP_DEBUG_LOG ) {
+		return;
+	}
+	$linea = '[' . current_time( 'mysql' ) . '] ' . $mensaje . "\n";
+	file_put_contents( WP_CONTENT_DIR . '/jb3-ai-search-debug.log', $linea, FILE_APPEND | LOCK_EX );
+}

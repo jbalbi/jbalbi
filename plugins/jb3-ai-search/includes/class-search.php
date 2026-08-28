@@ -60,19 +60,17 @@ class JB3_AISearch_Query {
 		// (problema de cómo se arma la consulta) o si SQL trae bien pero
 		// filtrar_geo_visibles() los descarta después (problema de
 		// geo-targeting real en esos posts puntuales).
-		if ( defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
-			error_log( sprintf(
-				'[jb3-ai-search] pregunta="%s" filtros=%s tax_query=%s post_type=%s | SQL trajo %d ids=%s | despues de geo quedaron %d ids=%s',
-				$pregunta,
-				wp_json_encode( $filtros ),
-				wp_json_encode( $args['tax_query'] ),
-				wp_json_encode( $args['post_type'] ),
-				count( $ids_sql ),
-				implode( ',', $ids_sql ),
-				count( $ids_finales ),
-				implode( ',', $ids_finales )
-			) );
-		}
+		jb3_aisearch_debug_log( sprintf(
+			'pregunta="%s" filtros=%s tax_query=%s post_type=%s | SQL trajo %d ids=%s | despues de geo quedaron %d ids=%s',
+			$pregunta,
+			wp_json_encode( $filtros ),
+			wp_json_encode( $args['tax_query'] ),
+			wp_json_encode( $args['post_type'] ),
+			count( $ids_sql ),
+			implode( ',', $ids_sql ),
+			count( $ids_finales ),
+			implode( ',', $ids_finales )
+		) );
 
 		return $ids_finales;
 	}

@@ -63,10 +63,16 @@ function jb3_aisearch_native_pre_get_posts( WP_Query $query ): void {
 		// texto_libre, "s" queda vacío — no filtra por texto, deja que
 		// tax_query solo decida.
 		$query->set( 's', $args['s'] );
+
+		jb3_aisearch_debug_log( sprintf(
+			'[native] pregunta="%s" filtros=%s tax_query=%s post_type=%s',
+			$pregunta,
+			wp_json_encode( $filtros ),
+			wp_json_encode( $args['tax_query'] ),
+			wp_json_encode( $args['post_type'] )
+		) );
 	} catch ( \Throwable $e ) {
-		if ( function_exists( 'error_log' ) && defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
-			error_log( '[jb3-ai-search] pre_get_posts falló, se usa la búsqueda nativa: ' . $e->getMessage() );
-		}
+		jb3_aisearch_debug_log( '[native] pre_get_posts falló, se usa la búsqueda nativa: ' . $e->getMessage() );
 	}
 }
 

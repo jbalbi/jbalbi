@@ -82,10 +82,8 @@ class JB3_AISearch_Client_Gemini {
 		] );
 
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
-			if ( defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
-				$detalle = is_wp_error( $response ) ? $response->get_error_message() : 'HTTP ' . wp_remote_retrieve_response_code( $response );
-				error_log( '[jb3-ai-search] Gemini falló: ' . $detalle );
-			}
+			$detalle = is_wp_error( $response ) ? $response->get_error_message() : 'HTTP ' . wp_remote_retrieve_response_code( $response );
+			jb3_aisearch_debug_log( 'Gemini falló: ' . $detalle );
 			return null;
 		}
 
