@@ -53,7 +53,7 @@ function jb3_aisearch_ajax_handler() {
 	}
 
 	wp_send_json_success( [
-		'html'  => function_exists( 'jb3_grid_thumbs' ) ? jb3_grid_thumbs( $resultados ) : '',
+		'html'  => function_exists( 'jb3_grid_mixto' ) ? jb3_grid_mixto( $resultados ) : '',
 		'count' => count( $resultados ),
 	] );
 }

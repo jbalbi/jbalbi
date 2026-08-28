@@ -2430,6 +2430,89 @@ body.error404 .inside-article .search-form {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   GRILLA MIXTA (jb3_grid_mixto(), _init_grids.php)
+   Para listados de tipos heterogéneos que necesitan mantener su orden
+   original (ej. resultados de búsqueda por relevancia) — jb3_modulo_render()
+   ya resuelve el caso "posters + thumbs" separando en dos grillas prolijas,
+   pero eso reordena el contenido por tipo; acá no se puede. Cada item
+   conserva su propia proporción (afiche 2/3 o miniatura 3/2, ver
+   --poster/--thumb abajo) y la grilla es "masonry" por columnas CSS
+   (column-count, sin JS ni librería) en vez de filas parejas de igual
+   alto — así un afiche vertical al lado de una miniatura horizontal no
+   fuerza a ninguno de los dos a estirarse/recortarse para igualar al otro.
+   Pedido explícito 2026-08-28: los resultados del buscador recortaban los
+   afiches (Garfield, Peter Rabbit) al forzarlos al formato horizontal de
+   jb3_grid_thumbs(), pensado para Op.Comerciales/Videos/Integraciones.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-grid-mixto {
+    column-count: var(--jb3-grid-cols, 4);
+    column-gap: 40px;
+}
+
+@media (max-width: 1023px) {
+    .jb3-grid-mixto { column-count: 3; }
+}
+
+@media (max-width: 767px) {
+    .jb3-grid-mixto { column-count: 2; column-gap: 20px; }
+}
+
+/* break-inside:avoid — sin esto, un item alto (afiche) puede partirse
+   entre el final de una columna y el principio de la siguiente. */
+.jb3-grid-mixto__item {
+    display: block;
+    position: relative;
+    break-inside: avoid;
+    margin-bottom: 40px;
+    color: var(--body-text) !important;
+    text-decoration: none !important;
+}
+
+@media (max-width: 767px) {
+    .jb3-grid-mixto__item { margin-bottom: 20px; }
+}
+
+.jb3-grid-mixto__item:hover {
+    z-index: 2;
+}
+
+/* Mismo criterio que posters/thumbs: la imagen crece de verdad al hacer
+   hover, por encima de la celda vecina (nada de overflow:hidden acá). */
+.jb3-grid-mixto__media {
+    display: block;
+    position: relative;
+}
+
+.jb3-grid-mixto__media img {
+    display: block;
+    width: 100%;
+    transition: transform .3s ease;
+}
+
+.jb3-grid-mixto__item:hover .jb3-grid-mixto__media img {
+    transform: scale(1.03);
+}
+
+.jb3-grid-mixto__item--poster .jb3-grid-mixto__media img {
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+}
+
+.jb3-grid-mixto__item--thumb .jb3-grid-mixto__media img {
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+}
+
+.jb3-grid-mixto__titulo {
+    display: block;
+    margin-top: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    RESULTADOS DE BÚSQUEDA (search.php)
    ═══════════════════════════════════════════════════════════════════════════ */
 .jb3-search-sin-resultados {
@@ -2477,8 +2560,11 @@ body.error404 .inside-article .search-form {
 /* Sin esto, al crecer la imagen (scale) este overlay se queda en el
    tamaño original — el anillo que la imagen gana de más queda sin el
    oscurecido semitransparente, y ESO es el "borde más claro" que se veía.
-   Con el mismo scale acá, crece exactamente igual que la imagen. */
-.jb3-grid-thumbs__item:hover .jb3-grid-thumbs__play {
+   Con el mismo scale acá, crece exactamente igual que la imagen.
+   jb3_grid_mixto() reusa esta misma clase __play (ver _init_grids.php) —
+   de ahí el selector .jb3-grid-mixto__item acá también. */
+.jb3-grid-thumbs__item:hover .jb3-grid-thumbs__play,
+.jb3-grid-mixto__item:hover .jb3-grid-thumbs__play {
     transform: scale(1.03);
 }
 
@@ -2493,7 +2579,8 @@ body.error404 .inside-article .search-form {
     transition: transform .3s ease;
 }
 
-.jb3-grid-thumbs__item:hover .jb3-grid-thumbs__play svg {
+.jb3-grid-thumbs__item:hover .jb3-grid-thumbs__play svg,
+.jb3-grid-mixto__item:hover .jb3-grid-thumbs__play svg {
     transform: scale(1.15);
 }
 

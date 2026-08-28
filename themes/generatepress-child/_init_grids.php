@@ -50,6 +50,56 @@ function jb3_grid_posters( array $posts, int $columnas = 0 ): string {
 // Si el post lo tiene cargado, se ve el ícono Y el link abre el modal (ver
 // _init_video_modal.php) en vez de ir a su página; si no lo tiene, es un
 // link normal, sin ícono. Nada de esto depende de quien arma el módulo.
+// Grilla MIXTA: para listados de tipos de contenido heterogéneos donde
+// además interesa preservar el orden tal cual llega (ej. resultados de
+// búsqueda por relevancia) — a diferencia de jb3_modulo_render(), que
+// separa posters/thumbs en dos grillas prolijas una debajo de la otra,
+// acá NO se puede reordenar/agrupar sin perder ese orden. Cada item elige
+// su propia proporción (afiche vertical o miniatura horizontal, según
+// jb3_modulo_tipos_poster()) y la grilla es "masonry" por columnas CSS
+// (column-count, sin JS) en vez de filas parejas — así una fila con
+// afiches altos y miniaturas bajas no deja huecos ni fuerza a todos al
+// mismo alto. Pedido explícito 2026-08-28 (resultados del buscador con
+// afiches recortados al forzarlos todos al formato horizontal de
+// jb3_grid_thumbs()).
+function jb3_grid_mixto( array $posts, int $columnas = 0 ): string {
+	if ( empty( $posts ) ) {
+		return '';
+	}
+	$tipos_poster = jb3_modulo_tipos_poster();
+	$style        = $columnas > 0 ? ' style="--jb3-grid-cols:' . (int) $columnas . ';"' : '';
+	ob_start();
+	?>
+	<div class="jb3-grid-mixto"<?php echo $style; ?>>
+		<?php foreach ( $posts as $item ) :
+			$post = get_post( $item );
+			if ( ! $post ) continue;
+			$es_poster = in_array( $post->post_type, $tipos_poster, true );
+			$video_url = function_exists( 'get_field' ) ? get_field( 'video_url', $post->ID ) : '';
+		?>
+			<a
+				class="jb3-grid-mixto__item jb3-grid-mixto__item--<?php echo $es_poster ? 'poster' : 'thumb'; ?>"
+				href="<?php echo esc_url( get_permalink( $post ) ); ?>"
+				<?php if ( $video_url ) : ?>data-jb3-video="<?php echo esc_url( $video_url ); ?>"<?php endif; ?>
+			>
+				<span class="jb3-grid-mixto__media">
+					<?php if ( has_post_thumbnail( $post ) ) : ?>
+						<?php echo get_the_post_thumbnail( $post, 'large' ); ?>
+					<?php endif; ?>
+					<?php if ( $video_url ) : ?>
+						<span class="jb3-grid-thumbs__play" aria-hidden="true">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+						</span>
+					<?php endif; ?>
+				</span>
+				<span class="jb3-grid-mixto__titulo"><?php echo esc_html( get_the_title( $post ) ); ?></span>
+			</a>
+		<?php endforeach; ?>
+	</div>
+	<?php
+	return ob_get_clean();
+}
+
 function jb3_grid_thumbs( array $posts, int $columnas = 0 ): string {
 	if ( empty( $posts ) ) {
 		return '';

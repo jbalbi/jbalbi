@@ -5,10 +5,11 @@
  * Antes caía en el search.php genérico de GeneratePress (sin padding ni
  * grilla propia del sitio — se ve roto). Mismo patrón que single-{cpt}.php:
  * <main id="jb3-main-content"> + .entry-content dentro de un jb3-contenedor
- * para el padding estándar, y jb3_grid_thumbs() (misma grilla que el resto
- * del sitio) para los resultados — sirve para cualquier tipo de contenido
- * mezclado (páginas, entradas, películas, series, etc.), a diferencia de
- * jb3_grid_posters() que es específica para pósters de película/serie.
+ * para el padding estándar, y jb3_grid_mixto() para los resultados — sirve
+ * para cualquier tipo de contenido mezclado (páginas, entradas, películas,
+ * series, etc.), eligiendo por sí sola la proporción correcta (afiche
+ * vertical o miniatura horizontal) para cada resultado en vez de forzar
+ * todos al mismo formato — ver _init_grids.php.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -39,7 +40,7 @@ get_header();
 					the_post();
 					$resultados[] = get_the_ID();
 				}
-				echo jb3_grid_thumbs( $resultados );
+				echo jb3_grid_mixto( $resultados );
 				?>
 
 				<div class="jb3-search-pagination">
