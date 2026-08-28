@@ -45,12 +45,36 @@ class JB3_AISearch_Query {
 		}
 
 		$resultados = ( new WP_Query( $args ) )->posts;
+		$ids_sql    = wp_list_pluck( $resultados, 'ID' );
 
 		// Ni el modelo ni un tax_query mal armado pueden dar falsos
 		// positivos de geo-targeting: cada resultado se revalida acá contra
 		// jb3_geo_post_visible() (misma función que usa el "the_posts" del
 		// buscador nativo) — doble candado, no solo el tax_query de arriba.
-		return self::filtrar_geo_visibles( wp_list_pluck( $resultados, 'ID' ) );
+		$ids_finales = self::filtrar_geo_visibles( $ids_sql );
+
+		// Log de diagnóstico temporal (auditoría 2026-08-28, reporte "el
+		// buscador trae 1 solo resultado cuando hay varios con el tag
+		// cargado") — solo con WP_DEBUG_LOG activo, para ver en qué paso se
+		// pierden los resultados: si el tax_query de SQL ya trae pocos
+		// (problema de cómo se arma la consulta) o si SQL trae bien pero
+		// filtrar_geo_visibles() los descarta después (problema de
+		// geo-targeting real en esos posts puntuales).
+		if ( defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
+			error_log( sprintf(
+				'[jb3-ai-search] pregunta="%s" filtros=%s tax_query=%s post_type=%s | SQL trajo %d ids=%s | despues de geo quedaron %d ids=%s',
+				$pregunta,
+				wp_json_encode( $filtros ),
+				wp_json_encode( $args['tax_query'] ),
+				wp_json_encode( $args['post_type'] ),
+				count( $ids_sql ),
+				implode( ',', $ids_sql ),
+				count( $ids_finales ),
+				implode( ',', $ids_finales )
+			) );
+		}
+
+		return $ids_finales;
 	}
 
 	private static function buscar_texto_simple( string $pregunta ): array {
