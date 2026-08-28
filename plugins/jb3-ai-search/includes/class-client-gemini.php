@@ -43,31 +43,54 @@ class JB3_AISearch_Client_Gemini {
 			return null;
 		}
 
-		$url = sprintf( self::API_URL, self::MODEL, rawurlencode( $api_key ) );
+		$url  = sprintf( self::API_URL, self::MODEL, rawurlencode( $api_key ) );
+		$body = wp_json_encode( [
+			'system_instruction' => [
+				'parts' => [ [ 'text' => JB3_AISearch_Schema::instrucciones() ] ],
+			],
+			'contents' => [
+				[ 'parts' => [ [ 'text' => $pregunta ] ] ],
+			],
+			'generationConfig' => [
+				'responseMimeType' => 'application/json',
+				'responseSchema'   => self::response_schema(),
+			],
+		] );
 
+		// Un reintento (con una pequeña espera) antes de rendirse — confirmado
+		// 2026-08-28: la API a veces falla de forma transitoria (timeout,
+		// hiccup de red) en una llamada suelta que después funciona sola sin
+		// tocar nada. Sin reintento, cada uno de esos blips degradaba
+		// silenciosamente a la búsqueda de texto plano (ver
+		// JB3_AISearch_Query::buscar_texto_simple()), que no encuentra
+		// contenido filtrado por etiqueta/canal — el buscador parecía
+		// "andar mal" de forma intermitente cuando en realidad la API
+		// respondía bien la mayoría de las veces.
+		$filtros = self::pedir( $url, $body );
+		if ( null === $filtros ) {
+			usleep( 300000 );
+			$filtros = self::pedir( $url, $body );
+		}
+		return $filtros;
+	}
+
+	private static function pedir( string $url, string $body ): ?array {
 		$response = wp_remote_post( $url, [
-			'timeout' => 12,
+			'timeout' => 15,
 			'headers' => [ 'content-type' => 'application/json' ],
-			'body'    => wp_json_encode( [
-				'system_instruction' => [
-					'parts' => [ [ 'text' => JB3_AISearch_Schema::instrucciones() ] ],
-				],
-				'contents' => [
-					[ 'parts' => [ [ 'text' => $pregunta ] ] ],
-				],
-				'generationConfig' => [
-					'responseMimeType' => 'application/json',
-					'responseSchema'   => self::response_schema(),
-				],
-			] ),
+			'body'    => $body,
 		] );
 
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+			if ( defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
+				$detalle = is_wp_error( $response ) ? $response->get_error_message() : 'HTTP ' . wp_remote_retrieve_response_code( $response );
+				error_log( '[jb3-ai-search] Gemini falló: ' . $detalle );
+			}
 			return null;
 		}
 
-		$body = json_decode( wp_remote_retrieve_body( $response ), true );
-		$json_texto = $body['candidates'][0]['content']['parts'][0]['text'] ?? '';
+		$data       = json_decode( wp_remote_retrieve_body( $response ), true );
+		$json_texto = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
 		if ( '' === $json_texto ) {
 			return null;
 		}
