@@ -25,7 +25,7 @@ $p = function( $key ) { return esc_attr( sanitize_text_field( wp_unslash( $_POST
         </div>
     <?php endif; ?>
 
-    <form method="post" class="jb3-form" novalidate autocomplete="on">
+    <form method="post" class="jb3-form jb3-form--recaptcha" novalidate autocomplete="on">
         <?php wp_nonce_field( 'jb3_register', 'jb3_register_nonce' ); ?>
 
         <!-- Datos personales -->

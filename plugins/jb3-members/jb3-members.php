@@ -36,6 +36,7 @@ $jb3_includes = [
     'includes/class-content-privacy.php',
     'includes/class-google-sheets.php',
     'includes/class-op-comerciales-tracking.php',
+    'includes/class-recaptcha.php',
     'admin/class-admin.php',
 ];
 
@@ -63,6 +64,7 @@ function jb3_members_boot() {
     JB3_Representatives::init();
     JB3_Content_Privacy::init();
     JB3_Op_Comerciales_Tracking::init();
+    JB3_Recaptcha::init();
 
     if ( is_admin() ) {
         JB3_Sync::init();

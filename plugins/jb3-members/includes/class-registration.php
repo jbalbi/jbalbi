@@ -64,6 +64,15 @@ class JB3_Registration {
             return [ [ __( 'Demasiados intentos de registro — esperá unos minutos y volvé a intentar.', 'jb3-members' ) ], false ];
         }
 
+        // reCAPTCHA v3 (ver class-recaptcha.php) — no bloquea si no hay
+        // credenciales configuradas, mismo criterio de degradar sin romper
+        // que el resto del sitio.
+        $recaptcha_token = sanitize_text_field( wp_unslash( $_POST['g-recaptcha-response'] ?? '' ) );
+        $recaptcha_error = JB3_Recaptcha::verify( $recaptcha_token );
+        if ( '' !== $recaptcha_error ) {
+            return [ [ $recaptcha_error ], false ];
+        }
+
         // — Sanitise ——————————————————————————————————————————————
         $first_name  = sanitize_text_field( wp_unslash( $_POST['first_name']  ?? '' ) );
         $last_name   = sanitize_text_field( wp_unslash( $_POST['last_name']   ?? '' ) );
