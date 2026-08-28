@@ -1,0 +1,45 @@
+.jb3-aisearch {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.jb3-aisearch__form {
+    display: flex;
+    gap: 12px;
+}
+
+.jb3-aisearch__input {
+    flex: 1 1 auto;
+    padding: 14px 18px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, .2);
+    background: rgba(255, 255, 255, .06);
+    color: #ffffff;
+    font-size: 16px;
+}
+
+.jb3-aisearch__input::placeholder {
+    color: rgba(255, 255, 255, .5);
+}
+
+.jb3-aisearch__submit {
+    flex: 0 0 auto;
+    padding: 14px 24px;
+    border: none;
+    border-radius: 8px;
+    background: var(--color-secondary, #a020f0);
+    color: #ffffff;
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.jb3-aisearch__estado {
+    margin-top: 16px;
+    text-align: center;
+    color: rgba(255, 255, 255, .7);
+}
+
+.jb3-aisearch__resultados {
+    margin-top: 24px;
+}

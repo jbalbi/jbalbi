@@ -235,7 +235,16 @@ function jb3_home_slider_shortcode() {
 
 							<?php if ( $slide['texto'] ) : ?>
 								<div class="jb3-home-slider__texto">
-									<?php echo $slide['texto']; // phpcs:ignore WordPress.Security.EscapeOutput -- WYSIWYG ACF, ya sanitizado al guardar. ?>
+									<?php
+									// wp_kses_post(), no crudo: ACF NO aplica wp_kses a los
+									// valores de un campo WYSIWYG por su cuenta (a diferencia
+									// de post_content, que WordPress sí filtra solo para
+									// cuentas sin unfiltered_html) — este era el único WYSIWYG
+									// del tema impreso sin sanitizar, corregido en la auditoría
+									// de seguridad 2026-08-27, mismo criterio que el resto de
+									// los campos WYSIWYG del sitio (mc_bajada, gs_bajada, etc.).
+									echo wp_kses_post( $slide['texto'] );
+									?>
 								</div>
 							<?php endif; ?>
 

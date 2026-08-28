@@ -2758,7 +2758,6 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
 
 .jb3-galeria-slider__track {
     display: flex;
-    gap: 20px;
 }
 
 .jb3-galeria-slider__track img {
@@ -2770,10 +2769,24 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
    midan lo mismo en el carrusel, pero SIN recortar: el ancho del slide se
    deja "auto" y sigue el ancho natural que le toca a la imagen a esa
    altura — una foto vertical queda angosta, una horizontal queda ancha,
-   pero ambas se ven completas. */
+   pero ambas se ven completas.
+
+   Separación entre fotos con border-right (parte del propio ancho del
+   slide, contado en su offsetWidth) en vez de gap en el track (espacio
+   vacío APARTE de los slides): cada slide se centra según su propio
+   ancho — con gap, si a una foto le tocaba un "asomo" más chico que el
+   gap, esa porción no mostraba nada de la foto vecina, solo el hueco
+   vacío ("la flechita queda en un espacio entre imágenes" — bug real
+   2026-08-26). Con el borde como parte del elemento medido, cualquier
+   asomo, por chico que sea, siempre entra dentro de un slide real. */
 .jb3-galeria-slider__slide {
     flex: 0 0 auto;
     height: 420px;
+    border-right: 3px solid var(--body-bg);
+}
+
+.jb3-galeria-slider__slide:last-child {
+    border-right: none;
 }
 
 .jb3-galeria-slider__slide img {

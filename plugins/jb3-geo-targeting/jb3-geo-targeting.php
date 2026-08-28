@@ -63,6 +63,24 @@ function jb3_geo_visitor_country(): string {
 // página entera como no cacheable por el simple hecho de hacer setcookie().
 const JB3_GEO_VARY_COOKIE = 'jb3_pais';
 
+/**
+ * setcookie() con los flags de hardening que le faltaban (auditoría de
+ * seguridad 2026-08-27) — ninguna de las cookies de este plugin la lee JS
+ * (confirmado, ver el resto del código), así que HttpOnly no rompe nada.
+ * Secure sale de is_ssl() en vez de hardcodeado: local corre por HTTP
+ * plano, forzar Secure=true ahí haría que el navegador ignore la cookie.
+ */
+function jb3_geo_setcookie( string $name, string $value, int $expire ): void {
+	setcookie( $name, $value, [
+		'expires'  => $expire,
+		'path'     => COOKIEPATH,
+		'domain'   => COOKIE_DOMAIN,
+		'secure'   => is_ssl(),
+		'httponly' => true,
+		'samesite' => 'Lax',
+	] );
+}
+
 add_action( 'init', function () {
 	if ( is_admin() ) {
 		return;
@@ -70,7 +88,7 @@ add_action( 'init', function () {
 
 	$pais = jb3_geo_visitor_country();
 	if ( ( $_COOKIE[ JB3_GEO_VARY_COOKIE ] ?? '' ) !== $pais ) {
-		setcookie( JB3_GEO_VARY_COOKIE, $pais, time() + DAY_IN_SECONDS, COOKIEPATH, COOKIE_DOMAIN );
+		jb3_geo_setcookie( JB3_GEO_VARY_COOKIE, $pais, time() + DAY_IN_SECONDS );
 	}
 } );
 
@@ -144,11 +162,19 @@ function jb3_geo_canales_visibles( string $pais ): array {
 // Comerciales sin canal asignado en un módulo que se suponía exclusivo,
 // 2026-08-13) porque una de las copias no incluía la vuelta "OR: sin canal
 // asignado" y las otras dos sí. Devuelve un array de cláusulas para sumar
-// (array_merge) al 'tax_query' que ya tenga armado quien llama — [] si
-// $pais viene vacío (nada que filtrar).
+// (array_merge) al 'tax_query' que ya tenga armado quien llama.
+//
+// Fail-closed (decisión del cliente 2026-08-26): con $pais vacío (no se
+// pudo determinar el país del visitante) se devuelve una cláusula que no
+// matchea NINGÚN post, en vez de [] (sin filtro = mostraría todo el
+// catálogo a cualquiera). Mismo criterio que jb3_geo_post_pais_visible()
+// — no afecta a Home/Login/páginas institucionales, esas se validan aparte
+// por jb3_geo_post_visible() y ya están exceptuadas ahí.
 function jb3_geo_tax_query_pais( string $pais ): array {
 	if ( '' === $pais ) {
-		return [];
+		return [
+			[ 'taxonomy' => JB3_GEO_TAXONOMY, 'field' => 'slug', 'terms' => [ '__jb3_pais_no_detectado__' ] ],
+		];
 	}
 
 	return [
@@ -181,7 +207,13 @@ function jb3_geo_post_pais_visible( int $post_id ): bool {
 
 	$pais = jb3_geo_visitor_country();
 	if ( '' === $pais ) {
-		return true; // País no detectado = se muestra igual.
+		// Fail-closed (decisión del cliente 2026-08-26, revirtiendo el
+		// fail-open original): este contenido SÍ tiene países asignados
+		// (algo lo restringe), pero no pudimos determinar el del
+		// visitante (GeoIP caído, IP no reconocida, etc.) — con licencias
+		// territoriales de por medio, ante la duda no se muestra, en vez
+		// de mostrarlo a todo el mundo por un fallo de detección.
+		return false;
 	}
 
 	foreach ( $terminos as $termino ) {
@@ -204,7 +236,9 @@ function jb3_geo_post_canal_visible( int $post_id ): bool {
 
 	$pais = jb3_geo_visitor_country();
 	if ( '' === $pais ) {
-		return true;
+		// Fail-closed — ver el mismo cambio (y su motivo) en
+		// jb3_geo_post_pais_visible() más arriba.
+		return false;
 	}
 
 	foreach ( $terminos as $termino ) {
@@ -232,7 +266,9 @@ function jb3_geo_page_canal_visible( int $post_id ): bool {
 
 	$pais = jb3_geo_visitor_country();
 	if ( '' === $pais ) {
-		return true;
+		// Fail-closed — ver el mismo cambio (y su motivo) en
+		// jb3_geo_post_pais_visible() más arriba.
+		return false;
 	}
 
 	return jb3_geo_canal_visible_para( (int) $canal_id, $pais );
@@ -378,9 +414,9 @@ add_action( 'init', function () {
 
 	$pais = sanitize_key( wp_unslash( $_GET['jb3_geo_pais'] ) );
 	if ( $pais ) {
-		setcookie( JB3_GEO_COOKIE, $pais, time() + WEEK_IN_SECONDS, COOKIEPATH, COOKIE_DOMAIN );
+		jb3_geo_setcookie( JB3_GEO_COOKIE, $pais, time() + WEEK_IN_SECONDS );
 	} else {
-		setcookie( JB3_GEO_COOKIE, '', time() - HOUR_IN_SECONDS, COOKIEPATH, COOKIE_DOMAIN );
+		jb3_geo_setcookie( JB3_GEO_COOKIE, '', time() - HOUR_IN_SECONDS );
 	}
 
 	wp_safe_redirect( remove_query_arg( [ 'jb3_geo_pais', '_wpnonce' ] ) );

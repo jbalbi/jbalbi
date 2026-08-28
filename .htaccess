@@ -1,0 +1,9 @@
+# Bloquea el acceso directo por HTTP a archivos de log — wp-config.php
+# puede tener WP_DEBUG_LOG activo (útil en desarrollo), y sin esto
+# wp-content/debug.log queda descargable tal cual por cualquiera
+# (auditoría de seguridad 2026-08-27). Viaja con el repo a cualquier
+# servidor, así que protege sin depender de que cada wp-config.php tenga
+# el debug apagado.
+<FilesMatch "\.log$">
+	Require all denied
+</FilesMatch>

@@ -51,6 +51,19 @@ class JB3_Registration {
     private static function process() {
         $errors = [];
 
+        // Freno por IP antes de tocar nada más — auditoría de seguridad
+        // 2026-08-27: el nonce por sí solo no limita repeticiones (es
+        // válido toda su ventana de 24h), así que sin esto alguien podía
+        // automatizar cientos de registros con emails distintos usando el
+        // mismo nonce, generando spam de "Solicitud de aprobación" a los
+        // representantes y cuentas "pending" basura. Reusa jb3_rate_limited()
+        // (ya existe para login/magic-link) pasándole la IP en vez de un
+        // email — la función solo usa el string como clave, funciona igual.
+        $ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : 'ip-desconocida';
+        if ( jb3_rate_limited( 'register_' . $ip, 5, 10 ) ) {
+            return [ [ __( 'Demasiados intentos de registro — esperá unos minutos y volvé a intentar.', 'jb3-members' ) ], false ];
+        }
+
         // — Sanitise ——————————————————————————————————————————————
         $first_name  = sanitize_text_field( wp_unslash( $_POST['first_name']  ?? '' ) );
         $last_name   = sanitize_text_field( wp_unslash( $_POST['last_name']   ?? '' ) );

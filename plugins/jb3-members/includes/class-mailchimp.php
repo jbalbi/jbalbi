@@ -148,13 +148,21 @@ class JB3_Mailchimp {
             exit;
         }
 
-        error_log( '[JB3 Webhook] POST recibido. type=' . ( $_POST['type'] ?? '—' ) . ' email=' . ( $_POST['data']['email'] ?? '—' ) );
-
-        // Verificar secret.
-        if ( $_GET['jb3_mc_hook'] !== self::webhook_secret() ) {
-            error_log( '[JB3 Webhook] Secret inválido.' );
+        // Verificar secret ANTES de cualquier otra cosa (incluido el log de
+        // abajo) — auditoría de seguridad 2026-08-27: antes el error_log()
+        // corría sin condición, en cada POST a esta URL, ANTES de validar
+        // nada — cualquiera sin conocer el secret podía forzar escritura en
+        // el log del servidor mandando POSTs en bucle con type/email
+        // arbitrarios. hash_equals() en vez de !==, para no depender de una
+        // comparación que no es a tiempo constante (esta sí importa: el
+        // secret protege un endpoint de escritura de datos de usuarios).
+        if ( ! hash_equals( self::webhook_secret(), (string) ( $_GET['jb3_mc_hook'] ?? '' ) ) ) {
             status_header( 403 );
             exit;
+        }
+
+        if ( defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
+            error_log( '[JB3 Webhook] POST recibido. type=' . ( $_POST['type'] ?? '—' ) . ' email=' . ( $_POST['data']['email'] ?? '—' ) );
         }
 
         $type  = sanitize_text_field( wp_unslash( $_POST['type'] ?? '' ) );
