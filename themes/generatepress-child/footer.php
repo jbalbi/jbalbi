@@ -58,7 +58,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</div>
 
 	<div class="jb3-footer-bar">
-		<a href="<?php echo esc_url( home_url( '/conectate-con-nosotors/' ) ); ?>" class="jb3-footer-bar__cta">CONECTATE <strong>AQUÍ</strong> CON NUESTRO EQUIPO COMERCIAL</a>
+		<a href="<?php echo esc_url( home_url( '/conectate-con-nosotors/' ) ); ?>" class="jb3-footer-bar__cta"><span>CONECTATE <strong>AQUÍ</strong> CON NUESTRO EQUIPO COMERCIAL</span></a>
 		<?php
 		// revisitCkyConsent() la expone el plugin CookieYes (cookie-law-info)
 		// como función global de JS, no de PHP — no hay forma de chequear

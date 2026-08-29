@@ -1211,7 +1211,19 @@ body {
    de contenedor de posicionamiento sin agregar nada más. El botón de
    volver arriba sigue siendo clickeable por separado porque va DESPUÉS en
    el HTML: con z-index igual, el que pinta último (totop) queda arriba en
-   la pila y se queda con el click en su propia zona. */
+   la pila y se queda con el click en su propia zona.
+
+   Bug real confirmado 2026-08-28: el texto de acá adentro (footer.php)
+   tiene que ir envuelto en un <span> ("CONECTATE <strong>AQUÍ</strong>
+   CON...") — sin ese <span>, al ser display:flex acá, el navegador arma
+   un ítem flex SEPARADO por cada tramo de texto suelto alrededor del
+   <strong> (uno para "CONECTATE ", otro para el <strong>AQUÍ</strong> en
+   sí, otro para " CON NUESTRO EQUIPO COMERCIAL"), y los acomoda como 3
+   columnas en fila en vez de dejarlos fluir como una sola oración — en
+   mobile, donde no entran en una fila, cada "columna" se corta por su
+   cuenta en vez de cortarse prolijo como una sola línea de texto. El
+   <span> hace que flex vea un solo ítem (el span), y adentro de ese span
+   el texto + <strong> fluyen como contenido inline normal, sin partirse. */
 .jb3-footer-bar__cta {
     position: absolute;
     inset: 0;
@@ -1224,12 +1236,10 @@ body {
     font-size: 14px;
 }
 
-/* margin en vez de confiar en los espacios del texto alrededor de <strong>:
-   display:flex en el link (arriba) puede comerse el espacio en blanco en
-   el borde entre texto suelto y un elemento inline ("CONECTATEAQUÍCON").
-   Sin color propio a propósito: hereda el de .jb3-footer-bar__cta (acá
+/* Sin color propio a propósito: hereda el de .jb3-footer-bar__cta (acá
    arriba y en :hover) — todo el texto cambia de color junto, en vez de
-   cruzarse entre "aquí" y el resto. */
+   cruzarse entre "aquí" y el resto. margin: solo respiro visual alrededor
+   de la palabra destacada, no un parche de espaciado. */
 .jb3-footer-bar__cta strong {
     margin: 0 .3em;
     font-size: 1.2em;
