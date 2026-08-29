@@ -19,11 +19,12 @@ defined( 'ABSPATH' ) || exit;
 // de en un archivo de credenciales fuera del repo (criterio distinto al
 // de Gemini/reCAPTCHA, cuyas claves sí habilitan gasto/acciones si se
 // filtran).
-// Segunda propiedad "Sitio JB3": la primera (G-K41YJGPLJ5) había quedado
-// creada por error dentro de la cuenta "consorciosricchetti.com" (otro
-// proyecto del cliente, sin relación) — Google Analytics no permite mover
-// una propiedad entre cuentas, así que se recreó de cero en la cuenta
-// correcta ("jbalbi.com.ar") y se da de baja la cuenta vieja completa.
+// Segunda propiedad, "JB3 - Site": la primera ("Sitio JB3", G-K41YJGPLJ5)
+// había quedado creada por error dentro de la cuenta
+// "consorciosricchetti.com" (otro proyecto del cliente, sin relación) —
+// Google Analytics no permite mover una propiedad entre cuentas, así que
+// se recreó de cero en la cuenta correcta ("jbalbi.com.ar") y se da de
+// baja la cuenta vieja completa.
 const JB3_GA_MEASUREMENT_ID = 'G-EJZW4LPX6Y';
 
 add_action( 'wp_head', 'jb3_ga_output' );
