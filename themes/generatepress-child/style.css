@@ -150,16 +150,15 @@ Text Domain: generatepress-child
         --jb3-modulo-padding-x:  20px;
         --slider-logo-width:     180px;
         --slider-logo-height:    65px;
-        /* --footer-bar-height quedaba fija en 48px (el valor de desktop,
-           una sola línea de texto) — en mobile el CTA de .jb3-footer-bar
-           se parte en 2 líneas y la barra real crece más alta que eso
-           (min-height no la achica, solo pone un piso), así que tanto el
-           padding-bottom del body como los elementos reposicionados por
-           encima de la barra (badge de reCAPTCHA, ícono de CookieYes)
-           quedaban tapados/pisados en mobile. Reportado en vivo
-           2026-08-28. Valor estimado con margen (2 líneas ~14px + padding
-           10px arriba/abajo), no medido en cada dispositivo real. */
-        --footer-bar-height:     76px;
+        /* --footer-bar-height quedaba fija en 48px (el valor de desktop) —
+           afecta tanto el padding-bottom del body como los elementos
+           reposicionados por encima de la barra (badge de reCAPTCHA,
+           ícono de CookieYes), así que tiene que reflejar el alto real en
+           mobile. Bajado a 40px 2026-08-28 junto con la letra más chica y
+           sin padding vertical de acá abajo — valor estimado, no medido
+           en cada dispositivo real; si el texto sigue partiéndose en 2
+           líneas en algún celular angosto, subir este valor. */
+        --footer-bar-height:     40px;
     }
 }
 
@@ -1243,6 +1242,24 @@ body {
 .jb3-footer-bar__cta strong {
     margin: 0 .3em;
     font-size: 1.2em;
+}
+
+/* Pedido explícito 2026-08-28: en mobile letra más chica, sin padding
+   vertical en la barra (el horizontal se mantiene, evita que el texto
+   toque los bordes/íconos de las esquinas), y "AQUÍ" del mismo tamaño
+   que el resto en vez de destacado — ver --footer-bar-height más arriba,
+   bajado en conjunto con este cambio. */
+@media (max-width: 767px) {
+    .jb3-footer-bar {
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+    .jb3-footer-bar__cta {
+        font-size: 11px;
+    }
+    .jb3-footer-bar__cta strong {
+        font-size: 1em;
+    }
 }
 
 .jb3-footer-bar__cta:hover,
