@@ -1181,6 +1181,17 @@ body {
     bottom: calc(var(--footer-bar-height) + 14px) !important;
 }
 
+/* Botón flotante "revisitar consentimiento" de CookieYes (plugin
+   cookie-law-info) — mismo problema que el badge de reCAPTCHA de arriba:
+   queda tapado detrás de la barra fija del footer. CookieYes arma la
+   clase del contenedor como "cky-revisit-" + posición elegida en su panel
+   (ej. "cky-revisit-bottom-left") — [class*=] agarra cualquier posición
+   "bottom-*" sin tener que saber el nombre exacto completo. Reportado en
+   vivo 2026-08-28 (captura: el ícono circular quedaba pisando la barra). */
+[class*="cky-revisit-bottom"] {
+    bottom: calc(var(--footer-bar-height) + 14px) !important;
+}
+
 /* !important porque la regla global "a { color: var(--link-color) !important }"
    (sección COLORES GLOBALES) le gana por !important a cualquier color sin
    !important acá, sin importar la especificidad de la clase — por eso el
