@@ -1168,6 +1168,19 @@ body {
     text-align: center;
 }
 
+/* Badge de reCAPTCHA (esquina inferior derecha, página de registro) — por
+   defecto Google lo posiciona a bottom:14px, que queda tapado detrás de
+   esta barra fija de 48px (jb3-footer-bar, arriba). Google fija esa
+   posición con un style inline en el elemento (mayor especificidad que
+   cualquier clase), así que hace falta !important acá para pisarlo — es
+   la forma que la propia documentación de Google sugiere para reubicar
+   el badge (a diferencia de OCULTARLO del todo, que si se hace exige
+   agregar el texto de aviso "protegido por reCAPTCHA" a mano en algún
+   lado — acá no hace falta, el badge sigue visible, solo más arriba). */
+.grecaptcha-badge {
+    bottom: calc(var(--footer-bar-height) + 14px) !important;
+}
+
 /* !important porque la regla global "a { color: var(--link-color) !important }"
    (sección COLORES GLOBALES) le gana por !important a cualquier color sin
    !important acá, sin importar la especificidad de la clase — por eso el
