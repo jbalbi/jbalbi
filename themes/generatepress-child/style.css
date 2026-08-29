@@ -1127,6 +1127,14 @@ html.mobile-menu-open .mobile-menu-control-wrapper {
     opacity: .7;
 }
 
+/* !important: mismo motivo que .jb3-footer-bar__cta más abajo — la regla
+   global "a { color: var(--link-color) !important }" (COLORES GLOBALES)
+   le gana a cualquier color sin !important, y acá interesa que el link
+   se vea igual de apagado que el resto del texto legal, no destacado. */
+.jb3-footer-legal__cookies {
+    color: inherit !important;
+}
+
 .jb3-footer-list {
     list-style: none;
     margin: 0;
