@@ -145,3 +145,4 @@ require_once __DIR__ . '/_init_video_modal.php';        // Modal de video (YouTu
 require_once __DIR__ . '/_init_image_modal.php';        // Modal de imagen (mismo patrón que el de video) para [data-jb3-image]
 require_once __DIR__ . '/_init_page_modal.php';          // Modal de página: trae el contenido de una Página real por AJAX, sin header/footer, para [data-jb3-page-modal]
 require_once __DIR__ . '/_init_acf_blocks.php';          // Bloque ACF "Módulo de Contenido" (jb3/modulo-contenido): reemplaza a [jb3_modulo] escrito a mano
+require_once __DIR__ . '/_init_analytics.php';           // Google Analytics (GA4), bloqueado por CookieYes hasta aceptar la categoría "Analytics"
