@@ -150,6 +150,16 @@ Text Domain: generatepress-child
         --jb3-modulo-padding-x:  20px;
         --slider-logo-width:     180px;
         --slider-logo-height:    65px;
+        /* --footer-bar-height quedaba fija en 48px (el valor de desktop,
+           una sola línea de texto) — en mobile el CTA de .jb3-footer-bar
+           se parte en 2 líneas y la barra real crece más alta que eso
+           (min-height no la achica, solo pone un piso), así que tanto el
+           padding-bottom del body como los elementos reposicionados por
+           encima de la barra (badge de reCAPTCHA, ícono de CookieYes)
+           quedaban tapados/pisados en mobile. Reportado en vivo
+           2026-08-28. Valor estimado con margen (2 líneas ~14px + padding
+           10px arriba/abajo), no medido en cada dispositivo real. */
+        --footer-bar-height:     76px;
     }
 }
 
