@@ -1292,6 +1292,68 @@ body {
     }
 }
 
+/* Botón "Cookies" — mismo patrón exacto que .jb3-footer-bar__totop de
+   arriba, espejado a la izquierda en vez de la derecha. Reabre el panel
+   de CookieYes (ver footer.php, onclick="revisitCkyConsent()") — con esto
+   en la barra fija (visible en TODO el sitio, siempre) ya no hace falta
+   el ícono flotante propio del plugin, que hay que desactivar en su panel
+   para no duplicar. Mismo criterio 2026-08-28: se ocultó en mobile igual
+   que totop (ver más abajo) porque el texto del CTA ya ocupa todo el
+   ancho ahí — si hace falta acceso a esto en mobile también, sumar el
+   link a alguna columna del footer de arriba (jb3-footer-col--links). */
+.jb3-footer-bar__cookies {
+    position: absolute;
+    z-index: 1;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .15);
+    color: var(--footer-bar-text) !important;
+    text-decoration: none;
+    transition: background-color .2s ease, transform .2s ease;
+}
+
+.jb3-footer-bar__cookies:hover,
+.jb3-footer-bar__cookies:focus-visible {
+    background: rgba(255, 255, 255, .3);
+    transform: translateY(calc(-50% - 2px));
+}
+
+.jb3-footer-bar__cookies-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    margin-bottom: 8px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: #000000;
+    color: #ffffff;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 4px);
+    transition: opacity .2s ease, transform .2s ease;
+}
+
+.jb3-footer-bar__cookies:hover .jb3-footer-bar__cookies-tooltip,
+.jb3-footer-bar__cookies:focus-visible .jb3-footer-bar__cookies-tooltip {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+@media (max-width: 767px) {
+    .jb3-footer-bar__cookies {
+        display: none;
+    }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    SLIDER HOME — V1: solo imagen + flechas ([home_slider], en construcción)
    ═══════════════════════════════════════════════════════════════════════════ */

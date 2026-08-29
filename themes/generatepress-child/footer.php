@@ -59,6 +59,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 	<div class="jb3-footer-bar">
 		<a href="<?php echo esc_url( home_url( '/conectate-con-nosotors/' ) ); ?>" class="jb3-footer-bar__cta">CONECTATE <strong>AQUÍ</strong> CON NUESTRO EQUIPO COMERCIAL</a>
+		<?php
+		// revisitCkyConsent() la expone el plugin CookieYes (cookie-law-info)
+		// como función global de JS, no de PHP — no hay forma de chequear
+		// desde acá si el plugin está activo, así que el link se imprime
+		// siempre; el "if (window.revisitCkyConsent)" del onclick es la
+		// única protección real (sin el plugin activo, el link no hace
+		// nada en vez de tirar un error de JS). Reemplaza al ícono flotante
+		// propio del plugin, que quedaba pisando esta misma barra — hay que
+		// desactivarlo en su panel (Content & Colours → Revisit Consent
+		// Button) para no tener los dos a la vez.
+		?>
+		<a href="#" class="jb3-footer-bar__cookies" aria-label="Configurar cookies" onclick="if (window.revisitCkyConsent) { revisitCkyConsent(); } return false;">
+			<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<circle cx="12" cy="12" r="10"></circle>
+				<circle cx="8.5" cy="10" r="1.2" fill="currentColor"></circle>
+				<circle cx="14" cy="8.5" r="1" fill="currentColor"></circle>
+				<circle cx="15" cy="14" r="1.2" fill="currentColor"></circle>
+				<circle cx="10" cy="15" r="1" fill="currentColor"></circle>
+			</svg>
+			<span class="jb3-footer-bar__cookies-tooltip" aria-hidden="true">Cookies</span>
+		</a>
 		<a href="#" class="jb3-footer-bar__totop" aria-label="Volver arriba">
 			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 				<polyline points="18 15 12 9 6 15"></polyline>
