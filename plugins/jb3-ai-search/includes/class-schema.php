@@ -91,10 +91,16 @@ class JB3_AISearch_Schema {
 	 * guarda el año real de estreno de cada contenido en ningún dato
 	 * consultable todavía, solo puede aparecer escrito en la sinopsis) —
 	 * el año resuelto va como palabra clave dentro de "texto_libre".
+	 *
+	 * Última frase agregada para el chat bubble (class-chat-ajax.php,
+	 * 2026-08-30): cuando hay conversación previa, ese llamador arma un solo
+	 * string "Conversación previa: ... Pregunta actual: ..." y lo manda acá
+	 * tal cual — esta función no cambia de firma ni sabe nada de historial,
+	 * solo le avisa al modelo cómo leer esa forma si aparece.
 	 */
 	public static function instrucciones(): string {
 		return sprintf(
-			'Hoy es %s. Extraé de la pregunta del usuario los filtros de búsqueda de contenido de un sitio de medios, según la estructura de datos pedida — usá la fecha de hoy para resolver referencias relativas ("este año", "el año pasado", "últimos 2 años") a un año concreto. Omití cualquier campo que la pregunta no mencione — no inventes valores que no estén en las opciones permitidas.',
+			'Hoy es %s. Extraé de la pregunta del usuario los filtros de búsqueda de contenido de un sitio de medios, según la estructura de datos pedida — usá la fecha de hoy para resolver referencias relativas ("este año", "el año pasado", "últimos 2 años") a un año concreto. Omití cualquier campo que la pregunta no mencione — no inventes valores que no estén en las opciones permitidas. Si el texto de entrada incluye un bloque "Conversación previa:" seguido de "Pregunta actual:", usá esa conversación previa SOLO para interpretar la pregunta actual (ej. un tema mencionado antes que ahora se retoma implícitamente) — extraé los filtros en base a esa interpretación de la pregunta actual, no de la conversación completa.',
 			date_i18n( 'Y-m-d' )
 		);
 	}

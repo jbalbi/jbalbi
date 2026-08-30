@@ -1,0 +1,185 @@
+/**
+ * Burbuja de chat flotante — bottom:calc(var(--footer-bar-height)+Npx) es el
+ * mismo patrón ya usado en el tema (style.css) para el badge de reCAPTCHA
+ * (.grecaptcha-badge) y el ícono de CookieYes ([class*="cky-revisit-bottom"]),
+ * ambos apilados sobre la barra fija del footer (.jb3-footer-bar). --footer-bar-height
+ * la define el tema en :root — no hace falta redefinirla acá, cualquier hoja
+ * cargada en la misma página puede usarla (mismo criterio que .jb3-notice de
+ * jb3-forms.css). Fallback a 48px por si esta hoja carga en un contexto sin
+ * esa variable (no debería pasar en este sitio, pero el plugin no depende
+ * de que el tema no cambie).
+ *
+ * Offset del toggle (+88px, más generoso que los +14px de reCAPTCHA/CookieYes):
+ * el badge de reCAPTCHA solo vive en la página de registro, pero se evita el
+ * choque en TODO el sitio con un solo valor fijo en vez de detectar por
+ * página (no hay mecanismo para eso desde el plugin) — el costo es mínimo,
+ * la burbuja queda un poco más arriba de lo estrictamente necesario en el
+ * resto de las páginas.
+ */
+.jb3-ai-chat__toggle {
+    position: fixed;
+    right: 20px;
+    bottom: calc(var(--footer-bar-height, 48px) + 88px);
+    z-index: 9999;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    background: var(--color-secondary, #a020f0);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .35);
+    transition: transform .15s ease;
+}
+
+.jb3-ai-chat__toggle:hover,
+.jb3-ai-chat__toggle:focus-visible {
+    transform: scale(1.05);
+}
+
+/* [hidden] antes que la regla base a propósito — mismo orden que
+   .jb3-video-modal[hidden]/.jb3-page-modal[hidden] en style.css del tema. */
+.jb3-ai-chat__panel[hidden] {
+    display: none;
+}
+
+.jb3-ai-chat__panel {
+    position: fixed;
+    right: 20px;
+    bottom: calc(var(--footer-bar-height, 48px) + 156px);
+    z-index: 9999;
+    width: 380px;
+    max-width: calc(100vw - 40px);
+    max-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    background: #17181c;
+    color: #ffffff;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
+    overflow: hidden;
+}
+
+.jb3-ai-chat__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, .06);
+    font-weight: 600;
+}
+
+.jb3-ai-chat__close {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+}
+
+.jb3-ai-chat__hilo {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.jb3-ai-chat__burbuja {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.jb3-ai-chat__burbuja--usuario {
+    align-self: flex-end;
+    background: var(--color-secondary, #a020f0);
+    color: #ffffff;
+}
+
+.jb3-ai-chat__burbuja--bot {
+    align-self: flex-start;
+    background: rgba(255, 255, 255, .08);
+}
+
+.jb3-ai-chat__burbuja--cargando {
+    opacity: .6;
+}
+
+.jb3-ai-chat__resultados {
+    align-self: flex-start;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 100%;
+}
+
+.jb3-ai-chat__resultado {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none !important;
+    color: inherit !important;
+}
+
+.jb3-ai-chat__resultado-media img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 6px;
+    display: block;
+}
+
+.jb3-ai-chat__resultado-titulo {
+    font-size: 13px;
+}
+
+.jb3-ai-chat__form {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    border-top: 1px solid rgba(255, 255, 255, .1);
+}
+
+.jb3-ai-chat__input {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, .2);
+    background: rgba(255, 255, 255, .06);
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.jb3-ai-chat__input::placeholder {
+    color: rgba(255, 255, 255, .5);
+}
+
+.jb3-ai-chat__submit {
+    flex: 0 0 auto;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    background: var(--color-secondary, #a020f0);
+    color: #ffffff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+@media (max-width: 767px) {
+    .jb3-ai-chat__panel {
+        right: 12px;
+        left: 12px;
+        width: auto;
+        max-width: none;
+    }
+}

@@ -17,6 +17,7 @@ const JB3_AISEARCH_THROTTLE_MAX = 8; // búsquedas por IP por minuto (solo el sh
 // acá abajo, así cubre TANTO el shortcode/AJAX COMO la búsqueda nativa del
 // sitio (class-native-search.php) sin tener que repetirlo en cada lugar.
 const JB3_AISEARCH_THROTTLE_GLOBAL_MAX = 300; // llamadas a la API por hora, para todo el sitio.
+const JB3_AISEARCH_CHAT_HISTORIAL_MAX  = 4; // intercambios (pregunta/respuesta) que el chat bubble manda como contexto — ver class-chat-ajax.php.
 
 /**
  * ─── PROVEEDOR DE IA: interruptor único ─────────────────────────────────────
@@ -50,6 +51,8 @@ require_once __DIR__ . '/includes/class-search.php';
 require_once __DIR__ . '/includes/class-native-search.php';
 require_once __DIR__ . '/includes/class-ajax.php';
 require_once __DIR__ . '/includes/shortcode.php';
+require_once __DIR__ . '/includes/class-chat.php';
+require_once __DIR__ . '/includes/class-chat-ajax.php';
 
 /**
  * Único punto de llamada — el resto del plugin no sabe (ni le importa) qué
