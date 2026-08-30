@@ -25,6 +25,11 @@
 	var enviando       = false;
 	var HISTORIAL_KEY  = 'jb3AIChatHistorial';
 	var HISTORIAL_MAX  = parseInt( jb3AIChat.historialMax, 10 ) || 4;
+	// Bandera para reabrir el panel solo al llegar de un click en un
+	// resultado del chat — no en cualquier carga de página normal (ver el
+	// listener de click más abajo, que la escribe justo antes de que el
+	// navegador navegue).
+	var REABRIR_KEY    = 'jb3AIChatReabrir';
 
 	function leerHistorial() {
 		try {
@@ -75,13 +80,35 @@
 	}
 
 	// Repinta la conversación guardada al cargar la página (ver comentario
-	// de arriba: solo texto, nunca los links de resultados).
-	leerHistorial().forEach( function ( turno ) {
-		agregarBurbuja( turno.pregunta, 'jb3-ai-chat__burbuja--usuario' );
-		if ( turno.respuesta ) {
-			agregarBurbuja( turno.respuesta, 'jb3-ai-chat__burbuja--bot' );
+	// de arriba: solo texto, nunca los links de resultados). Si todavía no
+	// hay ninguna conversación, muestra el saludo de bienvenida en su lugar
+	// — nunca los dos juntos, y el saludo NO se guarda en sessionStorage (no
+	// es un intercambio real, es puro saludo de UI).
+	var historialInicial = leerHistorial();
+	if ( historialInicial.length ) {
+		historialInicial.forEach( function ( turno ) {
+			agregarBurbuja( turno.pregunta, 'jb3-ai-chat__burbuja--usuario' );
+			if ( turno.respuesta ) {
+				agregarBurbuja( turno.respuesta, 'jb3-ai-chat__burbuja--bot' );
+			}
+		} );
+	} else if ( jb3AIChat.saludo ) {
+		agregarBurbuja( jb3AIChat.saludo, 'jb3-ai-chat__burbuja--bot' );
+	}
+
+	// Si la página anterior era el propio chat (el visitante clickeó un link
+	// de un resultado, ver el listener de click más abajo), reabre el panel
+	// solo, así no se pierde la sensación de continuidad. Se borra al toque
+	// para no reabrirlo de nuevo en la siguiente navegación normal.
+	try {
+		if ( sessionStorage.getItem( REABRIR_KEY ) ) {
+			sessionStorage.removeItem( REABRIR_KEY );
+			abrirPanel();
 		}
-	} );
+	} catch ( e ) {
+		// sessionStorage bloqueado — sin reapertura automática, el resto del
+		// chat sigue funcionando igual.
+	}
 
 	// Delegación de clicks — mismo patrón que los modales del tema
 	// (_init_video_modal.php/_init_page_modal.php): un solo listener en
@@ -91,6 +118,16 @@
 			panel.hidden ? abrirPanel() : cerrarPanel();
 		} else if ( e.target.closest( '[data-jb3-chat-close]' ) ) {
 			cerrarPanel();
+		} else if ( e.target.closest( '.jb3-ai-chat__resultado' ) ) {
+			// El link navega normal (no se llama preventDefault) — solo se
+			// deja la bandera lista ANTES de que el navegador se vaya.
+			try {
+				sessionStorage.setItem( REABRIR_KEY, '1' );
+			} catch ( err ) {
+				// sin sessionStorage no hay forma de avisarle a la próxima
+				// página — la navegación sigue funcionando igual, solo no
+				// se reabre sola.
+			}
 		}
 	} );
 

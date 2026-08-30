@@ -116,10 +116,18 @@ class JB3_AISearch_Schema {
 	 * string "Conversación previa: ... Pregunta actual: ..." y lo manda acá
 	 * tal cual — esta función no cambia de firma ni sabe nada de historial,
 	 * solo le avisa al modelo cómo leer esa forma si aparece.
+	 *
+	 * Ampliada el mismo día — reportado en vivo: preguntar "películas de
+	 * terror" y después, sin relación, "contenido de cocina" devolvía
+	 * resultados de terror — el modelo se "anclaba" al tema fuerte de la
+	 * conversación previa en vez de darse cuenta de que era un tema nuevo.
+	 * Se le aclara explícitamente que use el historial SOLO ante una
+	 * continuación real (pronombres, "y", "también", etc.) y lo ignore por
+	 * completo si la pregunta actual es un tema independiente.
 	 */
 	public static function instrucciones(): string {
 		return sprintf(
-			'Hoy es %s. Extraé de la pregunta del usuario los filtros de búsqueda de contenido de un sitio de medios, según la estructura de datos pedida — usá la fecha de hoy para resolver referencias relativas ("este año", "el año pasado", "últimos 2 años") a un año concreto. Omití cualquier campo que la pregunta no mencione — no inventes valores que no estén en las opciones permitidas. Si el texto de entrada incluye un bloque "Conversación previa:" seguido de "Pregunta actual:", usá esa conversación previa SOLO para interpretar la pregunta actual (ej. un tema mencionado antes que ahora se retoma implícitamente) — extraé los filtros en base a esa interpretación de la pregunta actual, no de la conversación completa.',
+			'Hoy es %s. Extraé de la pregunta del usuario los filtros de búsqueda de contenido de un sitio de medios, según la estructura de datos pedida — usá la fecha de hoy para resolver referencias relativas ("este año", "el año pasado", "últimos 2 años") a un año concreto. Omití cualquier campo que la pregunta no mencione — no inventes valores que no estén en las opciones permitidas. Si el texto de entrada incluye un bloque "Conversación previa:" seguido de "Pregunta actual:": usá esa conversación previa SOLO si la pregunta actual es una continuación real y explícita de lo anterior (ej. empieza con "y...", "también...", usa un pronombre que se refiere a algo mencionado antes, o pide un ajuste tipo "¿y en otro canal?"). Si la pregunta actual plantea un tema nuevo sin relación con lo anterior (ej. cambia completamente de género, tipo de contenido o tema), IGNORÁ POR COMPLETO la conversación previa y extraé los filtros como si fuera la primera pregunta — nunca arrastres un filtro de la conversación anterior a un tema no relacionado.',
 			date_i18n( 'Y-m-d' )
 		);
 	}

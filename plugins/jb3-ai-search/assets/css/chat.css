@@ -9,17 +9,16 @@
  * esa variable (no debería pasar en este sitio, pero el plugin no depende
  * de que el tema no cambie).
  *
- * Offset del toggle (+88px, más generoso que los +14px de reCAPTCHA/CookieYes):
- * el badge de reCAPTCHA solo vive en la página de registro, pero se evita el
- * choque en TODO el sitio con un solo valor fijo en vez de detectar por
- * página (no hay mecanismo para eso desde el plugin) — el costo es mínimo,
- * la burbuja queda un poco más arriba de lo estrictamente necesario en el
- * resto de las páginas.
+ * Offset del toggle (+14px, pegado a la barra — pedido explícito
+ * 2026-08-30): el mismo choque con el badge de reCAPTCHA que antes se
+ * evitaba con un offset grande ahora se evita directo no mostrando el chat
+ * en la página de registro (ver jb3_aisearch_chat_deberia_mostrar() en
+ * class-chat.php) — acá ya no hace falta el margen extra.
  */
 .jb3-ai-chat__toggle {
     position: fixed;
     right: 20px;
-    bottom: calc(var(--footer-bar-height, 48px) + 88px);
+    bottom: calc(var(--footer-bar-height, 48px) + 14px);
     z-index: 9999;
     width: 56px;
     height: 56px;
@@ -49,7 +48,9 @@
 .jb3-ai-chat__panel {
     position: fixed;
     right: 20px;
-    bottom: calc(var(--footer-bar-height, 48px) + 156px);
+    /* mismo salto de 68px sobre el toggle (56px de alto + 12px de aire) que
+       ya tenía antes de acercar el toggle a la barra. */
+    bottom: calc(var(--footer-bar-height, 48px) + 82px);
     z-index: 9999;
     width: 380px;
     max-width: calc(100vw - 40px);
