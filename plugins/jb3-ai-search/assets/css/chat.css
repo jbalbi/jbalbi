@@ -9,34 +9,43 @@
  * esa variable (no debería pasar en este sitio, pero el plugin no depende
  * de que el tema no cambie).
  *
- * Offset del toggle (+14px, pegado a la barra — pedido explícito
- * 2026-08-30): el mismo choque con el badge de reCAPTCHA que antes se
- * evitaba con un offset grande ahora se evita directo no mostrando el chat
- * en la página de registro (ver jb3_aisearch_chat_deberia_mostrar() en
- * class-chat.php) — acá ya no hace falta el margen extra.
+ * Toggle: pedido explícito 2026-08-30, "adentro de la barra, al lado del
+ * botón de ir arriba" — mismo tamaño/estilo que .jb3-footer-bar__totop del
+ * tema (36px, círculo semitransparente) en vez del botón flotante grande de
+ * antes, y bottom calculado para centrarlo verticalmente en la barra (mismo
+ * resultado que el top:50%+translateY(-50%) que usa totop, pero sin ser un
+ * hijo real de .jb3-footer-bar — sigue siendo position:fixed propio del
+ * plugin, solo alineado visualmente ahí con CSS, igual que el badge de
+ * reCAPTCHA). right:66px = 20px (right de totop) + 36px (su ancho) + 10px
+ * de aire — queda pegado a su izquierda.
  */
 .jb3-ai-chat__toggle {
     position: fixed;
-    right: 20px;
-    bottom: calc(var(--footer-bar-height, 48px) + 14px);
+    right: 66px;
+    bottom: calc((var(--footer-bar-height, 48px) - 36px) / 2);
     z-index: 9999;
-    width: 56px;
-    height: 56px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     border: none;
-    background: var(--color-secondary, #a020f0);
+    background: rgba(255, 255, 255, .15);
     color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, .35);
-    transition: transform .15s ease;
+    transition: background-color .2s ease, transform .15s ease;
 }
 
 .jb3-ai-chat__toggle:hover,
 .jb3-ai-chat__toggle:focus-visible {
+    background: rgba(255, 255, 255, .3);
     transform: scale(1.05);
+}
+
+.jb3-ai-chat__toggle svg {
+    width: 20px;
+    height: 20px;
 }
 
 /* [hidden] antes que la regla base a propósito — mismo orden que
@@ -48,9 +57,9 @@
 .jb3-ai-chat__panel {
     position: fixed;
     right: 20px;
-    /* mismo salto de 68px sobre el toggle (56px de alto + 12px de aire) que
-       ya tenía antes de acercar el toggle a la barra. */
-    bottom: calc(var(--footer-bar-height, 48px) + 82px);
+    /* el toggle ahora vive adentro de la barra (ver arriba) — el panel solo
+       necesita despegarse de la barra en sí, no del toggle puntual. */
+    bottom: calc(var(--footer-bar-height, 48px) + 12px);
     z-index: 9999;
     width: 380px;
     max-width: calc(100vw - 40px);
@@ -177,6 +186,13 @@
 }
 
 @media (max-width: 767px) {
+    /* .jb3-footer-bar__totop se oculta a este ancho (el CTA de texto ya
+       ocupa toda la barra, ver style.css del tema) — el toggle pasa a ese
+       lugar que queda libre en vez de seguir pegado a su izquierda. */
+    .jb3-ai-chat__toggle {
+        right: 20px;
+    }
+
     .jb3-ai-chat__panel {
         right: 12px;
         left: 12px;
