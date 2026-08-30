@@ -18,6 +18,17 @@
  * plugin, solo alineado visualmente ahí con CSS, igual que el badge de
  * reCAPTCHA). right:66px = 20px (right de totop) + 36px (su ancho) + 10px
  * de aire — queda pegado a su izquierda.
+ *
+ * !important en background-color/border-radius/color acá y en los otros
+ * dos botones del panel (__close, __submit): confirmado con DevTools
+ * 2026-08-30 — GeneratePress tiene una regla global sobre CUALQUIER
+ * <button> del sitio ("button:not(...):not(...), html input[type=button]...")
+ * que fuerza background-color/color/border-radius/text-transform con
+ * !important. .jb3-footer-bar__totop (el botón de "volver arriba" que
+ * está al lado) nunca chocó con esto porque es un <a>, no un <button> —
+ * acá sí hace falta pisarla explícitamente, mismo criterio que ya se usa
+ * en el resto del sitio contra reglas globales con !important (ver
+ * .jb3-footer-bar__cta y .jb3-representante__dato en style.css del tema).
  */
 .jb3-ai-chat__toggle {
     position: fixed;
@@ -26,10 +37,11 @@
     z-index: 9999;
     width: 36px;
     height: 36px;
-    border-radius: 50%;
+    border-radius: 50% !important;
     border: none;
-    background: rgba(255, 255, 255, .15);
-    color: #ffffff;
+    background-color: rgba(255, 255, 255, .15) !important;
+    color: #ffffff !important;
+    text-transform: none !important;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -39,7 +51,7 @@
 
 .jb3-ai-chat__toggle:hover,
 .jb3-ai-chat__toggle:focus-visible {
-    background: rgba(255, 255, 255, .3);
+    background-color: rgba(255, 255, 255, .3) !important;
     transform: scale(1.05);
 }
 
@@ -82,10 +94,13 @@
     font-weight: 600;
 }
 
+/* !important: mismo choque con el <button> global de GeneratePress que
+   .jb3-ai-chat__toggle (ver comentario grande arriba). */
 .jb3-ai-chat__close {
-    background: none;
+    background-color: transparent !important;
     border: none;
-    color: inherit;
+    border-radius: 0 !important;
+    color: inherit !important;
     font-size: 22px;
     line-height: 1;
     cursor: pointer;
@@ -174,13 +189,16 @@
     color: rgba(255, 255, 255, .5);
 }
 
+/* !important: mismo choque con el <button> global de GeneratePress que
+   .jb3-ai-chat__toggle (ver comentario grande más arriba). */
 .jb3-ai-chat__submit {
     flex: 0 0 auto;
     padding: 10px 16px;
     border: none;
-    border-radius: 8px;
-    background: var(--color-secondary, #a020f0);
-    color: #ffffff;
+    border-radius: 8px !important;
+    background-color: var(--color-secondary, #a020f0) !important;
+    color: #ffffff !important;
+    text-transform: none !important;
     font-weight: 600;
     cursor: pointer;
 }
