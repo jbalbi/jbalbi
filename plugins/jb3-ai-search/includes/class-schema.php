@@ -79,6 +79,25 @@ class JB3_AISearch_Schema {
 				'requerido'   => false,
 				'descripcion' => 'Palabras clave para buscar en el título y la sinopsis — nombre propio, año/fecha mencionado, o cualquier cosa que no se resuelva con los filtros de arriba (ej. el nombre de una película, o "2023" si la pregunta menciona un año — NO hay un campo de fecha aparte, el año va acá como palabra clave). Omitir si los filtros de arriba ya cubren toda la pregunta.',
 			],
+			[
+				'nombre'      => 'resumen',
+				'tipo'        => 'string',
+				'requerido'   => false,
+				// Usado SOLO por el chat bubble (jb3_aisearch_chat_texto_respuesta(),
+				// class-chat-ajax.php) para armar una respuesta en lenguaje
+				// natural en vez de repetir la pregunta del usuario tal cual
+				// entre comillas — pedido explícito 2026-08-30 ("no encontré
+				// nada para 'y alguna pelicula con tom hanks?'" sonaba robótico).
+				// A PROPÓSITO se le pide una frase corta que describe la
+				// BÚSQUEDA, nunca una respuesta — en este punto el modelo
+				// todavía no sabe si hay resultados o no (esta extracción
+				// corre ANTES de la consulta real), así que no puede afirmar
+				// que algo existe/no existe; eso lo decide el conteo real de
+				// WP_Query del lado del código, no el modelo. El shortcode de
+				// búsqueda [jb3_buscador_ia] también recibe este campo (mismo
+				// schema para los dos) pero no lo usa — no rompe nada.
+				'descripcion' => 'Frase corta (3-6 palabras) en español que describe QUÉ está buscando el usuario, sin punto final — para mostrarla en una respuesta tipo "Encontré resultados de {resumen}" / "No encontré {resumen}". Mantené la capitalización normal de nombres propios (ej. "Tom Hanks", no "tom hanks"), el resto en minúsculas salvo que corresponda mayúscula. Ej: "películas con Tom Hanks", "series de comedia en AXN", "producciones de este año". NO es una respuesta ni una afirmación de que algo existe — solo una paráfrasis corta de la pregunta. Omitir si no se puede resumir en pocas palabras.',
+			],
 		];
 	}
 

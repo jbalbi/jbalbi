@@ -51,7 +51,7 @@ function jb3_aisearch_chat_ajax_handler() {
 	} catch ( \Throwable $e ) {
 		jb3_aisearch_debug_log( 'Chat AJAX falló: ' . $e->getMessage() );
 		wp_send_json_success( [
-			'respuesta' => jb3_aisearch_chat_texto_respuesta( 0, $pregunta ),
+			'respuesta' => jb3_aisearch_chat_texto_respuesta( 0, $pregunta, null ),
 			'html'      => '',
 			'count'     => 0,
 		] );
@@ -59,7 +59,7 @@ function jb3_aisearch_chat_ajax_handler() {
 
 	$count = count( $resultados );
 	wp_send_json_success( [
-		'respuesta' => jb3_aisearch_chat_texto_respuesta( $count, $pregunta ),
+		'respuesta' => jb3_aisearch_chat_texto_respuesta( $count, $pregunta, $filtros['resumen'] ?? null ),
 		'html'      => $count ? jb3_aisearch_chat_render_resultados( $resultados ) : '',
 		'count'     => $count,
 	] );
@@ -129,17 +129,29 @@ function jb3_aisearch_chat_sanitizar_historial( $raw ): array {
  * prosa (cero riesgo de alucinación, cero costo extra de API por mensaje).
  * El rol del LLM en este plugin no cambia: sigue siendo únicamente
  * "pregunta → filtros estructurados".
+ *
+ * $resumen (campo "resumen" del schema, ver class-schema.php — agregado
+ * 2026-08-30) es una frase corta que arma el MISMO llamado que ya extrae los
+ * filtros, sin costo extra: reemplaza repetir la pregunta del usuario tal
+ * cual entre comillas (sonaba robótico — "No encontré nada para 'y alguna
+ * pelicula con tom hanks?'", reportado en vivo) por algo más natural ("No
+ * encontré películas con Tom Hanks"). $pregunta queda como respaldo si el
+ * modelo no pudo resumirla (campo opcional) o si $filtros salió null — en
+ * ese caso se le saca el signo de pregunta final para que la plantilla
+ * ("No encontré ¿...?") no quede con puntuación cruzada.
  */
-function jb3_aisearch_chat_texto_respuesta( int $count, string $pregunta ): string {
+function jb3_aisearch_chat_texto_respuesta( int $count, string $pregunta, ?string $resumen ): string {
+	$descripcion = $resumen ? trim( $resumen ) : trim( $pregunta, "¿? \t\n" );
+
 	if ( $count > 0 ) {
 		return sprintf(
-			'Encontré %d resultado%s para "%s":',
+			'Encontré %d resultado%s de %s:',
 			$count,
 			1 === $count ? '' : 's',
-			$pregunta
+			$descripcion
 		);
 	}
-	return sprintf( 'No encontré nada para "%s" — probá reformular la pregunta.', $pregunta );
+	return sprintf( 'No encontré %s — probá reformular la pregunta.', $descripcion );
 }
 
 /**
