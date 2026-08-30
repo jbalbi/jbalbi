@@ -137,6 +137,21 @@
 		}
 	} );
 
+	// input pasó a ser un <textarea> (pedido explícito 2026-08-30, "que no
+	// parezca un renglón solo") — sin esto, Enter simplemente insertaría un
+	// salto de línea en vez de mandar el mensaje, como en un <input> de
+	// toda la vida. Shift+Enter sigue insertando el salto de línea normal.
+	input.addEventListener( 'keydown', function ( e ) {
+		if ( 'Enter' === e.key && ! e.shiftKey ) {
+			e.preventDefault();
+			if ( form.requestSubmit ) {
+				form.requestSubmit();
+			} else {
+				form.dispatchEvent( new Event( 'submit', { cancelable: true } ) );
+			}
+		}
+	} );
+
 	form.addEventListener( 'submit', function ( e ) {
 		e.preventDefault();
 		if ( enviando ) {

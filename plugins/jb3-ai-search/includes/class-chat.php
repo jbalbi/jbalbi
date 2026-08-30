@@ -110,7 +110,7 @@ function jb3_aisearch_chat_markup(): void {
 		</div>
 		<div class="jb3-ai-chat__hilo" id="jb3-ai-chat-hilo"></div>
 		<form class="jb3-ai-chat__form" id="jb3-ai-chat-form">
-			<input type="text" class="jb3-ai-chat__input" placeholder="<?php esc_attr_e( 'Ej: películas de terror', 'jb3-ai-search' ); ?>" autocomplete="off" maxlength="200">
+			<textarea class="jb3-ai-chat__input" placeholder="<?php esc_attr_e( 'Ej: películas de terror', 'jb3-ai-search' ); ?>" autocomplete="off" maxlength="200" rows="2"></textarea>
 			<button type="submit" class="jb3-ai-chat__submit"><?php esc_html_e( 'Enviar', 'jb3-ai-search' ); ?></button>
 		</form>
 	</div>

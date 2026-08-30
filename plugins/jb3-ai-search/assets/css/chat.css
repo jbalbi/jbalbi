@@ -190,14 +190,22 @@
 
 .jb3-ai-chat__form {
     display: flex;
+    align-items: flex-end;
     gap: 8px;
     padding: 12px;
     border-top: 1px solid rgba(255, 255, 255, .1);
 }
 
+/* textarea (antes input de una línea) — pedido explícito 2026-08-30, "que
+   no parezca un renglón solo". resize:none: prolijo, sin el tirador de
+   redimensionar del navegador; Enter manda el mensaje (Shift+Enter hace
+   salto de línea) — ver chat.js. */
 .jb3-ai-chat__input {
     flex: 1 1 auto;
     min-width: 0;
+    resize: none;
+    font-family: inherit;
+    line-height: 1.4;
     padding: 10px 12px;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, .2);
