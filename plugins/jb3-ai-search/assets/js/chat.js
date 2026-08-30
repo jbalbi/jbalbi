@@ -123,6 +123,14 @@
 		if ( sessionStorage.getItem( REABRIR_KEY ) ) {
 			sessionStorage.removeItem( REABRIR_KEY );
 			abrirPanel();
+			// El repintado de arriba corrió con el panel todavía [hidden]
+			// (display:none) — con el hilo sin renderizar, scrollHeight daba 0
+			// y el scrollTop de cada burbuja no servía de nada. Recién acá,
+			// con el panel ya visible, el alto real existe y se puede bajar
+			// al final de la conversación (reportado en vivo 2026-08-30: la
+			// conversación volvía a aparecer arriba del todo en vez de en la
+			// última respuesta).
+			hilo.scrollTop = hilo.scrollHeight;
 		}
 	} catch ( e ) {
 		// sessionStorage bloqueado — sin reapertura automática, el resto del
