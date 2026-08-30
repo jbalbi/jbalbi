@@ -37,6 +37,13 @@
     z-index: 9999;
     width: 36px;
     height: 36px;
+    /* Encontrado con DevTools 2026-08-30: main.min.css (otra hoja del tema)
+       le pone padding:10px 20px a CUALQUIER <button> — con box-sizing:border-box
+       (estándar en el sitio), esos 20px+20px horizontales ya superan los
+       36px de ancho de acá, así que el contenido quedaba recortado a 0
+       (36 - 40 = negativo → el navegador lo deja en 0). El botón "existía"
+       en el DOM pero con ancho real 0, invisible del todo. */
+    padding: 0 !important;
     border-radius: 50% !important;
     border: none;
     background-color: rgba(255, 255, 255, .15) !important;
@@ -104,7 +111,7 @@
     font-size: 22px;
     line-height: 1;
     cursor: pointer;
-    padding: 0;
+    padding: 0 !important;
 }
 
 .jb3-ai-chat__hilo {
