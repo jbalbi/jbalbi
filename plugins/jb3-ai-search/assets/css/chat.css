@@ -53,13 +53,20 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: background-color .2s ease, transform .15s ease;
+    /* Misma animación de hover que .jb3-footer-bar__totop/__cookies (tema)
+       — pedido explícito 2026-08-30, "que los 3 luzcan igual". Esos dos
+       usan position:absolute + top:50%/translateY(-50%) para centrarse en
+       la barra, y el hover les suma "-2px" arriba de esa base; acá, como
+       el toggle es position:fixed con bottom calculado (no ese mismo
+       truco de centrado), alcanza con translateY(-2px) directo para el
+       mismo efecto visual de "se levanta un poco". */
+    transition: background-color .2s ease, transform .2s ease;
 }
 
 .jb3-ai-chat__toggle:hover,
 .jb3-ai-chat__toggle:focus-visible {
     background-color: rgba(255, 255, 255, .3) !important;
-    transform: scale(1.05);
+    transform: translateY(-2px);
 }
 
 .jb3-ai-chat__toggle svg {
