@@ -101,17 +101,31 @@
     font-weight: 600;
 }
 
-/* !important: mismo choque con el <button> global de GeneratePress que
-   .jb3-ai-chat__toggle (ver comentario grande arriba). */
+/* !important: mismo choque con el <button> global de GeneratePress/
+   main.min.css que .jb3-ai-chat__toggle (ver comentario grande arriba) —
+   width/height fijos acá por el mismo motivo que ahí: sin un tamaño
+   explícito, el botón queda angosto y alto (la "×" se ve estirada
+   verticalmente) en vez de un cuadradito parejo. display:flex centra el
+   carácter adentro sin depender de su ancho/alto natural de fuente. */
 .jb3-ai-chat__close {
-    background-color: transparent !important;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, .12) !important;
     border: none;
-    border-radius: 0 !important;
+    border-radius: 6px !important;
     color: inherit !important;
-    font-size: 22px;
+    font-size: 20px;
     line-height: 1;
     cursor: pointer;
     padding: 0 !important;
+}
+
+.jb3-ai-chat__close:hover,
+.jb3-ai-chat__close:focus-visible {
+    background-color: rgba(255, 255, 255, .22) !important;
 }
 
 .jb3-ai-chat__hilo {
