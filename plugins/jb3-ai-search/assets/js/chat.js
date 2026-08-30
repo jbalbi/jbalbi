@@ -3,13 +3,18 @@
  * pregunta → filtros → resultados que [jb3_buscador_ia], pero con memoria de
  * la conversación (sessionStorage) y respuesta conversacional.
  *
- * Memoria: se guarda {pregunta, respuesta} por intercambio en sessionStorage
- * (clave JB3AICHAT_HISTORIAL_KEY), tope HISTORIAL_MAX — sobrevive a navegar
- * entre páginas en la misma pestaña (sitio de varias páginas, sin SPA), se
- * borra al cerrarla. Al recargar cualquier página, se repintan las burbujas
- * de TEXTO guardadas (pregunta+respuesta) — a propósito NO se guardan ni
- * repintan los links de resultados, para no inflar el storage ni mostrar
- * links potencialmente viejos/rotos.
+ * Memoria: se guarda {pregunta, respuesta, html} por intercambio en
+ * sessionStorage (clave HISTORIAL_KEY), tope HISTORIAL_MAX — sobrevive a
+ * navegar entre páginas en la misma pestaña (sitio de varias páginas, sin
+ * SPA), se borra al cerrarla. Al recargar cualquier página, se repinta la
+ * conversación completa (texto Y resultados) — reportado en vivo
+ * 2026-08-30: un primer intento no guardaba el "html" de resultados para
+ * no inflar el storage, pero eso hacía que al volver de clickear un link
+ * la conversación se viera "vacía" justo en la parte más útil. El
+ * historial que se MANDA al servidor (para que el modelo interprete
+ * preguntas de seguimiento) sí sigue siendo solo {pregunta, respuesta} —
+ * ver historialParaEnviar() — el modelo no necesita el HTML de resultados
+ * para nada, mandarlo solo infla el pedido de cada mensaje nuevo.
  */
 ( function () {
 	var toggle = document.getElementById( 'jb3-ai-chat-toggle' );
@@ -49,6 +54,17 @@
 		}
 	}
 
+	// Versión liviana del historial para mandar al servidor — el modelo
+	// (ver jb3_aisearch_chat_construir_prompt() en class-chat-ajax.php)
+	// solo lee "pregunta"/"respuesta" de cada turno, el "html" de
+	// resultados que sí se guarda localmente para repintar no le sirve de
+	// nada ahí, así que no se manda.
+	function historialParaEnviar( historial ) {
+		return historial.map( function ( turno ) {
+			return { pregunta: turno.pregunta, respuesta: turno.respuesta };
+		} );
+	}
+
 	function agregarBurbuja( texto, clase ) {
 		var burbuja = document.createElement( 'div' );
 		burbuja.className = 'jb3-ai-chat__burbuja ' + clase;
@@ -79,17 +95,20 @@
 		toggle.setAttribute( 'aria-expanded', 'false' );
 	}
 
-	// Repinta la conversación guardada al cargar la página (ver comentario
-	// de arriba: solo texto, nunca los links de resultados). Si todavía no
-	// hay ninguna conversación, muestra el saludo de bienvenida en su lugar
-	// — nunca los dos juntos, y el saludo NO se guarda en sessionStorage (no
-	// es un intercambio real, es puro saludo de UI).
+	// Repinta la conversación guardada al cargar la página, texto Y
+	// resultados. Si todavía no hay ninguna conversación, muestra el
+	// saludo de bienvenida en su lugar — nunca los dos juntos, y el saludo
+	// NO se guarda en sessionStorage (no es un intercambio real, es puro
+	// saludo de UI).
 	var historialInicial = leerHistorial();
 	if ( historialInicial.length ) {
 		historialInicial.forEach( function ( turno ) {
 			agregarBurbuja( turno.pregunta, 'jb3-ai-chat__burbuja--usuario' );
 			if ( turno.respuesta ) {
 				agregarBurbuja( turno.respuesta, 'jb3-ai-chat__burbuja--bot' );
+			}
+			if ( turno.html ) {
+				agregarResultadosHtml( turno.html );
 			}
 		} );
 	} else if ( jb3AIChat.saludo ) {
@@ -172,7 +191,7 @@
 		datos.append( 'action', 'jb3_ai_chat' );
 		datos.append( 'nonce', jb3AIChat.nonce );
 		datos.append( 'pregunta', pregunta );
-		datos.append( 'historial', JSON.stringify( leerHistorial() ) );
+		datos.append( 'historial', JSON.stringify( historialParaEnviar( leerHistorial() ) ) );
 
 		fetch( jb3AIChat.ajaxUrl, { method: 'POST', body: datos, credentials: 'same-origin' } )
 			.then( function ( r ) { return r.json(); } )
@@ -192,7 +211,7 @@
 				}
 
 				var historial = leerHistorial();
-				historial.push( { pregunta: pregunta, respuesta: texto } );
+				historial.push( { pregunta: pregunta, respuesta: texto, html: respuesta.data.html || '' } );
 				guardarHistorial( historial );
 			} )
 			.catch( function () {
