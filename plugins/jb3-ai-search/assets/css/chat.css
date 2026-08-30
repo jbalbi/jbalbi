@@ -84,6 +84,34 @@
     height: 20px;
 }
 
+/* Tooltip "ChatBot" — mismo patrón exacto que .jb3-footer-bar__totop-tooltip
+   del tema (posición arriba centrado, mismo timing) — pedido explícito
+   2026-08-30, "que se vea que es el ícono del chat". #jb3-ai-chat-toggle
+   ya es position:fixed, sirve de contenedor de posicionamiento sin
+   agregar nada más. */
+.jb3-ai-chat__toggle-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    margin-bottom: 8px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: #000000;
+    color: #ffffff;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 4px);
+    transition: opacity .2s ease, transform .2s ease;
+}
+
+#jb3-ai-chat-toggle:hover .jb3-ai-chat__toggle-tooltip,
+#jb3-ai-chat-toggle:focus-visible .jb3-ai-chat__toggle-tooltip {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
 /* [hidden] antes que la regla base a propósito — mismo orden que
    .jb3-video-modal[hidden]/.jb3-page-modal[hidden] en style.css del tema. */
 .jb3-ai-chat__panel[hidden] {

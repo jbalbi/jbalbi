@@ -102,6 +102,7 @@ function jb3_aisearch_chat_markup(): void {
 			<path d="M2 13h2"></path>
 			<path d="M20 13h2"></path>
 		</svg>
+		<span class="jb3-ai-chat__toggle-tooltip" aria-hidden="true">ChatBot</span>
 	</button>
 	<div id="jb3-ai-chat-panel" class="jb3-ai-chat__panel" hidden>
 		<div class="jb3-ai-chat__header">
