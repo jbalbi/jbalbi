@@ -106,12 +106,12 @@ function jb3_aisearch_chat_markup(): void {
 	<div id="jb3-ai-chat-panel" class="jb3-ai-chat__panel" hidden>
 		<div class="jb3-ai-chat__header">
 			<span><?php esc_html_e( 'Preguntanos', 'jb3-ai-search' ); ?></span>
-			<button type="button" class="jb3-ai-chat__close" data-jb3-chat-close aria-label="<?php esc_attr_e( 'Cerrar', 'jb3-ai-search' ); ?>">&times;</button>
+			<button type="button" id="jb3-ai-chat-close" class="jb3-ai-chat__close" data-jb3-chat-close aria-label="<?php esc_attr_e( 'Cerrar', 'jb3-ai-search' ); ?>">&times;</button>
 		</div>
 		<div class="jb3-ai-chat__hilo" id="jb3-ai-chat-hilo"></div>
 		<form class="jb3-ai-chat__form" id="jb3-ai-chat-form">
 			<textarea class="jb3-ai-chat__input" placeholder="<?php esc_attr_e( 'Ej: películas de terror', 'jb3-ai-search' ); ?>" autocomplete="off" maxlength="200" rows="2"></textarea>
-			<button type="submit" class="jb3-ai-chat__submit"><?php esc_html_e( 'Enviar', 'jb3-ai-search' ); ?></button>
+			<button type="submit" id="jb3-ai-chat-submit" class="jb3-ai-chat__submit"><?php esc_html_e( 'Enviar', 'jb3-ai-search' ); ?></button>
 		</form>
 	</div>
 	<?php

@@ -22,15 +22,25 @@
  * !important en background-color/border-radius/color acá y en los otros
  * dos botones del panel (__close, __submit): confirmado con DevTools
  * 2026-08-30 — GeneratePress tiene una regla global sobre CUALQUIER
- * <button> del sitio ("button:not(...):not(...), html input[type=button]...")
+ * <button> del sitio ("button:not(.site-header-account__toggle):not(.menu-toggle), ...")
  * que fuerza background-color/color/border-radius/text-transform con
  * !important. .jb3-footer-bar__totop (el botón de "volver arriba" que
- * está al lado) nunca chocó con esto porque es un <a>, no un <button> —
- * acá sí hace falta pisarla explícitamente, mismo criterio que ya se usa
- * en el resto del sitio contra reglas globales con !important (ver
- * .jb3-footer-bar__cta y .jb3-representante__dato en style.css del tema).
+ * está al lado) nunca chocó con esto porque es un <a>, no un <button>.
+ *
+ * !important NO ALCANZABA (seguía viéndose el botón del tema, cuadrado y
+ * con sus colores): esa regla del tema pesa MÁS que una sola clase por
+ * especificidad — cada ":not(.algo)" suma como si fuera una clase más,
+ * "button:not(a):not(b)" pesa 2 clases + 1 etiqueta, más que
+ * ".jb3-ai-chat__toggle" (1 clase sola), aunque los dos usen !important
+ * (con !important empatado, gana el más específico, no el que aparece
+ * después). La forma de ganar siempre, sin importar cuántas clases sume
+ * la otra regla, es un selector por ID (#jb3-ai-chat-toggle) — un ID pesa
+ * más que cualquier cantidad de clases. Por eso estas 3 reglas (acá,
+ * __close, __submit) usan el ID del botón en vez de la clase — la clase
+ * sigue en el HTML por si sirve para algo más adelante, pero el estilo ya
+ * no depende de ella.
  */
-.jb3-ai-chat__toggle {
+#jb3-ai-chat-toggle {
     position: fixed;
     right: 66px;
     bottom: calc((var(--footer-bar-height, 48px) - 36px) / 2);
@@ -63,8 +73,8 @@
     transition: background-color .2s ease, transform .2s ease;
 }
 
-.jb3-ai-chat__toggle:hover,
-.jb3-ai-chat__toggle:focus-visible {
+#jb3-ai-chat-toggle:hover,
+#jb3-ai-chat-toggle:focus-visible {
     background-color: rgba(255, 255, 255, .3) !important;
     transform: translateY(-2px);
 }
@@ -108,13 +118,13 @@
     font-weight: 600;
 }
 
-/* !important: mismo choque con el <button> global de GeneratePress/
-   main.min.css que .jb3-ai-chat__toggle (ver comentario grande arriba) —
-   width/height fijos acá por el mismo motivo que ahí: sin un tamaño
-   explícito, el botón queda angosto y alto (la "×" se ve estirada
-   verticalmente) en vez de un cuadradito parejo. display:flex centra el
-   carácter adentro sin depender de su ancho/alto natural de fuente. */
-.jb3-ai-chat__close {
+/* ID en vez de clase (mismo motivo que #jb3-ai-chat-toggle más arriba —
+   especificidad, no !important) — width/height fijos por el mismo motivo
+   que el toggle: sin un tamaño explícito, el botón queda angosto y alto
+   (la "×" se ve estirada verticalmente) en vez de un cuadradito parejo.
+   display:flex centra el carácter adentro sin depender de su ancho/alto
+   natural de fuente. */
+#jb3-ai-chat-close {
     width: 28px;
     height: 28px;
     display: flex;
@@ -130,8 +140,8 @@
     padding: 0 !important;
 }
 
-.jb3-ai-chat__close:hover,
-.jb3-ai-chat__close:focus-visible {
+#jb3-ai-chat-close:hover,
+#jb3-ai-chat-close:focus-visible {
     background-color: rgba(255, 255, 255, .22) !important;
 }
 
@@ -225,9 +235,8 @@
     color: rgba(255, 255, 255, .5);
 }
 
-/* !important: mismo choque con el <button> global de GeneratePress que
-   .jb3-ai-chat__toggle (ver comentario grande más arriba). */
-.jb3-ai-chat__submit {
+/* ID en vez de clase (mismo motivo que #jb3-ai-chat-toggle más arriba). */
+#jb3-ai-chat-submit {
     flex: 0 0 auto;
     padding: 10px 16px;
     border: none;
@@ -243,7 +252,7 @@
     /* .jb3-footer-bar__totop se oculta a este ancho (el CTA de texto ya
        ocupa toda la barra, ver style.css del tema) — el toggle pasa a ese
        lugar que queda libre en vez de seguir pegado a su izquierda. */
-    .jb3-ai-chat__toggle {
+    #jb3-ai-chat-toggle {
         right: 20px;
     }
 
