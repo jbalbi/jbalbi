@@ -25,6 +25,7 @@ class JB3_AISearch_Client_Claude {
 	const API_URL   = 'https://api.anthropic.com/v1/messages';
 	const MODEL     = 'claude-haiku-4-5-20251001'; // tarea de extracción simple, no hace falta un modelo grande.
 	const TOOL_NAME = 'extraer_filtros_busqueda';
+	const TOOL_NAME_CHAT = 'redactar_respuesta_chat';
 
 	/**
 	 * @param string $pregunta Texto tal cual lo escribió el usuario.
@@ -74,6 +75,64 @@ class JB3_AISearch_Client_Claude {
 		return null;
 	}
 
+	/**
+	 * Mismo contrato que JB3_AISearch_Client_Gemini::redactar_respuesta_chat()
+	 * — ver el docblock de ese método (jb3-ai-search.php aplica el freno
+	 * global antes de llamar a cualquiera de los dos). Usa "tool use" igual
+	 * que extraer_filtros(), con un schema de un solo campo string.
+	 *
+	 * @param string[] $titulos
+	 */
+	public static function redactar_respuesta_chat( string $pregunta, int $count, array $titulos, bool $es_seguimiento ): ?string {
+		$api_key = jb3_aisearch_api_key( 'claude' );
+		if ( '' === $api_key ) {
+			return null;
+		}
+
+		$datos = wp_json_encode( [
+			'pregunta_del_usuario' => $pregunta,
+			'cantidad_resultados'  => $count,
+			'titulos_reales'       => $titulos,
+		] );
+
+		$response = wp_remote_post( self::API_URL, [
+			'timeout' => 12,
+			'headers' => [
+				'x-api-key'         => $api_key,
+				'anthropic-version' => '2023-06-01',
+				'content-type'      => 'application/json',
+			],
+			'body' => wp_json_encode( [
+				'model'       => self::MODEL,
+				'max_tokens'  => 512,
+				'system'      => JB3_AISearch_Schema::instrucciones_chat_respuesta( $es_seguimiento ),
+				'tools'       => [ self::tool_schema_chat() ],
+				'tool_choice' => [ 'type' => 'tool', 'name' => self::TOOL_NAME_CHAT ],
+				'messages'    => [
+					[ 'role' => 'user', 'content' => $datos ],
+				],
+			] ),
+		] );
+
+		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+			return null;
+		}
+
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+		if ( ! is_array( $body ) || empty( $body['content'] ) || ! is_array( $body['content'] ) ) {
+			return null;
+		}
+
+		foreach ( $body['content'] as $block ) {
+			if ( is_array( $block ) && ( $block['type'] ?? '' ) === 'tool_use' && is_array( $block['input'] ?? null ) ) {
+				$respuesta = trim( (string) ( $block['input']['respuesta'] ?? '' ) );
+				return '' !== $respuesta ? $respuesta : null;
+			}
+		}
+
+		return null;
+	}
+
 	/** Traduce JB3_AISearch_Schema::campos() al formato "input_schema" (JSON Schema) que espera "tool use". */
 	private static function tool_schema(): array {
 		$properties = [];
@@ -108,6 +167,24 @@ class JB3_AISearch_Client_Claude {
 				'type'       => 'object',
 				'properties' => $properties,
 				'required'   => $required,
+			],
+		];
+	}
+
+	/** Schema de "tool use" para redactar_respuesta_chat() — un solo campo string. */
+	private static function tool_schema_chat(): array {
+		return [
+			'name'         => self::TOOL_NAME_CHAT,
+			'description'  => 'Redacta la respuesta conversacional final para el usuario del chat.',
+			'input_schema' => [
+				'type'       => 'object',
+				'properties' => [
+					'respuesta' => [
+						'type'        => 'string',
+						'description' => 'La frase final, lista para mostrarle al usuario tal cual.',
+					],
+				],
+				'required' => [ 'respuesta' ],
 			],
 		];
 	}

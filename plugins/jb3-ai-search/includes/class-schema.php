@@ -131,4 +131,31 @@ class JB3_AISearch_Schema {
 			date_i18n( 'Y-m-d' )
 		);
 	}
+
+	/**
+	 * Instrucciones para la SEGUNDA llamada a la IA que usa el chat bubble
+	 * (ver jb3_aisearch_chat_redactar_respuesta() en jb3-ai-search.php) —
+	 * redacta la frase final que ve el usuario, distinta de instrucciones()
+	 * de arriba (esa extrae filtros, esta redacta texto). Vive acá, un solo
+	 * lugar, para que class-client-gemini.php y class-client-claude.php usen
+	 * exactamente el mismo texto sin duplicarlo — pedido explícito
+	 * 2026-08-31 ("que TODAS las conversaciones sean más naturales").
+	 *
+	 * Todo lo que puede decir sobre resultados sale de datos REALES que el
+	 * llamador ya le pasa como contenido del pedido (cantidad, títulos) —
+	 * acá solo se le prohíbe explícitamente inventar algo fuera de eso.
+	 */
+	public static function instrucciones_chat_respuesta( bool $es_seguimiento ): string {
+		$base = 'Sos el asistente conversacional de un sitio de streaming (películas, series, producciones originales, contenido comercial, videos e integraciones de marca). '
+			. 'Te paso el resultado REAL de una búsqueda que ya se hizo — nunca inventes títulos, cantidades ni datos que no estén en lo que te paso. '
+			. 'Redactá UNA sola respuesta corta (1-2 frases), tono cercano y natural en español, sin comillas, sin emojis, sin markdown, sin repetir la pregunta del usuario entre comillas. '
+			. 'Si la cantidad de resultados es 0: avisá con calidez que no encontraste nada de eso y sugerí reformular o probar otra búsqueda, sin sonar como un error técnico. '
+			. 'Si es mayor a 0: ofrecé los resultados con entusiasmo genuino — podés nombrar uno o dos títulos de la lista como ejemplo si suena natural, pero no hace falta nombrarlos todos porque se muestran aparte como tarjetas con imagen y título.';
+
+		if ( $es_seguimiento ) {
+			$base .= ' Esta pregunta es una continuación de la conversación anterior — si tiene sentido, redactalo como una continuación natural, no como si fuera la primera vez que hablan.';
+		}
+
+		return $base;
+	}
 }

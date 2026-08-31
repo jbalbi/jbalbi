@@ -74,6 +74,37 @@ function jb3_aisearch_extraer_filtros( string $pregunta ): ?array {
 	return JB3_AISearch_Client_Gemini::extraer_filtros( $pregunta );
 }
 
+/**
+ * Segunda llamada al mismo proveedor de IA, SOLO para el chat bubble —
+ * redacta la respuesta con lenguaje natural en vez de la plantilla fija
+ * (jb3_aisearch_chat_texto_respuesta() en class-chat-ajax.php, que sigue
+ * existiendo como respaldo si esto devuelve null). Pedido explícito
+ * 2026-08-31 ("que TODAS las conversaciones sean más naturales") — el
+ * usuario aceptó el trade-off de que esto consume el MISMO presupuesto
+ * compartido de 300/hora que ya usa jb3_aisearch_extraer_filtros() (se
+ * aplica el mismo freno acá, mismo criterio de "un solo punto" que esa
+ * función) — cada mensaje de chat con resultados gasta 2 llamadas en vez
+ * de 1.
+ *
+ * No guarda nada — cada llamada es autocontenida (pregunta + conteo real +
+ * títulos reales de ESE pedido), no hay banco de frases ni caché de
+ * respuestas del lado del servidor.
+ *
+ * @param string[] $titulos
+ * @return string|null Null si no hay presupuesto o la API falló — el
+ *                      llamador cae a la plantilla fija en ese caso.
+ */
+function jb3_aisearch_chat_redactar_respuesta( string $pregunta, int $count, array $titulos, bool $es_seguimiento ): ?string {
+	if ( ! jb3_aisearch_throttle_global_ok() ) {
+		return null;
+	}
+
+	if ( 'claude' === JB3_AISEARCH_PROVIDER ) {
+		return JB3_AISearch_Client_Claude::redactar_respuesta_chat( $pregunta, $count, $titulos, $es_seguimiento );
+	}
+	return JB3_AISearch_Client_Gemini::redactar_respuesta_chat( $pregunta, $count, $titulos, $es_seguimiento );
+}
+
 function jb3_aisearch_throttle_global_ok(): bool {
 	$key    = 'jb3_aisearch_throttle_global';
 	$conteo = (int) get_transient( $key );

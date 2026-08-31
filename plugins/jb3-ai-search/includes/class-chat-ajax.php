@@ -5,9 +5,13 @@ defined( 'ABSPATH' ) || exit;
  * Endpoint AJAX del chat bubble — mismo criterio de seguridad que
  * class-ajax.php (token → freno de abuso → IA → WP_Query geo-filtrada), pero
  * con dos diferencias: acepta un "historial" de la conversación (para que el
- * modelo pueda interpretar preguntas de seguimiento) y arma la respuesta
- * conversacional acá mismo con PHP, en vez de con una segunda llamada al
- * modelo — ver jb3_aisearch_chat_texto_respuesta() más abajo.
+ * modelo pueda interpretar preguntas de seguimiento) y, desde 2026-08-31,
+ * arma la respuesta conversacional con una SEGUNDA llamada a la IA
+ * (jb3_aisearch_chat_redactar_respuesta(), jb3-ai-search.php) en vez de solo
+ * una plantilla fija — pedido explícito ("que TODAS las conversaciones sean
+ * más naturales"). La plantilla (jb3_aisearch_chat_texto_respuesta() más
+ * abajo) sigue existiendo como respaldo si esa segunda llamada falla o no
+ * hay presupuesto — nunca se rompe la respuesta por eso.
  *
  * Freno por IP: la MISMA función jb3_aisearch_throttle_ok() que ya usa
  * class-ajax.php (mismo transient, misma clave) — a propósito: buscador y
@@ -15,7 +19,9 @@ defined( 'ABSPATH' ) || exit;
  * jb3_aisearch_extraer_filtros()), así que comparten un solo presupuesto de
  * 8/min por IP en vez de que alguien duplique su cupo abriendo el otro. El
  * freno GLOBAL (300/hora, todo el sitio) ya está adentro de
- * jb3_aisearch_extraer_filtros(), se hereda gratis acá también.
+ * jb3_aisearch_extraer_filtros() Y de jb3_aisearch_chat_redactar_respuesta()
+ * — un mensaje de chat con resultados gasta 2 de esas 300 llamadas/hora en
+ * vez de 1, se hereda gratis acá también.
  */
 add_action( 'wp_ajax_jb3_ai_chat', 'jb3_aisearch_chat_ajax_handler' );
 add_action( 'wp_ajax_nopriv_jb3_ai_chat', 'jb3_aisearch_chat_ajax_handler' );
@@ -57,12 +63,35 @@ function jb3_aisearch_chat_ajax_handler() {
 		] );
 	}
 
-	$count = count( $resultados );
+	$count     = count( $resultados );
+	$titulos   = jb3_aisearch_chat_titulos( $resultados );
+	$respuesta = jb3_aisearch_chat_redactar_respuesta( $pregunta, $count, $titulos, ! empty( $historial ) )
+		?? jb3_aisearch_chat_texto_respuesta( $count, $pregunta, $filtros['resumen'] ?? null );
+
 	wp_send_json_success( [
-		'respuesta' => jb3_aisearch_chat_texto_respuesta( $count, $pregunta, $filtros['resumen'] ?? null ),
+		'respuesta' => $respuesta,
 		'html'      => $count ? jb3_aisearch_chat_render_resultados( $resultados ) : '',
 		'count'     => $count,
 	] );
+}
+
+/**
+ * Titulos reales de los primeros resultados encontrados, para pasarle a
+ * jb3_aisearch_chat_redactar_respuesta() como unico material que la IA
+ * puede nombrar (nunca un titulo fuera de esta lista) - tope bajo (5) a
+ * proposito: es solo para que la respuesta pueda mencionar un par como
+ * ejemplo, no un listado completo (eso ya lo ve el usuario en las tarjetas
+ * de jb3_aisearch_chat_render_resultados(), que muestra hasta 8).
+ */
+function jb3_aisearch_chat_titulos( array $ids, int $limite = 5 ): array {
+	$titulos = [];
+	foreach ( array_slice( $ids, 0, $limite ) as $id ) {
+		$titulo = get_the_title( $id );
+		if ( '' !== $titulo ) {
+			$titulos[] = $titulo;
+		}
+	}
+	return $titulos;
 }
 
 /**

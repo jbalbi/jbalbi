@@ -74,6 +74,73 @@ class JB3_AISearch_Client_Gemini {
 		return $filtros;
 	}
 
+	/**
+	 * Redacta la respuesta conversacional del chat bubble a partir de datos
+	 * YA REALES (nunca inventa) — único llamador:
+	 * jb3_aisearch_chat_redactar_respuesta() en jb3-ai-search.php, que aplica
+	 * el freno global ANTES de esta llamada (mismo presupuesto compartido de
+	 * 300/hora que extraer_filtros()). Mismo patrón que extraer_filtros():
+	 * responseSchema fuerza un único campo string, así el parseo es tan
+	 * confiable como el de los filtros — nada de texto libre suelto que haya
+	 * que limpiar a mano.
+	 *
+	 * @param string[] $titulos Títulos reales ya encontrados (hasta unos
+	 *                           pocos) — el modelo puede nombrar alguno como
+	 *                           ejemplo, nunca uno fuera de la lista.
+	 * @return string|null Null si la API falló o no devolvió nada usable —
+	 *                      el llamador cae a la plantilla fija en ese caso
+	 *                      (jb3_aisearch_chat_texto_respuesta()).
+	 */
+	public static function redactar_respuesta_chat( string $pregunta, int $count, array $titulos, bool $es_seguimiento ): ?string {
+		$api_key = jb3_aisearch_api_key( 'gemini' );
+		if ( '' === $api_key ) {
+			return null;
+		}
+
+		$datos = wp_json_encode( [
+			'pregunta_del_usuario' => $pregunta,
+			'cantidad_resultados'  => $count,
+			'titulos_reales'       => $titulos,
+		] );
+
+		$url  = sprintf( self::API_URL, self::MODEL, rawurlencode( $api_key ) );
+		$body = wp_json_encode( [
+			'system_instruction' => [
+				'parts' => [ [ 'text' => JB3_AISearch_Schema::instrucciones_chat_respuesta( $es_seguimiento ) ] ],
+			],
+			'contents' => [
+				[ 'parts' => [ [ 'text' => $datos ] ] ],
+			],
+			'generationConfig' => [
+				'responseMimeType' => 'application/json',
+				'responseSchema'   => [
+					'type'       => 'OBJECT',
+					'properties' => [
+						'respuesta' => [
+							'type'        => 'STRING',
+							'description' => 'La frase final, lista para mostrarle al usuario tal cual.',
+						],
+					],
+					'required' => [ 'respuesta' ],
+				],
+			],
+		] );
+
+		// Mismo reintento que extraer_filtros() (ver el comentario ahí arriba
+		// sobre timeouts transitorios de Gemini, confirmado 2026-08-28) — sin
+		// esto, cada timeout suelto perdía la respuesta natural y caía
+		// directo a la plantilla fija, cuando alcanzaba con reintentar una
+		// vez (confirmado en vivo 2026-08-31 con el log de debug).
+		$resultado = self::pedir( $url, $body );
+		if ( null === $resultado ) {
+			usleep( 300000 );
+			$resultado = self::pedir( $url, $body );
+		}
+
+		$respuesta = trim( (string) ( $resultado['respuesta'] ?? '' ) );
+		return '' !== $respuesta ? $respuesta : null;
+	}
+
 	private static function pedir( string $url, string $body ): ?array {
 		$response = wp_remote_post( $url, [
 			'timeout' => 15,
