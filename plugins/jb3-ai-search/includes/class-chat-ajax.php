@@ -139,19 +139,29 @@ function jb3_aisearch_chat_sanitizar_historial( $raw ): array {
  * modelo no pudo resumirla (campo opcional) o si $filtros salió null — en
  * ese caso se le saca el signo de pregunta final para que la plantilla
  * ("No encontré ¿...?") no quede con puntuación cruzada.
+ *
+ * Tono conversacional — pedido explícito 2026-08-31 ("que no suene tan a
+ * respuesta de bot", ej. "te puedo recomendar estas películas" en vez de
+ * "Encontré 19 resultados de películas de acción:"). Se sacó el número
+ * exacto de la frase con 2+ resultados a propósito: jb3_aisearch_chat_render_resultados()
+ * muestra como máximo 8 igual, así que decir "19" y listar 8 quedaba
+ * inconsistente. "estas opciones de %s" (no "estas %s") también a
+ * propósito: "opciones" es el sustantivo que concuerda con "estas"
+ * (femenino plural fijo), $resumen queda como complemento con "de" que no
+ * necesita concordar en género/número con nada — evita que "estas
+ * películas de terror" quedara mal si $resumen viene en otro género/número
+ * (ej. "contenido de cocina", masculino singular).
  */
 function jb3_aisearch_chat_texto_respuesta( int $count, string $pregunta, ?string $resumen ): string {
 	$descripcion = $resumen ? trim( $resumen ) : trim( $pregunta, "¿? \t\n" );
 
-	if ( $count > 0 ) {
-		return sprintf(
-			'Encontré %d resultado%s de %s:',
-			$count,
-			1 === $count ? '' : 's',
-			$descripcion
-		);
+	if ( 0 === $count ) {
+		return sprintf( 'No encontré nada de %s por ahora — probá con otra búsqueda.', $descripcion );
 	}
-	return sprintf( 'No encontré %s — probá reformular la pregunta.', $descripcion );
+	if ( 1 === $count ) {
+		return sprintf( 'Encontré esto de %s:', $descripcion );
+	}
+	return sprintf( 'Te puedo recomendar estas opciones de %s:', $descripcion );
 }
 
 /**
