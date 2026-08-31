@@ -106,7 +106,19 @@ function jb3_aisearch_chat_markup(): void {
 	</button>
 	<div id="jb3-ai-chat-panel" class="jb3-ai-chat__panel" hidden>
 		<div class="jb3-ai-chat__header">
-			<span><?php esc_html_e( 'Preguntanos', 'jb3-ai-search' ); ?></span>
+			<span class="jb3-ai-chat__header-titulo">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<rect x="4" y="8" width="16" height="12" rx="3"></rect>
+					<path d="M12 8V4"></path>
+					<circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"></circle>
+					<circle cx="9" cy="14" r="1.2" fill="currentColor" stroke="none"></circle>
+					<circle cx="15" cy="14" r="1.2" fill="currentColor" stroke="none"></circle>
+					<path d="M9 17.5h6"></path>
+					<path d="M2 13h2"></path>
+					<path d="M20 13h2"></path>
+				</svg>
+				ChatBot
+			</span>
 			<button type="button" id="jb3-ai-chat-close" class="jb3-ai-chat__close" data-jb3-chat-close aria-label="<?php esc_attr_e( 'Cerrar', 'jb3-ai-search' ); ?>">&times;</button>
 		</div>
 		<div class="jb3-ai-chat__hilo" id="jb3-ai-chat-hilo"></div>

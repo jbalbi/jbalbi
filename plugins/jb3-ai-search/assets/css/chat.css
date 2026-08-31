@@ -146,6 +146,14 @@
     font-weight: 600;
 }
 
+/* Mismo icono de robot que #jb3-ai-chat-toggle, más chico — pedido
+   explícito 2026-08-31 ("el mismo iconito que en la barra"). */
+.jb3-ai-chat__header-titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 /* ID en vez de clase (mismo motivo que #jb3-ai-chat-toggle más arriba —
    especificidad, no !important) — width/height fijos por el mismo motivo
    que el toggle: sin un tamaño explícito, el botón queda angosto y alto
