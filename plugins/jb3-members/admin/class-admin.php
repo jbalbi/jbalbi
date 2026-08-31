@@ -70,6 +70,13 @@ class JB3_Admin {
     // -------------------------------------------------------------------------
 
     public static function register_menu() {
+        // Posición 32: fija, a propósito DESPUÉS de los 6 CPT del tema
+        // (peliculas..integraciones, ahora con menu_position 26-31 explícito
+        // en _init_custom_post_types.php). Antes esto pedía 30 sin saber que
+        // WordPress le asigna esa misma posición automáticamente a uno de
+        // los CPT (el orden en que se registran) — el choque de posiciones
+        // hacía que JB3 Members quedara intercalado en el medio de la lista
+        // de CPT en vez de después de todos — reportado en vivo 2026-08-31.
         add_menu_page(
             __( 'JB3 Members', 'jb3-members' ),
             __( 'JB3 Members', 'jb3-members' ),
@@ -77,7 +84,7 @@ class JB3_Admin {
             'jb3-members',
             [ __CLASS__, 'page_representatives' ],
             'dashicons-groups',
-            30
+            32
         );
         add_submenu_page(
             'jb3-members',

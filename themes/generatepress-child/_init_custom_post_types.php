@@ -36,6 +36,14 @@ $args_peliculas = array(
 	'labels'				=> $labels_peliculas,
 	'public'				=> true,
 	'show_in_rest'			=> true,
+	// Posición fija (no la asignada automáticamente por WP) — sin esto, los
+	// 6 CPT de acá abajo se numeran dinámicamente a partir de 26 en el orden
+	// en que se registran, y jb3-members (add_menu_page con posición fija
+	// 30, ver class-admin.php) puede chocar con la posición que le tocó a
+	// alguno de ellos, quedando intercalado en el medio de la lista de CPT
+	// en vez de después de todos — reportado en vivo 2026-08-31. 26-31 para
+	// los 6 CPT, jb3-members pasa a 32 (después de todos).
+	'menu_position'			=> 26,
 	'menu_icon'				=> 'dashicons-editor-video',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
 	//'taxonomies'			=> array( 'category', 'post_tag' ),
@@ -82,6 +90,7 @@ $args_series = array(
 	'labels'				=> $labels_series,
 	'public'				=> true,
 	'show_in_rest'			=> true,
+	'menu_position'			=> 27,
 	'menu_icon'				=> 'dashicons-video-alt2',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
 	//'taxonomies'			=> array( 'category', 'post_tag' ),
@@ -124,6 +133,7 @@ $args_prod_originales = array(
 	'labels'				=> $labels_prod_originales,
 	'public'				=> true,
 	'show_in_rest'			=> true,
+	'menu_position'			=> 28,
 	'menu_icon'				=> 'dashicons-star-filled',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
 	//'taxonomies'			=> array( 'category', 'post_tag' ),
@@ -166,6 +176,7 @@ $args_op_comerciales = array(
 	'labels'				=> $labels_op_comerciales,
 	'public'				=> true,
 	'show_in_rest'			=> true,
+	'menu_position'			=> 29,
 	'menu_icon'				=> 'dashicons-chart-bar',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
 	//'taxonomies'			=> array( 'category', 'post_tag' ),
@@ -208,6 +219,7 @@ $args_videos = array(
 	'labels'				=> $labels_videos,
 	'public'				=> true,
 	'show_in_rest'			=> true,
+	'menu_position'			=> 30,
 	'menu_icon'				=> 'dashicons-format-video',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
 	//'taxonomies'			=> array( 'category', 'post_tag' ),
@@ -250,6 +262,7 @@ $args_integraciones = array(
 	'labels'				=> $labels_integraciones,
 	'public'				=> true,
 	'show_in_rest'			=> true,
+	'menu_position'			=> 31,
 	'menu_icon'				=> 'dashicons-megaphone',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
 	//'taxonomies'			=> array( 'category', 'post_tag' ),
