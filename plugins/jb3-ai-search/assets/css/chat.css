@@ -147,11 +147,21 @@
 }
 
 /* Mismo icono de robot que #jb3-ai-chat-toggle, más chico — pedido
-   explícito 2026-08-31 ("el mismo iconito que en la barra"). */
+   explícito 2026-08-31 ("el mismo iconito que en la barra"). line-height:1
+   en vez de dejar el alto de línea normal del texto — con flex
+   align-items:center solo, el SVG queda centrado contra la CAJA de línea
+   del texto (más alta que el texto en sí), no contra el texto visible, así
+   que se veía descolgado hacia abajo respecto al ícono. flex-shrink:0 en
+   el SVG: sin esto, el texto lo puede achicar si el panel queda angosto. */
 .jb3-ai-chat__header-titulo {
     display: flex;
     align-items: center;
     gap: 8px;
+    line-height: 1;
+}
+
+.jb3-ai-chat__header-titulo svg {
+    flex-shrink: 0;
 }
 
 /* ID en vez de clase (mismo motivo que #jb3-ai-chat-toggle más arriba —
