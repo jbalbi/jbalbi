@@ -170,6 +170,13 @@
    altura visual en vez de que el texto domine. */
 .jb3-ai-chat__header-texto {
     font-size: 14px;
+    /* align-items:center alinea las CAJAS del ícono y el texto, pero el
+       texto tiene aire debajo de su propia base (descendentes de la
+       fuente) que el ícono no tiene — quedaba corrido hacia arriba
+       respecto al piso real del ícono. Empujoncito manual en vez de
+       depender del centrado automático — pedido explícito 2026-09-01. */
+    position: relative;
+    top: 2px;
 }
 
 /* ID en vez de clase (mismo motivo que #jb3-ai-chat-toggle más arriba —
