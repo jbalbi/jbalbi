@@ -107,7 +107,7 @@ function jb3_aisearch_chat_markup(): void {
 	<div id="jb3-ai-chat-panel" class="jb3-ai-chat__panel" hidden>
 		<div class="jb3-ai-chat__header">
 			<span class="jb3-ai-chat__header-titulo">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 					<rect x="4" y="8" width="16" height="12" rx="3"></rect>
 					<path d="M12 8V4"></path>
 					<circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"></circle>
@@ -117,7 +117,7 @@ function jb3_aisearch_chat_markup(): void {
 					<path d="M2 13h2"></path>
 					<path d="M20 13h2"></path>
 				</svg>
-				ChatBot
+				<span class="jb3-ai-chat__header-texto">ChatBot</span>
 			</span>
 			<button type="button" id="jb3-ai-chat-close" class="jb3-ai-chat__close" data-jb3-chat-close aria-label="<?php esc_attr_e( 'Cerrar', 'jb3-ai-search' ); ?>">&times;</button>
 		</div>

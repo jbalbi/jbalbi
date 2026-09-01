@@ -156,12 +156,20 @@
 .jb3-ai-chat__header-titulo {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     line-height: 1;
 }
 
 .jb3-ai-chat__header-titulo svg {
     flex-shrink: 0;
+}
+
+/* Texto más chico que el tamaño heredado del panel (~16-18px) — pedido
+   explícito 2026-08-31, con guías visuales: el ícono achicado a 18px de
+   arriba (antes 20px) y el texto bajado a este tamaño quedan a la misma
+   altura visual en vez de que el texto domine. */
+.jb3-ai-chat__header-texto {
+    font-size: 14px;
 }
 
 /* ID en vez de clase (mismo motivo que #jb3-ai-chat-toggle más arriba —
