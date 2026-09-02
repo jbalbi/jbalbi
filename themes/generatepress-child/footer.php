@@ -37,7 +37,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				// ancho ahí). revisitCkyConsent() la expone CookieYes
 				// (cookie-law-info) como función global de JS.
 				?>
-				· <a href="#" class="jb3-footer-legal__cookies" onclick="if (window.revisitCkyConsent) { revisitCkyConsent(); } return false;">Configurar cookies</a>
+				
 			</p>
 		</div>
 
@@ -59,8 +59,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</ul>
 			<h3 class="jb3-footer-heading">Columna 3b</h3>
 			<ul class="jb3-footer-list">
-				<li><a href="#">Enlace 1</a></li>
-				<li><a href="#">Enlace 2</a></li>
+				<li><a href="#" class="jb3-footer-legal__cookies" onclick="if (window.revisitCkyConsent) { revisitCkyConsent(); } return false;">Configurar cookies</a></li>
 			</ul>
 		</div>
 

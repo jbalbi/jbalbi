@@ -363,6 +363,35 @@ add_filter( 'the_posts', function ( array $posts, WP_Query $query ) {
 	return array_values( array_filter( $posts, fn( WP_Post $post ) => jb3_geo_post_visible( $post->ID ) ) );
 }, 10, 2 );
 
+// ─── MENÚS DE NAVEGACIÓN: sacar ítems que no corresponden a tu país ─────────
+// Sin esto, un canal (o cualquier Página/contenido) restringido por país
+// seguía apareciendo en el menú para todo el mundo — el visitante lo veía
+// en la navegación y recién se enteraba de que no puede entrar al hacer
+// click (404 vía template_redirect más arriba). Reusa jb3_geo_post_visible()
+// tal cual, la misma función que ya decide el 404 y el filtro de
+// búsqueda — no es una regla aparte solo para canales: cubre CUALQUIER
+// ítem de menú que apunte a una Página/Entrada/CPT real (películas, series,
+// una Página de concurso con "pais" tildado a mano, lo que sea). Un ítem sin
+// restricción de país asignada (la inmensa mayoría de las Páginas
+// institucionales) sigue visible siempre, mismo criterio que en el resto
+// del sitio.
+// Solo alcanza a ítems tipo "post_type" (Página/Entrada/CPT reales,
+// $item->object_id existe) — un "Enlace personalizado" del menú (URL
+// escrita a mano, sin post real detrás) no tiene forma de chequearse así y
+// queda sin filtrar, a propósito: no hay ningún dato de país que consultar.
+add_filter( 'wp_nav_menu_objects', function ( array $items ) {
+	if ( is_admin() ) {
+		return $items;
+	}
+
+	return array_values( array_filter( $items, function ( $item ) {
+		if ( 'post_type' !== $item->type ) {
+			return true;
+		}
+		return jb3_geo_post_visible( (int) $item->object_id );
+	} ) );
+} );
+
 // ─── BARRA DE ADMIN: previsualizar el sitio como otro país ──────────────────
 add_action( 'admin_bar_menu', function ( WP_Admin_Bar $admin_bar ) {
 	if ( ! current_user_can( 'manage_options' ) ) {

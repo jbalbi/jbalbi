@@ -1761,8 +1761,15 @@ body {
     display: inline-block;
     color: var(--nav-text) !important;
     text-decoration: none !important;
-    font-size: var(--nav-font-size);
-    font-weight: var(--nav-font-weight);
+    /* Fijo, NO var(--nav-font-size)/--nav-font-weight: esas variables pasan a
+       los valores grandes/regular del panel mobile del header por debajo de
+       1279px (ver @media (max-width: 1279px) más arriba) — ese es el
+       breakpoint del hamburguesa del header, sin relación con esta subnav,
+       que tiene su propio breakpoint propio (se oculta recién a los 767px,
+       ver más abajo). Compartir la variable hacía que la subnav se viera
+       grande entre 768 y 1278px por accidente. */
+    font-size: 11px;
+    font-weight: 700;
     letter-spacing: .05em;
     text-transform: uppercase;
 }
@@ -1874,7 +1881,7 @@ body {
 .jb3-canales-slider__titulo,
 .jb3-modulo__titulo {
     padding-left: 16px;
-    border-left: 4px solid var(--color-primary);
+    border-left: 6px solid var(--color-primary);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: .02em;
@@ -2475,12 +2482,14 @@ body.error404 .inside-article .search-form {
 .jb3-cols-2 > .wp-block-group__inner-container { grid-template-columns: repeat(2, 1fr); }
 .jb3-cols-3 > .wp-block-group__inner-container { grid-template-columns: repeat(3, 1fr); }
 .jb3-cols-4 > .wp-block-group__inner-container { grid-template-columns: repeat(4, 1fr); }
+.jb3-cols-5 > .wp-block-group__inner-container { grid-template-columns: repeat(5, 1fr); }
 .jb3-cols-6 > .wp-block-group__inner-container { grid-template-columns: repeat(6, 1fr); }
 .jb3-cols-8 > .wp-block-group__inner-container { grid-template-columns: repeat(8, 1fr); }
 
 @media (max-width: 1023px) {
     .jb3-cols-3 > .wp-block-group__inner-container { grid-template-columns: repeat(2, 1fr); }
     .jb3-cols-4 > .wp-block-group__inner-container { grid-template-columns: repeat(2, 1fr); }
+    .jb3-cols-5 > .wp-block-group__inner-container { grid-template-columns: repeat(3, 1fr); }
     .jb3-cols-6 > .wp-block-group__inner-container { grid-template-columns: repeat(3, 1fr); }
     .jb3-cols-8 > .wp-block-group__inner-container { grid-template-columns: repeat(4, 1fr); }
 }
@@ -2492,6 +2501,74 @@ body.error404 .inside-article .search-form {
 @media (max-width: 767px) {
     [class*="jb3-cols-"] > .wp-block-group__inner-container {
         grid-template-columns: repeat(1, 1fr);
+        gap: 20px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BLOQUE "GRILLA" (blocks/grilla) — columnas configurables por número,
+   InnerBlocks real. Mismos 40/40/20px de gap que el resto del sitio.
+   Las tres variables --jb3-grilla-cols-* las pone render.php inline, según
+   los campos gr_columnas_desktop/tablet/mobile del bloque — cada
+   instancia del bloque puede tener su propio número de columnas por
+   breakpoint, por eso son variables por-instancia (inline), no clases
+   fijas como jb3-cols-N.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-grilla {
+    display: grid;
+    grid-template-columns: repeat(var(--jb3-grilla-cols-desktop, 3), 1fr);
+    gap: 40px;
+}
+
+@media (max-width: 1023px) {
+    .jb3-grilla {
+        grid-template-columns: repeat(var(--jb3-grilla-cols-tablet, 2), 1fr);
+    }
+}
+
+@media (max-width: 767px) {
+    .jb3-grilla {
+        grid-template-columns: repeat(var(--jb3-grilla-cols-mobile, 1), 1fr);
+        gap: 20px;
+    }
+}
+
+/* min-width:0: mismo motivo que #page más arriba — un hijo ancho adentro
+   de un ítem (una imagen grande sin object-fit, por ejemplo) puede
+   empujar esa columna de grid más allá de su 1fr si no se le pone este
+   freno explícito. */
+.jb3-grilla__item {
+    min-width: 0;
+    grid-column-start: var(--jb3-grilla-gc-desktop, auto);
+}
+
+@media (max-width: 1023px) {
+    .jb3-grilla__item { grid-column-start: var(--jb3-grilla-gc-tablet, auto); }
+}
+
+@media (max-width: 767px) {
+    .jb3-grilla__item { grid-column-start: var(--jb3-grilla-gc-mobile, auto); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GAP DEL SITIO EN CUALQUIER LAYOUT "CUADRÍCULA" NATIVO DE GUTENBERG
+   Para cuando el editor arma la grilla con el panel nativo del bloque
+   (Ajustes → Diseño → Cuadrícula) en vez de la clase jb3-cols-N de acá
+   arriba — mismo resultado visual, sin que el editor tenga que acordarse de
+   ninguna clase.
+   WordPress le pone gap:0.5em a CUALQUIER bloque con layout grid con esta
+   regla nativa: ":where(.is-layout-grid){gap: 0.5em;}" — el ":where()" es
+   a propósito de WordPress (especificidad CERO), pensado justo para que un
+   tema lo pise fácil con un selector normal, sin hacer falta !important acá.
+   Mismos 40px/20px que el resto de las grillas del sitio (jb3-grid-thumbs,
+   jb3-cols-N) para que se vea igual sea cual sea el mecanismo que usó el
+   editor para armar la grilla. */
+.is-layout-grid {
+    gap: 40px;
+}
+
+@media (max-width: 767px) {
+    .is-layout-grid {
         gap: 20px;
     }
 }
@@ -2726,17 +2803,14 @@ body.error404 .inside-article .search-form {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   TARJETAS — dos usos de la misma clase base ".jb3-tarjeta":
-   1) bloque "Grilla de Tarjetas" (blocks/grilla-tarjetas): usa el
-      contenedor/breakpoints/imagen de .jb3-grid-thumbs (arriba) para SU
-      propia imagen (proporción 3/2 fija).
-   2) bloque genérico "Tarjeta" (blocks/tarjeta): ítem suelto, sin
-      contenedor propio (se inserta adentro de lo que sea — ver
-      jb3-cols-N más arriba) — usa ".jb3-tarjeta__media" acá abajo, SIN
-      proporción forzada (tiene que servir tanto para posters verticales
-      como para imágenes horizontales).
-   Los dos comparten título/texto (mismo estilo) y, si hay link, el
-   pequeño zoom al pasar el mouse.
+   TARJETAS — bloque genérico "Tarjeta" (blocks/tarjeta): ítem suelto, sin
+   contenedor propio (se inserta adentro de lo que sea — un Grupo con
+   jb3-cols-N o con layout Grid nativo, jb3-grid-thumbs/posters — ver más
+   arriba). Sin proporción de imagen forzada a propósito: tiene que servir
+   tanto para posters verticales como para imágenes horizontales.
+   (Existió en paralelo un bloque "Grilla de Tarjetas", con su propio
+   contenedor/proporción fija, pero nunca llegó a usarse en ningún post —
+   eliminado 2026-09-01 junto con blocks/grilla-tarjetas/.)
    ═══════════════════════════════════════════════════════════════════════════ */
 /* !important: la regla global "a { color: var(--link-color) !important }"
    (sección COLORES GLOBALES) le gana a cualquier color sin !important acá,

@@ -267,49 +267,16 @@ add_action( 'acf/init', function () {
 		),
 	) );
 
-	// N tarjetas (imagen + título + texto), sin post real detrás — ej. una
-	// sección de "Posibilidades Infinitas" con 3 beneficios. Reutiliza el
-	// mismo contenedor y los mismos breakpoints que .jb3-grid-thumbs (3/2/1
-	// responsive en desktop/tablet/mobile — ver _init_grids.php/style.css)
-	// A PROPÓSITO, en vez de que cada página arme esto a mano con el
-	// bloque nativo "Columnas": Columnas nativo pasa de 3 a 1 columna de
-	// una sola vez al llegar a mobile (sin paso intermedio en tablet),
-	// distinto del resto de las grillas del sitio — con este bloque el
-	// comportamiento responsive queda idéntico en todos lados.
-	//
-	// Grupo de campos ACF ("Grilla de Tarjetas", Location: Block == Grilla
-	// de Tarjetas), campos sueltos:
-	//   gt_columnas (Number, opcional — 0 o vacío = default, 3 en desktop;
-	//                mismo criterio que mc_columnas/gi_columnas.)
-	//   gt_items    (Repeater, requerido) sub-campos:
-	//                  imagen (Image, requerido)
-	//                  titulo (Text, requerido)
-	//                  texto  (Textarea, opcional)
-	acf_register_block_type( array(
-		'name'            => 'grilla-tarjetas',
-		'title'           => 'Grilla de Tarjetas',
-		'description'     => 'N tarjetas con imagen, título y texto — ej. una sección de beneficios/posibilidades, sin post real detrás.',
-		'render_template' => __DIR__ . '/blocks/grilla-tarjetas/render.php',
-		'category'        => 'jb3',
-		'icon'            => 'layout',
-		'keywords'        => array( 'tarjetas', 'grilla', 'beneficios', 'posibilidades', 'columnas' ),
-		'mode'            => 'preview',
-		'api_version'     => 3, // ver comentario largo en "modulo-contenido" más arriba.
-		'supports'        => array(
-			'align'           => false,
-			'customClassName' => false,
-			'anchor'          => false,
-		),
-	) );
-
 	// Ítem suelto (imagen + título + texto + link, todos opcionales salvo
 	// la imagen) — SIN saber nada de grilla ni columnas, para insertar
 	// adentro de lo que sea: un Grupo con jb3-cols-N (ver style.css), un
-	// Grupo con jb3-grid-thumbs/posters, Columnas nativo, donde haga falta,
-	// tantas veces como se necesite. Reemplaza, para contenido NUEVO, tanto
-	// a "Grilla de Imágenes" (con solo imagen) como a "Grilla de Tarjetas"
-	// (con título+texto) — esos dos bloques quedan sin tocar para lo que ya
-	// los usa, no hace falta migrar nada existente.
+	// Grupo con layout Grid nativo, jb3-grid-thumbs/posters, Columnas
+	// nativo, donde haga falta, tantas veces como se necesite. Reemplaza,
+	// para contenido NUEVO, a "Grilla de Imágenes" (con solo imagen) — ese
+	// bloque queda sin tocar para lo que ya lo usa, no hace falta migrar
+	// nada existente. ("Grilla de Tarjetas", el equivalente con título+
+	// texto, existió en paralelo un tiempo pero nunca llegó a usarse en
+	// ningún post — eliminado 2026-09-01, ver comentario en style.css.)
 	// Sin proporción de imagen forzada a propósito: tiene que servir tanto
 	// para posters verticales como para tarjetas horizontales.
 	//
@@ -412,8 +379,8 @@ add_action( 'acf/init', function () {
 		// "ACF Block Version 1" — la variante vieja, que no soporta un área
 		// de InnerBlocks real dentro del editor (el bloque quedaba roto,
 		// "An error occurred when loading the block in edit mode"). Este
-		// bloque es el único del sitio que necesita InnerBlocks, así que es
-		// el único que pide la versión 3 (la 2 no soporta InnerBlocks).
+		// fue el primer bloque del sitio que necesitó InnerBlocks (después
+		// se sumó "Grilla", más abajo) — la versión 2 no soporta InnerBlocks.
 		// El campo "Países" no se guardaba antes con la versión 3 — la
 		// causa real NO era la versión del bloque, sino una key de campo
 		// duplicada en la base (dos posts acf-field con el mismo
@@ -428,12 +395,55 @@ add_action( 'acf/init', function () {
 		),
 	) );
 
+	// N columnas (CSS Grid), configurables por número — no por panel de
+	// Layout nativo ni por clase CSS escrita a mano (ver la ronda larga con
+	// el layout "Cuadrícula" nativo de Gutenberg que motivó este bloque:
+	// su combo "Máx. columnas"+"Mín. ancho" no respeta el gap real del
+	// sitio cuando los dos campos están cargados a la vez — desajuste
+	// confirmado leyendo wp-includes/block-supports/layout.php,
+	// 2026-09-01). InnerBlocks real (como "Contenido por País" — adentro va
+	// cualquier otro bloque, "Tarjeta" u otro). Sin título propio a
+	// propósito: para un título con entrada en la subnav, poner un bloque
+	// "Título y Bajada" antes — no duplicar esa lógica acá (ver
+	// blocks/grilla/render.php para el detalle completo).
+	//
+	// Grupo de campos ACF ("Grilla", Location: Block == Grilla), campos
+	// sueltos:
+	//   gr_columnas_desktop (Number, opcional — vacío/0 = default 3)
+	//   gr_columnas_tablet  (Number, opcional — vacío/0 = default 2)
+	//   gr_columnas_mobile  (Number, opcional — vacío/0 = default 1)
+	//   gr_alineacion       (Select, choices = izquierda/centro/derecha,
+	//                        default izquierda) — dónde arranca la última
+	//                        fila cuando queda incompleta (ej. 7 tarjetas
+	//                        en 3 columnas: la 7ma sola, ¿pegada a la
+	//                        izquierda, centrada, o pegada a la derecha?).
+	acf_register_block_type( array(
+		'name'               => 'grilla',
+		'title'              => 'Grilla',
+		'description'        => 'Contenedor de columnas (CSS Grid) configurable por número, con InnerBlocks real — insertar adentro cualquier otro bloque (Tarjeta, imágenes, lo que haga falta).',
+		'render_template'    => __DIR__ . '/blocks/grilla/render.php',
+		'category'           => 'jb3',
+		'icon'               => 'layout',
+		'keywords'           => array( 'grilla', 'grid', 'columnas', 'tarjetas', 'contenedor' ),
+		'mode'               => 'preview',
+		'api_version'        => 3,
+		'acf_block_version'  => 3, // ver comentario largo en "contenido-por-pais" más arriba — hace falta para InnerBlocks real.
+		'supports'           => array(
+			'align'           => false,
+			'customClassName' => false,
+			'anchor'          => false,
+		),
+	) );
+
 	// Ver comentario del bloque más arriba: sin este filtro, ACF envuelve el
 	// InnerBlocks del front en un <div class="acf-innerblocks-container">
 	// propio — un nivel de DOM extra que rompería la cascada de espaciado
 	// unificado (".entry-content > * + *" no llega hasta ahí) para lo que
-	// sea que se ponga adentro.
+	// sea que se ponga adentro. En "Grilla" además rompería el Grid mismo
+	// (display:grid necesita que los ítems sean HIJOS DIRECTOS de
+	// .jb3-grilla — con el div de ACF de por medio, todo el InnerBlocks
+	// pasaría a contar como un solo ítem gigante en vez de varios).
 	add_filter( 'acf/blocks/wrap_frontend_innerblocks', function ( $wrap, $block_name ) {
-		return 'acf/contenido-por-pais' === $block_name ? false : $wrap;
+		return in_array( $block_name, array( 'acf/contenido-por-pais', 'acf/grilla' ), true ) ? false : $wrap;
 	}, 10, 2 );
 } );
