@@ -166,28 +166,46 @@ function jb3_canales_slider_render( string $titulo, string $bajada = '' ): strin
 	return ob_get_clean();
 }
 
-// URL de la Página de canal (plantilla "Canal", campo ACF "canal" vinculado
-// al término) — no toda la lista de canales tiene su Página armada todavía,
-// así que un canal sin Página muestra el logo sin link en vez de romper el
-// slider entero. Cacheado en memoria: se pide una vez por canal por request,
-// no una vez por canal por cada slider que se imprima en la misma página.
+// URL de la página de canal (CPT "pagina_canal", campo ACF "canal"
+// vinculado al término) — no toda la lista de canales tiene su página
+// armada todavía, así que un canal sin página muestra el logo sin link en
+// vez de romper el slider entero. Búsqueda en DOS pasos, "pagina_canal"
+// primero y "page" solo como fallback (no un solo get_posts() con los dos
+// post_type juntos): si algún día vuelve a pasar que una página suelta
+// tenga el mismo campo "canal" cargado por error (como pasaba con
+// "Películas" antes de corregirla, 2026-09-02) sin querer, el desempate ya
+// no depende del orden por fecha de get_posts() — el CPT real gana
+// siempre, sin ambigüedad. 'page' se sigue permitiendo como fallback a
+// propósito: páginas sueltas que no son la principal de un canal (ej. una
+// página secundaria de contenido) pueden tener el mismo campo "canal"
+// cargado de forma legítima sin haber migrado al CPT — ver comentario en
+// _init_custom_post_types.php sobre por qué ese campo se mantuvo como
+// mecanismo único, en vez de duplicarlo con una asignación nativa de
+// taxonomía solo para el CPT. Cacheado en memoria: se pide una vez por
+// canal por request, no una vez por canal por cada slider que se imprima
+// en la misma página.
 function jb3_canal_pagina_url( int $canal_term_id ): string {
 	static $cache = [];
 	if ( array_key_exists( $canal_term_id, $cache ) ) {
 		return $cache[ $canal_term_id ];
 	}
 
-	$pages = get_posts( [
-		'post_type'      => 'page',
-		'post_status'    => 'publish',
-		'posts_per_page' => 1,
-		'meta_key'       => 'canal',
-		'meta_value'     => $canal_term_id,
-		'fields'         => 'ids',
-		'no_found_rows'  => true,
-	] );
+	foreach ( [ 'pagina_canal', 'page' ] as $post_type ) {
+		$pages = get_posts( [
+			'post_type'      => $post_type,
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+			'meta_key'       => 'canal',
+			'meta_value'     => $canal_term_id,
+			'fields'         => 'ids',
+			'no_found_rows'  => true,
+		] );
+		if ( $pages ) {
+			return $cache[ $canal_term_id ] = (string) get_permalink( $pages[0] );
+		}
+	}
 
-	return $cache[ $canal_term_id ] = $pages ? (string) get_permalink( $pages[0] ) : '';
+	return $cache[ $canal_term_id ] = '';
 }
 
 add_shortcode( 'jb3_canales_slider', function ( $atts, $content = null ) {

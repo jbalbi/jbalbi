@@ -35,10 +35,17 @@ add_action( 'acf/init', function () {
 // puede expresar (siempre hay un fallback).
 //
 // Grupo de campos "Fondo de página" (Location: Post Type == Page/videos/
-// op_comerciales), campos sueltos:
-// - fondo_modo: Select — por_defecto / personalizado / sin_fondo
+// op_comerciales/pagina_canal), campos sueltos:
+// - fondo_modo: Select — por_defecto / personalizado / del_canal / sin_fondo
 // - fondo_desktop, fondo_mobile: Image (URL) — visibles solo si
 //   fondo_modo == personalizado (conditional logic en ACF)
+//
+// "del_canal": no sube nada en el post — reusa el fondo cargado UNA sola
+// vez en el término de "canales" vinculado (campos fondo_desktop/
+// fondo_mobile del grupo "Canales", mismo criterio que ya usa el logo
+// automático en single-pagina_canal.php: se sube una vez por canal, no en
+// cada página). Pensado para "pagina_canal", pero funciona para cualquier
+// post que tenga el campo ACF "canal" cargado.
 //
 // Series/Películas/Prod. Originales quedan afuera de esta cascada por
 // completo: usan el hero (ver _init_hero.php) en vez de fondo de página, y
@@ -67,6 +74,14 @@ add_action( 'wp_head', function () {
 		if ( 'personalizado' === $modo ) {
 			$desktop = get_field( 'fondo_desktop' );
 			$mobile  = get_field( 'fondo_mobile' );
+		}
+
+		if ( 'del_canal' === $modo ) {
+			$canal_term_id = get_field( 'canal' );
+			if ( $canal_term_id ) {
+				$desktop = get_field( 'fondo_desktop', 'canales_' . $canal_term_id );
+				$mobile  = get_field( 'fondo_mobile', 'canales_' . $canal_term_id );
+			}
 		}
 	}
 

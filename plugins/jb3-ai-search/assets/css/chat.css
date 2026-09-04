@@ -310,12 +310,18 @@
 }
 
 @media (max-width: 767px) {
-    /* .jb3-footer-bar__totop se oculta a este ancho (el CTA de texto ya
-       ocupa toda la barra, ver style.css del tema) — el toggle pasa a ese
-       lugar que queda libre en vez de seguir pegado a su izquierda. */
-    #jb3-ai-chat-toggle {
-        right: 20px;
-    }
+	/* El CTA de texto de la barra fija ("CONÉCTATE AQUÍ...") ocupa TODO el
+	   ancho en mobile (ver style.css del tema) — dejar el ícono flotando
+	   adentro de esa misma barra (como en desktop) quedaba pisando el
+	   texto del CTA (reportado 2026-09-04). En vez de vivir DENTRO de la
+	   barra, en mobile flota un poco por ENCIMA — mismo patrón que ya usa
+	   el sitio para el ícono de CookieYes/reCAPTCHA sobre esta misma barra
+	   (bottom: calc(var(--footer-bar-height) + 14px), ver style.css del
+	   tema). */
+	#jb3-ai-chat-toggle {
+		right: 20px;
+		bottom: calc(var(--footer-bar-height, 48px) + 14px) !important;
+	}
 
     .jb3-ai-chat__panel {
         right: 12px;

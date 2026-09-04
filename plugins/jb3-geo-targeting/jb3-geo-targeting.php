@@ -16,7 +16,13 @@ const JB3_GEO_CACHE_TTL      = DAY_IN_SECONDS;
 
 /** Tipos de contenido con restricción por país (misma taxonomía "pais" que registra el theme). */
 function jb3_geo_post_types(): array {
-	return [ 'peliculas', 'series', 'prod_originales', 'op_comerciales', 'videos', 'integraciones', 'post', 'page' ];
+	// "pagina_canal": CPT de páginas de canal (migrado desde Página +
+	// plantilla "Canal", 2026-09-02) — no tiene la taxonomía "pais" propia,
+	// pero SÍ necesita el chequeo de jb3_geo_post_visible() (que revisa el
+	// campo "canal" antes que nada) para que template_redirect siga dando
+	// 404 por país. Sin esto acá, la migración al CPT saca silenciosamente
+	// la restricción geográfica de todas las páginas de canal.
+	return [ 'peliculas', 'series', 'prod_originales', 'op_comerciales', 'videos', 'integraciones', 'post', 'page', 'pagina_canal' ];
 }
 
 // ─── PAÍS DEL VISITANTE ──────────────────────────────────────────────────────
@@ -101,7 +107,7 @@ add_filter( 'litespeed_vary_cookies', 'jb3_geo_vary_cookies' );
 add_filter( 'litespeed_vary_curr_cookies', 'jb3_geo_vary_cookies' );
 
 // ─── PAÍSES PERMITIDOS DE UN CANAL ──────────────────────────────────────────
-// Lee el campo ACF "paises_permitidos" (Taxonomy → pais, checkbox, return
+// Lee el campo ACF "paises" (Taxonomy → pais, checkbox, return
 // format "Term ID") del término de "canales". Vacío = SIN países tildados,
 // el canal NO se ve en ningún país — mismo criterio fail-closed que ahora
 // usa "pais" a nivel de post individual (cambiado 2026-08-14: antes vacío
@@ -250,11 +256,11 @@ function jb3_geo_post_canal_visible( int $post_id ): bool {
 	return false;
 }
 
-// Las Páginas de canal (plantilla "Canal", ver page-canal.php) no tienen la
-// taxonomía "canales" asignada directamente — se vinculan a un término vía
-// el campo ACF "canal" (Taxonomy → canales, un solo valor). Si esa Página
-// no tiene el campo cargado, no aplica ninguna restricción por esta vía
-// (podría ser una Página normal que no usa esa plantilla).
+// Las páginas de canal (CPT "pagina_canal", ver _init_custom_post_types.php
+// en el tema) no tienen la taxonomía "canales" asignada directamente — se
+// vinculan a un término vía el campo ACF "canal" (Taxonomy → canales, un
+// solo valor). Si ese post no tiene el campo cargado, no aplica ninguna
+// restricción por esta vía.
 function jb3_geo_page_canal_visible( int $post_id ): bool {
 	if ( ! function_exists( 'get_field' ) ) {
 		return true;

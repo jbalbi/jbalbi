@@ -57,47 +57,20 @@ class JB3_Profile_Update {
     // ─── Form processing ──────────────────────────────────────────────────────
 
     private static function process( $user_id ) {
-        $errors = [];
-
-        // — Sanitise ——————————————————————————————————————————————
-        $first_name = sanitize_text_field( wp_unslash( $_POST['first_name']  ?? '' ) );
-        $last_name  = sanitize_text_field( wp_unslash( $_POST['last_name']   ?? '' ) );
-        $company    = sanitize_text_field( wp_unslash( $_POST['company']     ?? '' ) );
-        $job_title  = sanitize_text_field( wp_unslash( $_POST['job_title']   ?? '' ) );
-        $phone      = jb3_sanitize_phone( wp_unslash( $_POST['phone']    ?? '' ) );
-        $country    = strtoupper( sanitize_text_field( wp_unslash( $_POST['country'] ?? '' ) ) );
-        $sector     = sanitize_text_field( wp_unslash( $_POST['sector']      ?? '' ) );
-        $newsletter = ! empty( $_POST['newsletter'] ) ? 1 : 0;
-        $raw        = isset( $_POST['interests'] ) && is_array( $_POST['interests'] )
-                      ? $_POST['interests'] : [];
-        $interests  = array_map( 'sanitize_text_field', array_map( 'wp_unslash', $raw ) );
-
-        // — Validate ——————————————————————————————————————————————
-        if ( '' === $first_name ) {
-            $errors[] = __( 'El nombre es obligatorio.', 'jb3-members' );
-        }
-        if ( '' === $last_name ) {
-            $errors[] = __( 'El apellido es obligatorio.', 'jb3-members' );
-        }
-        if ( '' === $company ) {
-            $errors[] = __( 'La empresa es obligatoria.', 'jb3-members' );
-        }
-        if ( '' === $phone ) {
-            $errors[] = __( 'El teléfono es obligatorio.', 'jb3-members' );
-        }
-        if ( ! array_key_exists( $country, jb3_countries() ) ) {
-            $errors[] = __( 'El país seleccionado no es válido.', 'jb3-members' );
-        }
-        if ( ! in_array( $job_title, jb3_job_titles(), true ) ) {
-            $errors[] = __( 'El cargo seleccionado no es válido.', 'jb3-members' );
-        }
-        if ( ! in_array( $sector, jb3_sectors(), true ) ) {
-            $errors[] = __( 'El sector seleccionado no es válido.', 'jb3-members' );
-        }
-
-        // Validate interests.
-        $valid_keys = array_keys( jb3_interests() );
-        $interests  = array_values( array_filter( $interests, fn( $i ) => in_array( $i, $valid_keys, true ) ) );
+        // — Sanitise + validate (campos compartidos con el registro, ver
+        // helpers.php) ————————————————————————————————————————————
+        [ $data, $errors ] = jb3_sanitize_and_validate_profile_fields();
+        [
+            'first_name' => $first_name,
+            'last_name'  => $last_name,
+            'company'    => $company,
+            'job_title'  => $job_title,
+            'phone'      => $phone,
+            'country'    => $country,
+            'sector'     => $sector,
+            'newsletter' => $newsletter,
+            'interests'  => $interests,
+        ] = $data;
 
         if ( ! empty( $errors ) ) {
             return [ $errors, false ];

@@ -288,42 +288,18 @@ class JB3_Sync {
             return null;
         }
 
-        $email = strtolower( trim( $user->user_email ) );
-        $hash  = md5( $email );
+        $hash = md5( strtolower( trim( $user->user_email ) ) );
 
         if ( ! (bool) get_user_meta( $uid, 'jb3_newsletter', true ) ) {
             return [ 'method' => 'DELETE', 'path' => '/lists/' . $list_id . '/members/' . $hash ];
         }
 
-        $interests_raw = (array) get_user_meta( $uid, 'jb3_interests', true );
-        $interests     = [];
-        foreach ( array_keys( JB3_Mailchimp::get_cached_interests() ) as $id ) {
-            $interests[ $id ] = in_array( $id, $interests_raw, true );
-        }
-        $nl_ids = (array) get_user_meta( $uid, 'jb3_newsletter_countries', true );
-        foreach ( array_keys( JB3_Mailchimp::get_newsletter_interests() ) as $id ) {
-            $interests[ $id ] = in_array( $id, $nl_ids, true );
-        }
-
+        // Payload (merge_fields, interests) compartido con el sync individual
+        // — ver JB3_Mailchimp::build_member_data().
         return [
             'method' => 'PUT',
             'path'   => '/lists/' . $list_id . '/members/' . $hash,
-            'body'   => wp_json_encode( [
-                'email_address' => $user->user_email,
-                'status_if_new' => 'subscribed',
-                'status'        => 'subscribed',
-                'merge_fields'  => [
-                    'FNAME'   => $user->first_name,
-                    'LNAME'   => $user->last_name,
-                    'PHONE'   => get_user_meta( $uid, 'jb3_phone',     true ) ?: '',
-                    'COMPANY' => get_user_meta( $uid, 'jb3_company',   true ) ?: '',
-                    'MMERGE5' => get_user_meta( $uid, 'jb3_sector',    true ) ?: '',
-                    'MMERGE6' => get_user_meta( $uid, 'jb3_job_title', true ) ?: '',
-                    'COUNTRY' => get_user_meta( $uid, 'jb3_country',   true ) ?: '',
-                    'ESTADO'  => $is_admin ? 'Admin' : 'Aprobado',
-                ],
-                'interests' => $interests,
-            ] ),
+            'body'   => wp_json_encode( JB3_Mailchimp::build_member_data( $user, $is_admin ) ),
         ];
     }
 

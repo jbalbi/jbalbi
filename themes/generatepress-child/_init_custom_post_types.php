@@ -1,4 +1,5 @@
 <?php
+defined( 'ABSPATH' ) || exit;
 
 function custom_post_types() {
 
@@ -46,7 +47,6 @@ $args_peliculas = array(
 	'menu_position'			=> 26,
 	'menu_icon'				=> 'dashicons-editor-video',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
-	//'taxonomies'			=> array( 'category', 'post_tag' ),
 	// Sin archivo nativo: /peliculas/ queda libre para una Página propia
 	// (mismo motivo en los otros 5 CPT de acá abajo). Los permalinks de
 	// cada película individual (/peliculas/nombre-pelicula/) NO se tocan —
@@ -93,7 +93,6 @@ $args_series = array(
 	'menu_position'			=> 27,
 	'menu_icon'				=> 'dashicons-video-alt2',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
-	//'taxonomies'			=> array( 'category', 'post_tag' ),
 	'has_archive'			=> false,
 	'rewrite'				=> array( 'slug' => 'series' ),
 );
@@ -136,7 +135,6 @@ $args_prod_originales = array(
 	'menu_position'			=> 28,
 	'menu_icon'				=> 'dashicons-star-filled',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
-	//'taxonomies'			=> array( 'category', 'post_tag' ),
 	'has_archive'			=> false,
 	'rewrite' 				=> array( 'slug' => 'prod-originales' ),
 );
@@ -179,7 +177,6 @@ $args_op_comerciales = array(
 	'menu_position'			=> 29,
 	'menu_icon'				=> 'dashicons-chart-bar',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
-	//'taxonomies'			=> array( 'category', 'post_tag' ),
 	'has_archive'			=> false,
 	'rewrite'				=> array( 'slug' => 'op-comerciales' ),
 );
@@ -222,7 +219,6 @@ $args_videos = array(
 	'menu_position'			=> 30,
 	'menu_icon'				=> 'dashicons-format-video',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
-	//'taxonomies'			=> array( 'category', 'post_tag' ),
 	'has_archive'			=> false,
 	'rewrite'				=> array( 'slug' => 'videos' ),
 );
@@ -265,14 +261,137 @@ $args_integraciones = array(
 	'menu_position'			=> 31,
 	'menu_icon'				=> 'dashicons-megaphone',
 	'supports'				=> array( 'title', 'editor', 'thumbnail', 'revisions', 'page-attributes', 'post-formats' ),
-	//'taxonomies'			=> array( 'category', 'post_tag' ),
 	'has_archive'			=> false,
 	'rewrite'				=> array( 'slug' => 'integraciones' ),
 );
 register_post_type( 'integraciones', $args_integraciones );
 
+// CPT para páginas de Canal (AXN, Sony Channel, etc.) — antes eran Páginas
+// normales con la plantilla "Canal" (page-canal.php), agrupadas con el
+// resto de las Páginas del sitio sin forma de distinguirlas fácil en el
+// admin. El vínculo con el término de la taxonomía "canales" (que sigue
+// guardando logo/países/redes, sin cambios) sigue siendo el campo ACF
+// puntero "canal" — no se pasó a asignación nativa de taxonomía a
+// propósito: ese mismo campo se usa también en páginas sueltas que NO son
+// la página principal de un canal (ej. una página secundaria de
+// contenido), y una asignación nativa solo en este CPT hubiera obligado a
+// mantener dos mecanismos de lectura de visibilidad en paralelo.
+// Slug interno "pagina_canal" (NO "canales"): coincidir con el slug de la
+// taxonomía generaría colisión de query var/rewrite entre taxonomía y CPT.
+// Sin 'taxonomies' (ni "canales" ni "pais"): sin "pais" registrada acá, el
+// panel nativo de País ni aparece para este CPT — no hace falta repetir el
+// hack de _init_taxonomias.php que lo oculta a mano para "page" (ese sigue
+// haciendo falta ahí, sin tocar).
+$labels_pagina_canal = array(
+	'name'					=>  'Canales',
+	'singular_name'			=>  'Canal',
+	'menu_name'				=>  'Canales',
+	'name_admin_bar'		=>  'Canal',
+	'archives'				=>  'Listado de canales',
+	'attributes'			=>  'Atributos de canal',
+	'parent_item_colon'		=>  'Canal superior:',
+	'all_items'				=>  'Todos los canales',
+	'add_new_item'			=>  'Agregar nuevo canal',
+	'add_new'				=>  'Agregar nuevo',
+	'new_item'				=>  'Nuevo canal',
+	'edit_item'				=>  'Editar canal',
+	'update_item'			=>  'Actualizar canal',
+	'view_item'				=>  'Ver canal',
+	'view_items'			=>  'Ver canales',
+	'search_items'			=>  'Buscar canal',
+	'not_found'				=>  'No hay canales',
+	'not_found_in_trash'	=>  'No hay canales en la papelera',
+	'insert_into_item'		=>  'Insertar en el canal',
+	'uploaded_to_this_item'	=>  'Subida a este canal',
+	'items_list'			=>  'Lista de canales',
+	'items_list_navigation'	=>  'Navegacion de lista de canales',
+	'filter_items_list'		=>  'Filtrar lista de canales'
+);
+$args_pagina_canal = array(
+	'labels'				=> $labels_pagina_canal,
+	'public'				=> true,
+	'show_in_rest'			=> true,
+	// 33: jb3-members ya ocupa el 32 (ver class-admin.php) — este CPT va
+	// después de todos, mismo criterio que la posición fija de los otros 6.
+	'menu_position'			=> 33,
+	'menu_icon'				=> 'dashicons-networking',
+	'supports'				=> array( 'title', 'editor', 'revisions' ),
+	'has_archive'			=> false,
+	// false (no el 'slug' => 'canal' automático de siempre): la URL de cada
+	// canal se mantiene PLANA (/axn/, igual que hoy con la Página vieja),
+	// pedido explícito 2026-09-02. WordPress no genera nada solo con esto —
+	// la resolución real corre por el hook pre_get_posts de más abajo, que
+	// intercepta la URL dinámicamente contra la base (sin lista de slugs a
+	// mano, así un canal nuevo cargado desde el editor funciona solo).
+	'rewrite'				=> false,
+);
+register_post_type( 'pagina_canal', $args_pagina_canal );
+
 }
 add_action( 'init', 'custom_post_types' );
+
+// ─── URLs PLANAS PARA "pagina_canal" (sin "/canal/" ni "/canales/" adelante) ──
+// El CPT se registró con 'rewrite' => false arriba (nada automático) — en
+// vez de una lista de slugs a mano (lo que había acá antes, descartado
+// 2026-09-02: obligaba a tocar código cada vez que se cargaba un canal
+// nuevo desde el editor, algo que un editor de contenido no puede hacer
+// solo), esto resuelve la URL plana DE FORMA DINÁMICA, contra la base real.
+// Funciona aprovechando la propia regla "atrapa-todo" que trae WordPress
+// para cualquier URL de un solo segmento que no matchee ninguna regla más
+// específica. OJO, esa regla NO siempre pone el slug en "pagename" — se
+// confirmó probando el request real (2026-09-02): con este sitio (varios
+// CPT con su propio permastruct antes en la lista) la regla que termina
+// matchando es la genérica de "post individual", que pone el slug en
+// "name", no en "pagename" — por eso se revisan los dos, cubre cualquiera
+// de las dos formas en que WordPress puede resolver un slug suelto.
+// Acá se intercepta esa query ANTES de que se ejecute (pre_get_posts,
+// todavía a tiempo de cambiarla) y se revisa si en realidad hay un post
+// "pagina_canal" publicado con ese slug — si lo hay, la consulta se
+// redirige a ese CPT; si no, sigue su curso normal (una Página/Entrada
+// real, o 404 genuino si no existe nada). Sin lista que mantener, sin
+// flush_rewrite_rules() necesario para que un canal nuevo funcione — el
+// editor crea el post, le pone su slug, y ya está online.
+add_action( 'pre_get_posts', function ( WP_Query $query ) {
+	if ( is_admin() || ! $query->is_main_query() ) {
+		return;
+	}
+
+	$slug = $query->get( 'pagename' ) ?: $query->get( 'name' );
+	if ( '' === $slug || str_contains( $slug, '/' ) ) {
+		return; // vacío, o con más de un segmento (ej. /pais/algo/) — no es candidato a canal.
+	}
+
+	$canal = get_page_by_path( $slug, OBJECT, 'pagina_canal' );
+	if ( ! $canal ) {
+		return; // no hay ningun canal con ese slug — se deja que WP siga con su resolución normal.
+	}
+
+	$query->set( 'post_type', 'pagina_canal' );
+	$query->set( 'pagina_canal', $slug );
+	$query->set( 'pagename', '' );
+	$query->set( 'name', $slug );
+} );
+
+// get_permalink()/the_permalink() de un post 'pagina_canal' generarían por
+// default algo tipo "?pagina_canal=axn" (al no tener 'rewrite' propio) —
+// esto los reescribe a la URL plana real, para que el link que arma
+// WordPress coincida con la regla de arriba.
+// $leavename: cuando WordPress arma el link de "vista previa" para el
+// editor (get_sample_permalink, tanto editor clásico como de bloques) pide
+// este link con $leavename=true para dejar el token "%postname%" SIN
+// sustituir — así detecta que hay un lugar editable y muestra el control
+// de slug. Si acá siempre devolvemos el slug ya resuelto (como antes, sin
+// mirar $leavename) WordPress nunca encuentra el token y directamente
+// oculta el control de edición del slug en el editor (confirmado 2026-09-02:
+// wp-admin/includes/post.php linea ~1582, "Permalinks without a post/page
+// name placeholder don't have anything to edit") — la Edición Rápida sigue
+// funcionando porque no pasa por get_sample_permalink.
+add_filter( 'post_type_link', function ( $link, $post, $leavename ) {
+	if ( 'pagina_canal' !== $post->post_type ) {
+		return $link;
+	}
+	return home_url( '/' . ( $leavename ? '%postname%' : $post->post_name ) . '/' );
+}, 10, 3 );
 
 
 ?>

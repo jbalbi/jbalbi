@@ -3,9 +3,10 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Endpoint AJAX público (con y sin sesión — es un buscador de cara al
- * público) que orquesta: token de seguridad → freno de abuso → Claude →
- * WP_Query geo-filtrada → HTML de resultados (jb3_grid_thumbs(), la misma
- * función que ya usa search.php para resultados de tipos mixtos).
+ * público) que orquesta: token de seguridad → freno de abuso → IA (Gemini,
+ * con Claude como cliente alternativo listo para activar) → WP_Query
+ * geo-filtrada → HTML de resultados (jb3_grid_mixto(), la misma función
+ * que ya usa search.php para resultados de tipos mixtos).
  */
 add_action( 'wp_ajax_jb3_ai_search', 'jb3_aisearch_ajax_handler' );
 add_action( 'wp_ajax_nopriv_jb3_ai_search', 'jb3_aisearch_ajax_handler' );

@@ -29,15 +29,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<p><strong>Frase de cierre institucional.</strong></p>
 			<p class="jb3-footer-legal">
 				© <?php echo esc_html( gmdate( 'Y' ) ); ?> JB3. Todos los derechos reservados.
-				<?php
-				// Mismo criterio que el link "Cookies" de .jb3-footer-bar
-				// (ver más abajo) — este vive en la columna del footer,
-				// SIEMPRE visible (a diferencia del de la barra fija, que
-				// se oculta en mobile porque el CTA ya ocupa todo el
-				// ancho ahí). revisitCkyConsent() la expone CookieYes
-				// (cookie-law-info) como función global de JS.
-				?>
-				
 			</p>
 		</div>
 
@@ -59,6 +50,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</ul>
 			<h3 class="jb3-footer-heading">Columna 3b</h3>
 			<ul class="jb3-footer-list">
+				<?php
+				// Mismo criterio que el link "Cookies" de .jb3-footer-bar
+				// (ver más abajo) — este vive en la columna del footer,
+				// SIEMPRE visible (a diferencia del de la barra fija, que
+				// se oculta en mobile porque el CTA ya ocupa todo el
+				// ancho ahí). revisitCkyConsent() la expone CookieYes
+				// (cookie-law-info) como función global de JS.
+				?>
 				<li><a href="#" class="jb3-footer-legal__cookies" onclick="if (window.revisitCkyConsent) { revisitCkyConsent(); } return false;">Configurar cookies</a></li>
 			</ul>
 		</div>

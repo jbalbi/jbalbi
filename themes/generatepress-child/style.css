@@ -1052,6 +1052,21 @@ html.mobile-menu-open .mobile-menu-control-wrapper {
     display: block;
 }
 
+/* GeneratePress le pinta fondo a CUALQUIER <button> nativo en :hover/:focus
+   (--btn-bg-hover, el rosa de los botones CTA del sitio, con !important) —
+   mismo mecanismo que ya se documentó arriba para .menu-toggle, pero acá no
+   estaba cubierto porque es un botón nuevo. Como buscador/LinkedIn son <a>,
+   no matchean ese selector de GP y nunca se ven afectados; el de cuenta sí
+   es un <button> real, y un click lo deja en :focus (los botones nativos
+   quedan enfocados después del click, no solo con teclado), así que el
+   fondo rosa queda pegado ahí. Se fuerza de vuelta a transparente en los
+   tres estados para que nunca se pinte, sea por mouse o por teclado. */
+.site-header-account__toggle:hover,
+.site-header-account__toggle:focus,
+.site-header-account__toggle:active {
+    background-color: var(--icon-bg) !important;
+}
+
 /* Estructura/posición acá; colores, tipografía y hover viven en la sección
    "Submenú (dropdown)" de arriba, compartidos con los submenús del nav. */
 .site-header-account__menu {
@@ -1093,7 +1108,6 @@ html.mobile-menu-open .mobile-menu-control-wrapper {
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--footer-gap);
-    /* max-width: 1400px; */
     margin: 0 auto;
     padding: var(--footer-padding-y) var(--footer-padding-x);
 }
@@ -1789,7 +1803,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   LOGO AUTOMÁTICO EN PÁGINAS DE CANAL (page-canal.php)
+   LOGO AUTOMÁTICO EN PÁGINAS DE CANAL (CPT pagina_canal, single-pagina_canal.php)
    El resto del contenido de la página lo arma el editor de bloques libre —
    esto es solo el logo, que sale solo del término vinculado (campo ACF
    "canal") para no tener que volver a subirlo en cada página.
@@ -1879,7 +1893,8 @@ body {
    en .jb3-modulo__titulo más abajo) — rayita vertical, 600, mayúsculas. Un
    solo lugar para tocar el estilo si cambia a futuro. */
 .jb3-canales-slider__titulo,
-.jb3-modulo__titulo {
+.jb3-modulo__titulo,
+.jb3-contenido-bloque__titulo {
     padding-left: 16px;
     border-left: 6px solid var(--color-primary);
     font-weight: 600;
@@ -2291,7 +2306,8 @@ body {
 
 /* ═══════════════════════════════════════════════════════════════════════════
    UTILIDAD: CONTENEDOR CON EL MISMO MARGEN QUE LOS MÓDULOS
-   Para páginas de contenido libre (page-canal.php y similares): se aplica
+   Para páginas de contenido libre (páginas de canal, single-pagina_canal.php,
+   y similares): se aplica
    a mano en el editor de bloques a un bloque Grupo — Configuración del
    bloque → Avanzado → "Clases CSS adicionales" → escribir jb3-contenedor.
    Cualquier bloque DENTRO de ese Grupo queda alineado 80/40/20 igual que
@@ -2330,7 +2346,7 @@ body {
    con el padding-top propio de .jb3-contenedor (40px más) = 80px, el doble
    de lo que usa el resto del sitio. Se saca el padding-top SOLO acá (el
    primer módulo pegado al <article>), sin tocar .jb3-contenedor en
-   cualquier otro lugar donde se usa (page-canal.php, etc.), que sigue
+   cualquier otro lugar donde se usa (páginas de canal, etc.), que sigue
    necesitando su espacio completo cuando no viene después de un <article>. */
 #jb3-main-content > article + .jb3-contenedor {
     padding-top: 0;
@@ -3085,6 +3101,9 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
     flex: 0 0 auto;
     height: 420px;
     border-right: 3px solid var(--body-bg);
+    /* overflow:hidden para que el zoom en hover de más abajo no se salga
+       del recorte de la foto hacia el slide de al lado. */
+    overflow: hidden;
 }
 
 .jb3-galeria-slider__slide:last-child {
@@ -3096,6 +3115,13 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
     width: auto;
     height: 100%;
     cursor: pointer;
+    /* Mismo efecto de zoom en hover que posters/thumbs (ver
+       .jb3-grid-posters__item:hover img más arriba en este archivo). */
+    transition: transform .3s ease;
+}
+
+.jb3-galeria-slider__slide:hover img {
+    transform: scale(1.03);
 }
 
 @media (max-width: 1023px) {
@@ -3191,4 +3217,157 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
     max-height: 100%;
     width: auto;
     height: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CONTENIDO ESTRUCTURADO DE PELÍCULA/SERIE (prototipo, 2026-09-03)
+   Estilo mínimo/utilitario a propósito — esto es para evaluar el campo ACF
+   Flexible Content en sí (_init_contenido_pelicula.php), no la versión
+   final de diseño. Vive dentro de .entry-content (columna de lectura
+   normal, sin .jb3-contenedor) — no necesita ancho completo.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-contenido-pelicula {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+/* .jb3-contenido-bloque__titulo comparte la regla de la "rayita" vertical
+   con .jb3-modulo__titulo/.jb3-canales-slider__titulo más arriba (mismo
+   estilo de título que ya usa el resto del sitio) — acá solo el margen
+   propio de este contexto. */
+.jb3-contenido-bloque__titulo {
+    margin: 0 0 16px;
+}
+
+.jb3-contenido-bloque--texto .jb3-contenido-bloque__texto {
+    line-height: 1.6;
+}
+
+/* Sinopsis + Información agrupadas (jb3_contenido_render_texto_par): 2
+   columnas SOLO cuando las dos están cargadas — con una sola, el grupo
+   tiene un único <section> hijo y el grid de 1 columna implícito ya la
+   deja a ancho completo, sin necesidad de una regla aparte. */
+.jb3-contenido-fila--dos-columnas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+}
+
+@media (max-width: 767px) {
+    .jb3-contenido-fila--dos-columnas {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+}
+
+/* Trailer/Película completa/Especial: mismo triángulo de "play" sobre un
+   rectángulo oscuro — el modal real (video/YouTube/Vimeo/archivo) lo abre
+   _init_video_modal.php, esto es solo el disparador visual. Cada video al
+   100% del ancho disponible (columna central de .entry-content, no
+   full-bleed) — varios videos agrupados (ej. 2 trailers) quedan uno debajo
+   del otro, cada uno con su título propio si lo completaron
+   (jb3_contenido_render_videos), no lado a lado achicados. */
+.jb3-contenido-videos {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.jb3-contenido-videos__item-titulo {
+    margin: 8px 0 0;
+    font-size: 0.95em;
+}
+
+/* background-image (miniatura de YouTube) lo pone PHP inline cuando puede
+   resolverla (jb3_contenido_youtube_thumb()) — Vimeo/archivo propio se
+   quedan con el fondo negro de acá, sin miniatura. */
+.jb3-contenido-video {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background-color: #000000;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Círculo semitransparente detrás del triángulo — sin esto, el triángulo
+   solo (sin nada atrás) se pierde contra una miniatura con colores claros
+   o mucho detalle en el centro. */
+.jb3-contenido-video__play {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, .55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jb3-contenido-video__play::before {
+    content: '';
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 12px 0 12px 20px;
+    border-color: transparent transparent transparent #ffffff;
+    /* Optical centering: un triángulo apuntando a la derecha "pesa" más a
+       la izquierda que a la derecha — sin este margen se ve corrido del
+       centro del círculo. */
+    margin-left: 4px;
+}
+
+/* La galería del módulo de Contenido ya NO usa esta grilla propia — pasó a
+   reusar el carrusel compartido (.jb3-galeria-slider, ver
+   _init_galeria_slider.php) 2026-09-03. Reglas de grilla borradas de acá
+   por quedar sin uso. */
+
+/* Imagen suelta (jb3_contenido_render_imagen) — nunca se agrupa, es un
+   bloque chico para intercalar entre otros dos. */
+.jb3-contenido-bloque--imagen {
+    margin: 0;
+}
+
+.jb3-contenido-bloque--imagen img {
+    display: block;
+    width: 100%;
+    max-width: 720px;
+    border-radius: 8px;
+}
+
+/* Banner — a diferencia de Imagen suelta, va a ancho completo (no tiene
+   tope de 720px) y es un <a> clickeable, no una <figure>. */
+.jb3-contenido-bloque--banner {
+    display: block;
+}
+
+.jb3-contenido-bloque--banner img {
+    display: block;
+    width: 100%;
+}
+
+.jb3-contenido-bloque__epigrafe {
+    margin-top: 8px;
+    font-size: 0.9em;
+    color: #999999;
+}
+
+/* Renta/Alquiler — logos de las plataformas en fila, centrados en pantalla
+   (pedido explícito 2026-09-03, "uno al costado del otro centrados"). */
+.jb3-contenido-renta__plataformas {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 32px;
+}
+
+.jb3-contenido-renta__plataforma img {
+    display: block;
+    height: 80px; /* 40px + 100% (el doble del original) */
+    width: auto;
 }

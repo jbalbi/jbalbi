@@ -275,6 +275,56 @@ class JB3_Mailchimp {
     }
 
     // -------------------------------------------------------------------------
+    // Payload builder: WP user → Mailchimp member data
+    // -------------------------------------------------------------------------
+
+    /**
+     * Arma el payload completo (email, status, merge_fields, interests) para
+     * el upsert de UN miembro en Mailchimp. Compartido entre sync_user()
+     * (sync individual, disparado al guardar el perfil o vía
+     * jb3_sync_to_mailchimp) y JB3_Sync::build_op() (sync masivo por Batch
+     * API) — antes cada uno armaba este mismo array por su cuenta, y se
+     * habían desincronizado: acá (sync individual) el campo ESTADO quedaba
+     * siempre "Aprobado" aunque el usuario fuera admin, mientras que el
+     * sync masivo sí distinguía "Admin" correctamente. Factorizado acá
+     * (auditoría de limpieza 2026-09-02) para que no vuelva a pasar.
+     *
+     * @return array Payload de Mailchimp (email_address, status_if_new,
+     *               status, merge_fields, interests).
+     */
+    public static function build_member_data( WP_User $user, bool $is_admin ): array {
+        $uid = $user->ID;
+
+        $interests_raw = (array) get_user_meta( $uid, 'jb3_interests', true );
+        $interests     = [];
+        foreach ( array_keys( self::get_cached_interests() ) as $id ) {
+            $interests[ $id ] = in_array( $id, $interests_raw, true );
+        }
+
+        $nl_ids = (array) get_user_meta( $uid, 'jb3_newsletter_countries', true );
+        foreach ( array_keys( self::get_newsletter_interests() ) as $id ) {
+            $interests[ $id ] = in_array( $id, $nl_ids, true );
+        }
+
+        return [
+            'email_address' => $user->user_email,
+            'status_if_new' => 'subscribed',
+            'status'        => 'subscribed',
+            'merge_fields'  => [
+                'FNAME'   => $user->first_name,
+                'LNAME'   => $user->last_name,
+                'PHONE'   => get_user_meta( $uid, 'jb3_phone',     true ) ?: '',
+                'COMPANY' => get_user_meta( $uid, 'jb3_company',   true ) ?: '',
+                'MMERGE5' => get_user_meta( $uid, 'jb3_sector',    true ) ?: '',
+                'MMERGE6' => get_user_meta( $uid, 'jb3_job_title', true ) ?: '',
+                'COUNTRY' => get_user_meta( $uid, 'jb3_country',   true ) ?: '',
+                'ESTADO'  => $is_admin ? 'Admin' : 'Aprobado',
+            ],
+            'interests' => $interests,
+        ];
+    }
+
+    // -------------------------------------------------------------------------
     // Sync: WordPress → Mailchimp
     // -------------------------------------------------------------------------
 
@@ -305,36 +355,7 @@ class JB3_Mailchimp {
             return;
         }
 
-        $interests_raw = (array) get_user_meta( $user_id, 'jb3_interests', true );
-
-        $interests = [];
-        foreach ( array_keys( self::get_cached_interests() ) as $id ) {
-            $interests[ $id ] = in_array( $id, $interests_raw, true );
-        }
-
-        $nl_ids      = (array) get_user_meta( $user_id, 'jb3_newsletter_countries', true );
-        $nl_interest = self::get_newsletter_interests();
-        foreach ( array_keys( $nl_interest ) as $id ) {
-            $interests[ $id ] = in_array( $id, $nl_ids, true );
-        }
-
-        $data = [
-            'email_address' => $user->user_email,
-            'status_if_new' => 'subscribed',
-            'status'        => 'subscribed',
-            'merge_fields'  => [
-                'FNAME'   => $user->first_name,
-                'LNAME'   => $user->last_name,
-                'PHONE'   => get_user_meta( $user_id, 'jb3_phone',     true ),
-                'COMPANY' => get_user_meta( $user_id, 'jb3_company',   true ),
-                'MMERGE5' => get_user_meta( $user_id, 'jb3_sector',    true ),
-                'MMERGE6' => get_user_meta( $user_id, 'jb3_job_title', true ),
-                'COUNTRY'     => get_user_meta( $user_id, 'jb3_country',             true ),
-
-                'ESTADO'      => 'Aprobado',
-            ],
-            'interests' => $interests,
-        ];
+        $data = self::build_member_data( $user, $is_admin );
 
         $hash = md5( strtolower( trim( $user->user_email ) ) );
         $url  = 'https://' . self::server() . '.api.mailchimp.com/3.0/lists/' . self::list_id() . '/members/' . $hash;

@@ -49,8 +49,6 @@ class JB3_Registration {
     // ─── Form processing ──────────────────────────────────────────────────────
 
     private static function process() {
-        $errors = [];
-
         // Freno por IP antes de tocar nada más — auditoría de seguridad
         // 2026-08-27: el nonce por sí solo no limita repeticiones (es
         // válido toda su ventana de 24h), así que sin esto alguien podía
@@ -73,49 +71,26 @@ class JB3_Registration {
             return [ [ $recaptcha_error ], false ];
         }
 
-        // — Sanitise ——————————————————————————————————————————————
-        $first_name  = sanitize_text_field( wp_unslash( $_POST['first_name']  ?? '' ) );
-        $last_name   = sanitize_text_field( wp_unslash( $_POST['last_name']   ?? '' ) );
-        $email       = sanitize_email(      wp_unslash( $_POST['email']       ?? '' ) );
-        $company     = sanitize_text_field( wp_unslash( $_POST['company']     ?? '' ) );
-        $job_title   = sanitize_text_field( wp_unslash( $_POST['job_title']   ?? '' ) );
-        $phone       = jb3_sanitize_phone( wp_unslash( $_POST['phone']    ?? '' ) );
-        $country     = strtoupper( sanitize_text_field( wp_unslash( $_POST['country'] ?? '' ) ) );
-        $sector      = sanitize_text_field( wp_unslash( $_POST['sector']      ?? '' ) );
-        $newsletter  = ! empty( $_POST['newsletter'] ) ? 1 : 0;
-        $raw         = isset( $_POST['interests'] ) && is_array( $_POST['interests'] )
-                       ? $_POST['interests'] : [];
-        $interests   = array_map( 'sanitize_text_field', array_map( 'wp_unslash', $raw ) );
+        // — Sanitise + validate (campos compartidos con el perfil, ver
+        // helpers.php) ————————————————————————————————————————————
+        [ $data, $errors ] = jb3_sanitize_and_validate_profile_fields();
+        [
+            'first_name' => $first_name,
+            'last_name'  => $last_name,
+            'company'    => $company,
+            'job_title'  => $job_title,
+            'phone'      => $phone,
+            'country'    => $country,
+            'sector'     => $sector,
+            'newsletter' => $newsletter,
+            'interests'  => $interests,
+        ] = $data;
 
-        // — Validate ——————————————————————————————————————————————
-        if ( '' === $first_name ) {
-            $errors[] = __( 'El nombre es obligatorio.', 'jb3-members' );
-        }
-        if ( '' === $last_name ) {
-            $errors[] = __( 'El apellido es obligatorio.', 'jb3-members' );
-        }
+        // — Email: solo se pide acá, no es parte del helper compartido ————
+        $email = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
         if ( ! is_email( $email ) ) {
             $errors[] = __( 'El email no es válido.', 'jb3-members' );
         }
-        if ( '' === $company ) {
-            $errors[] = __( 'La empresa es obligatoria.', 'jb3-members' );
-        }
-        if ( '' === $phone ) {
-            $errors[] = __( 'El teléfono es obligatorio.', 'jb3-members' );
-        }
-        if ( ! array_key_exists( $country, jb3_countries() ) ) {
-            $errors[] = __( 'El país seleccionado no es válido.', 'jb3-members' );
-        }
-        if ( ! in_array( $job_title, jb3_job_titles(), true ) ) {
-            $errors[] = __( 'El cargo seleccionado no es válido.', 'jb3-members' );
-        }
-        if ( ! in_array( $sector, jb3_sectors(), true ) ) {
-            $errors[] = __( 'El sector seleccionado no es válido.', 'jb3-members' );
-        }
-
-        // Filter interests to only allowed keys.
-        $valid_keys = array_keys( jb3_interests() );
-        $interests  = array_values( array_filter( $interests, fn( $i ) => in_array( $i, $valid_keys, true ) ) );
 
         if ( ! empty( $errors ) ) {
             return [ $errors, false ];

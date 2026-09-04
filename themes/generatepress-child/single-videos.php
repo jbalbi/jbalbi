@@ -2,10 +2,10 @@
 /**
  * Template para single del CPT "videos".
  *
- * Sin título visible a propósito: el título no se muestra en las páginas
- * sin hero (ver page.php). GeneratePress tampoco lo imprime el suyo acá
- * (generate_show_title forzado a false en _init_layout.php) — este template
- * es 100% custom y nunca pasa por content-single.php de GP de todas formas.
+ * Sin título visible a propósito: este CPT no usa hero. GeneratePress
+ * tampoco imprime el suyo acá (generate_show_title forzado a false en
+ * _init_layout.php) — este template es 100% custom y nunca pasa por
+ * content-single.php de GP de todas formas.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

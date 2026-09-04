@@ -436,13 +436,23 @@ add_action( 'acf/init', function () {
 	) );
 
 	// Ver comentario del bloque más arriba: sin este filtro, ACF envuelve el
-	// InnerBlocks del front en un <div class="acf-innerblocks-container">
-	// propio — un nivel de DOM extra que rompería la cascada de espaciado
-	// unificado (".entry-content > * + *" no llega hasta ahí) para lo que
-	// sea que se ponga adentro. En "Grilla" además rompería el Grid mismo
-	// (display:grid necesita que los ítems sean HIJOS DIRECTOS de
-	// .jb3-grilla — con el div de ACF de por medio, todo el InnerBlocks
-	// pasaría a contar como un solo ítem gigante en vez de varios).
+	// InnerBlocks en un <div class="acf-innerblocks-container"> propio —
+	// un nivel de DOM extra que rompería la cascada de espaciado unificado
+	// (".entry-content > * + *" no llega hasta ahí) para lo que sea que se
+	// ponga adentro de "Contenido por País".
+	// "Grilla" (blocks/grilla/render.php) entra acá por otro motivo, NO por
+	// el front: ese bloque arma su HTML del front a mano (recorre
+	// $wp_block->parsed_block['innerBlocks'] y llama render_block() él
+	// mismo, sin usar la etiqueta <InnerBlocks /> en absoluto), así que ahí
+	// este filtro no hace nada — este 'wrap_frontend_innerblocks' solo
+	// entra en juego cuando ACF reemplaza un <InnerBlocks /> real, y eso
+	// pasa únicamente en la vista previa del editor ($is_preview, 'mode' =>
+	// 'preview' en el registro del bloque, más abajo) — que sí imprime esa
+	// etiqueta tal cual. Sin excluir "acf/grilla" acá, la vista previa
+	// dentro del editor mostraría el mismo div de ACF de más, rompiendo el
+	// Grid visualmente MIENTRAS SE EDITA (display:grid necesita que los
+	// ítems sean hijos directos de .jb3-grilla) — aunque en el sitio real
+	// nunca se hubiera notado.
 	add_filter( 'acf/blocks/wrap_frontend_innerblocks', function ( $wrap, $block_name ) {
 		return in_array( $block_name, array( 'acf/contenido-por-pais', 'acf/grilla' ), true ) ? false : $wrap;
 	}, 10, 2 );

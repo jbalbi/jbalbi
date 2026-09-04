@@ -26,6 +26,9 @@ Plugin WordPress para registro, aprobación y acceso de miembros con magic link,
 18. [Comportamiento en instalación nueva](#18-comportamiento-en-instalación-nueva)
 19. [Notas para desarrolladores](#19-notas-para-desarrolladores)
 20. [Debug y logs](#20-debug-y-logs)
+21. [Contenido privado](#21-contenido-privado)
+22. [Tracking de Op. Comerciales y Google Sheets](#22-tracking-de-op-comerciales-y-google-sheets)
+23. [Entrada automática por link de Mailchimp (?e=)](#23-entrada-automática-por-link-de-mailchimp-e)
 
 ---
 
@@ -75,8 +78,13 @@ jb3-members/
 │   ├── class-login.php               # Shortcode [jb3_login], logout, rate limiting
 │   ├── class-auth-guard.php          # Guard de sesión y redirección por perfil incompleto
 │   ├── class-cleanup.php             # Cron diario de limpieza de pendientes
-│   ├── class-mailchimp.php           # Sync individual, webhook, caché de intereses
-│   └── class-sync.php                # Sync masivo (Batch API) + limpieza MC→WP
+│   ├── class-mailchimp.php           # Sync individual, webhook, caché de intereses, payload compartido
+│   ├── class-sync.php                # Sync masivo (Batch API) + limpieza MC→WP
+│   ├── class-recaptcha.php           # reCAPTCHA v3 en el registro (ver sección 15)
+│   ├── class-content-privacy.php     # Checkbox "Contenido privado" en cualquier CPT público (ver sección 21)
+│   ├── class-mailchimp-entry.php     # Entrada automática por ?e= de campañas Mailchimp (ver sección 23)
+│   ├── class-op-comerciales-tracking.php  # Tracking de vistas/descargas a Google Sheets (ver sección 22)
+│   └── class-google-sheets.php       # Cliente mínimo de Google Sheets API v4 (ver sección 22)
 ├── admin/
 │   └── class-admin.php               # Backoffice completo: menú, columnas, import/export, borrado
 ├── public/
@@ -220,7 +228,11 @@ Ir a **JB3 Members → Configuración**:
 | Página de Dashboard | Destino post-login |
 | API Key Mailchimp | Formato: `xxxxxxxx-usXX` (el sufijo define el servidor) |
 | Audience ID | ID de la audiencia Mailchimp |
+| Email remitente / Nombre remitente | `jb3_email_from` / `jb3_email_from_name` — remitente de los emails transaccionales (ver `JB3_Email::headers()`); si se dejan vacíos, cae a `admin_email`/nombre del sitio |
+| ID de la planilla (Google Sheets) | `jb3_gsheets_id` — planilla donde se registran vistas/descargas de Op. Comerciales (ver sección 22) |
 | Perfil obligatorio | Siempre activo. Todos los usuarios (miembros y admins) deben completar el perfil antes de navegar |
+
+Las credenciales de reCAPTCHA (sección 15) y de la cuenta de servicio de Google Sheets (sección 22) **no** se configuran acá — viven en archivos PHP fuera de `wp-content` (fuera del repo git), ver el docblock de `class-recaptcha.php` y `class-google-sheets.php`.
 
 ### Sincronización de grupos Mailchimp
 
@@ -322,10 +334,14 @@ Formulario de edición de perfil.
 - Campos editables: todos excepto email
 - Soporta `?redirect_to=URL` para volver a la página original tras guardar (usado por el guard de perfil completo)
 - Al guardar: dispara `jb3_after_profile_save` → sincroniza con Mailchimp
+- Incluye también el formulario de **eliminar cuenta** (`JB3_Profile_Update::handle_delete_account()`, hook `init`): pide confirmación + nonce propio (`jb3_delete_account_{user_id}`), y llama a `wp_delete_user()` — el hook `delete_user` archiva automáticamente el contacto en Mailchimp
 
 ### `[jb3_logout]`
 Cierra la sesión y redirige al inicio. Se usa en una página dedicada.
 - El shortcode no renderiza nada; la lógica está en `handle_logout_page()` via `template_redirect`
+
+### `[jb3_representantes]`
+Directorio público de representantes (`class-representatives.php`). Lista los representantes con `visible = 1`, con su foto (`photo_id`), teléfono y link de WhatsApp (`wa.me`) cuando está cargado.
 
 ---
 
@@ -444,13 +460,15 @@ Se dispara automáticamente cuando:
 3. Si `jb3_newsletter = 0`:
    - Miembro: llama a `archive_contact()` — fire-and-forget
    - Admin: simplemente retorna (los admins no se archivan)
-4. Si `jb3_newsletter = 1`: construye el body con todos los campos + intereses + intereses de newsletter, y hace PUT directo a `/lists/{list_id}/members/{hash}` con `status_if_new: 'subscribed'` y `status: 'subscribed'`
+4. Si `jb3_newsletter = 1`: arma el payload con `build_member_data()` y hace PUT directo a `/lists/{list_id}/members/{hash}` con `status_if_new: 'subscribed'` y `status: 'subscribed'`
 
 El PUT directo es **sincrónico** — espera la respuesta de Mailchimp. Los errores (HTTP 4xx/5xx) quedan logueados con `error_log('[JB3 Mailchimp] ...')`.
 
+**`build_member_data(WP_User $user, bool $is_admin)`**: arma el payload completo (email, status, merge_fields, interests) para el upsert de UN miembro. Es el builder **compartido** entre `sync_user()` (acá) y `JB3_Sync::build_op()` (sync masivo, sección de abajo) — antes cada uno lo armaba por su cuenta y se habían desincronizado (el campo `ESTADO` quedaba "Aprobado" para admins en el sync individual); unificado en `class-mailchimp.php` (limpieza 2026-09-02).
+
 **`archive_contact($email)`**: hace PATCH `status: unsubscribed` + DELETE sobre el contacto. Ambas llamadas tienen `'blocking' => false` (fire-and-forget) para no bloquear al usuario.
 
-**Intereses en el sync**: los arrays `jb3_interests` y `jb3_newsletter_countries` almacenan IDs de Mailchimp. Para el sync se construye un mapa `[mc_id => true/false]` iterando todos los IDs conocidos del caché.
+**Intereses en el sync**: los arrays `jb3_interests` y `jb3_newsletter_countries` almacenan IDs de Mailchimp. `build_member_data()` construye un mapa `[mc_id => true/false]` iterando todos los IDs conocidos del caché.
 
 ### Sync masivo (`JB3_Sync`)
 
@@ -469,7 +487,7 @@ Operado desde **JB3 Members → Sincronizar Mailchimp**. El navegador llama repe
 - Por cada página: una sola SQL `IN()` verifica qué emails existen en WP
 - Los emails que no están en WP se archivan en Mailchimp via Batch API DELETE
 
-**`build_op(WP_User $user, string $list_id)`**: función unificada para miembros y admins.
+**`build_op(WP_User $user, string $list_id)`**: función unificada para miembros y admins — usa `JB3_Mailchimp::build_member_data()` (mismo builder que el sync individual) para el body del PUT.
 - Admins: bypasean el check de estado, `ESTADO: 'Admin'`
 - Miembros: solo si `jb3_status = approved`, `ESTADO: 'Aprobado'`
 
@@ -648,6 +666,14 @@ Los filtros por rol/estado (Todos/Pendientes/Aprobados) no sincronizan con Mailc
 - Sin infraestructura adicional (usa transients de WP)
 - El mensaje de error revela que el rate limit fue alcanzado, pero el tiempo de expiración no se muestra al usuario
 
+### Rate limiting + reCAPTCHA en registro
+- Además del rate limit por email de arriba (compartido con login), `[jb3_register]` tiene su **propio freno por IP**: máx. 5 intentos cada 10 minutos (`jb3_rate_limited('register_' . $ip, 5, 10)`) — evita que se automaticen altas masivas con emails distintos usando el mismo nonce (auditoría 2026-08-27)
+- **reCAPTCHA v3** (`JB3_Recaptcha`, invisible, por puntaje ≥ `MIN_SCORE` = 0.5) — solo en el formulario de registro, no en login (que ya tiene su propio rate-limit). Si no hay credenciales configuradas, no bloquea (degrada sin romper, mismo criterio que el resto del sitio con servicios externos caídos)
+
+### Anti-enumeración de email
+- `[jb3_register]`: si el email ya existe, responde exactamente igual que un alta exitosa (sin decir "ya registrado") — evita que cualquiera use el formulario como oráculo para saber qué emails son usuarios del sitio (auditoría 2026-08-28)
+- `[jb3_login]`: mismo criterio — un email no registrado recibe el mismo mensaje de éxito que uno real
+
 ### Webhook de Mailchimp
 - URL incluye secret de 32 chars único por instalación, generado automáticamente con `wp_generate_password(32, false)`
 - Peticiones sin secret correcto → HTTP 403
@@ -719,7 +745,7 @@ El plugin crea el rol `jb3_member` con el único permiso `read`. Se asigna a tod
 
 Los administradores de WordPress **no reciben** el rol `jb3_member`. Son reconocidos en el código siempre por `user_can($user_id, 'manage_options')`, no por `jb3_is_member()`.
 
-### Tablas de base de datos (schema v1.1)
+### Tablas de base de datos (schema v1.2, `JB3_Database::DB_VER`)
 
 `{prefix}jb3_representatives`
 
@@ -731,6 +757,7 @@ Los administradores de WordPress **no reciben** el rol `jb3_member`. Son reconoc
 | `email` | VARCHAR(150) | Email |
 | `phone` | VARCHAR(50) | Teléfono |
 | `whatsapp` | VARCHAR(50) | Número de WhatsApp (enlace `wa.me` en el directorio público) |
+| `photo_id` | BIGINT UNSIGNED | ID de adjunto (Media Library) con la foto del representante, `0` = sin foto (agregado en v1.2) |
 | `is_default` | TINYINT(1) | `1` = representante default (fallback para países sin asignación) |
 | `visible` | TINYINT(1) | `1` = aparece en el directorio público `[jb3_representantes]` |
 | `notify_downloads` | TINYINT(1) | `1` = recibe el aviso por email cuando alguien de su país descarga una Op. Comercial |
@@ -747,6 +774,8 @@ Los administradores de WordPress **no reciben** el rol `jb3_member`. Son reconoc
 Índices: `idx_rep (representative_id)`, `idx_country (country_code)`.
 
 Migración v1.0 → v1.1: `JB3_Database::maybe_upgrade()` corre en cada `plugins_loaded` (compara `jb3_db_version` contra `JB3_Database::DB_VER`); si difieren, copia los valores de la vieja columna `country_code` a la tabla de join y la elimina. Ver `migrate_country_code_column()`.
+
+Migración v1.1 → v1.2: solo agrega la columna `photo_id` — `dbDelta()` la suma sola a la tabla existente, sin función de migración dedicada (no hay datos viejos que mover).
 
 `JB3_Representatives::get_by_country()` sigue devolviendo TODOS los representantes de un país (usado por el email de aprobación de registro); `get_notifiable_by_country()` filtra además por `notify_downloads = 1` (usado por el aviso de descarga de Op. Comerciales).
 
@@ -841,6 +870,7 @@ jb3_job_titles()   // array de strings
 jb3_sectors()      // array de strings
 jb3_interests()    // alias de JB3_Mailchimp::get_cached_interests()
 jb3_sanitize_phone( $phone )  // permite dígitos, +, -, espacios, paréntesis
+jb3_sanitize_and_validate_profile_fields()  // [$data, $errors] — campos de perfil compartidos entre [jb3_register] y [jb3_profile] (nombre, apellido, empresa, cargo, teléfono, país, sector, newsletter, intereses); el email NO está acá, solo se pide en el registro
 ```
 
 ### Por qué el borrado masivo (Todos/Pendientes/Aprobados) no archiva en Mailchimp al momento
@@ -886,3 +916,40 @@ Causas comunes de errores en el log:
 | `API error 404` | Audience ID incorrecto |
 | `Connection timeout` | Mailchimp no accesible desde el servidor (firewall, DNS) |
 | `has signed up to a lot of lists` | Email bloqueado temporalmente por Mailchimp (24-48h) por muchos signups recientes |
+
+---
+
+## 21. Contenido privado
+
+`JB3_Content_Privacy` agrega un checkbox **"Contenido privado"** (meta `_jb3_privado`) disponible en **cualquier tipo de contenido público** — se registra dinámicamente contra `get_post_types(['public' => true])`, sin lista fija, así un CPT nuevo del tema lo tiene disponible solo con existir.
+
+A propósito **no** usa el estado nativo "Privada" de WordPress ni toca `post_status` — el post sigue "Publicado" como siempre, para no romper ninguna consulta existente del sitio (`[jb3_modulo]`, grillas, geo-targeting, etc.). La restricción vive aparte, en un guard de `template_redirect` (mismo criterio que `jb3-geo-targeting`).
+
+**Quién puede ver el contenido igual**:
+- El autor/editor del post, o un admin (`current_user_can('edit_post', $post_id)`)
+- Un usuario ya logueado que sea `jb3_member` o admin
+
+**Visitante sin sesión ni permiso**: en vez del contenido, ve una pantalla con botones "Ingresar"/"Registrarte" (`render_bloqueado()`). Si llegó con un link de campaña de Mailchimp válido (`?e=`, ver sección 23), en cambio recibe un magic link directo a su email (`render_magic_link_enviado()`) — no el formulario genérico.
+
+---
+
+## 22. Tracking de Op. Comerciales y Google Sheets
+
+`JB3_Op_Comerciales_Tracking` registra en Google Sheets (vía `JB3_Google_Sheets`, un cliente mínimo de la API v4 sin el SDK oficial) quién ve y quién descarga cada Op. Comercial, en dos hojas separadas: **"oportunidades vistas"** y **"oportunidades descargadas"**.
+
+- **Vistas**: automático, en `template_redirect` — no requiere cambios en el tema.
+- **Descargas**: el botón "Descargar PDF" del tema tiene que apuntar a `JB3_Op_Comerciales_Tracking::download_url($post_id)` en vez del PDF directo — un `<a href="pdf.pdf" download">` nunca pasa por PHP, así que sin este link intermedio no hay forma de loguear el click.
+- Al registrar una descarga, avisa por email a los representantes del país del **usuario que descarga** (no del contenido) — `notify_downloads = 1` en `jb3_representatives`.
+- **"Posible bot"**: heurística best-effort contra `JB3_BOT_UA_SIGNATURES` (helpers.php) — marca Sí/No en la planilla para poder filtrar a mano escáneres de seguridad de correo (Microsoft Safe Links, Mimecast, etc.) que abren links automáticamente y generan vistas/descargas falsas.
+
+**Credenciales de Google Sheets**: cuenta de servicio, JWT bearer, archivo `jb3-sc-stats.php` fuera de `wp-content` (nunca se commitea) — mismo criterio que las credenciales de reCAPTCHA. El `ID de la planilla` se configura en **JB3 Members → Configuración** (`jb3_gsheets_id`, ver sección 6).
+
+---
+
+## 23. Entrada automática por link de Mailchimp (`?e=`)
+
+Los links de campaña de Mailchimp pueden llevar el `unique_email_id` del contacto como parámetro `e`. `JB3_Mailchimp_Entry::verificar()` lo resuelve contra la API de Mailchimp (no hay forma de leer el email desde ese ID sin la API) para saber a quién mandarle un magic link — **únicamente** cuando el visitante **no tiene sesión activa**.
+
+Alcance a propósito acotado: si ya hay sesión (sea cual sea, venga o no de un link reenviado de otra persona), `e` se ignora por completo — el acceso lo deciden solo los permisos normales de la página (contenido privado, geo-targeting, etc.), nunca la identidad de quién generó el link.
+
+Hoy el único consumidor es el guard de **contenido privado** (sección 21): un visitante sin sesión que llega con `?e=` válido a una página privada recibe el magic link directo, en vez del formulario genérico de Ingresar/Registrarte. Cachea resultados (`CACHE_TTL_HIT` = 1 día, `CACHE_TTL_MISS` = 1 hora) para no pegarle a la API de Mailchimp en cada request.

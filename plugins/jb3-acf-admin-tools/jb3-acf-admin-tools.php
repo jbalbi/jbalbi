@@ -64,23 +64,52 @@ add_action( 'acf/input/admin_footer', function () {
 			} );
 		}
 
-		// Grupo de 3 botones reutilizado por los dos casos de abajo —
-		// "aplicar(modo)" es lo único que cambia entre uno y otro.
-		function crearGrupoBotones( aplicar ) {
+		// Grupo de 3 botones reutilizado por los dos casos de abajo — SIN
+		// vincular el click acá (ver vincularBotones() más abajo, motivo).
+		function crearGrupoBotones() {
 			var $grupo = $( '<div class="jb3-acf-botones"></div>' );
 			[
 				{ texto: 'Invertir', modo: 'invertir' },
 				{ texto: 'Todos', modo: 'todo' },
 				{ texto: 'Limpiar', modo: 'ninguno' }
 			].forEach( function ( accion ) {
-				var $btn = $( '<button type="button" class="button button-small jb3-acf-invertir"></button>' ).text( accion.texto );
-				$btn.on( 'click', function ( e ) {
-					e.preventDefault();
-					aplicar( accion.modo );
-				} );
+				var $btn = $( '<button type="button" class="button button-small jb3-acf-invertir"></button>' )
+					.attr( 'data-modo', accion.modo )
+					.text( accion.texto );
 				$grupo.append( $btn );
 			} );
 			return $grupo;
+		}
+
+		// Vincula (o RE-vincula) el click de un grupo de botones ya insertado
+		// en el DOM contra el $lista actual — se llama tanto la primera vez
+		// que se crea el grupo como cada vez que jb3Escanear encuentra uno
+		// "ya existente".
+		//
+		// Bug real reportado 2026-09-03: un grupo "ya existente" en el DOM no
+		// siempre está funcional. Cuando ACF clona una fila de repeater/
+		// flexible content para crear una nueva (botón "+ Agregar"), el
+		// clonado copia el HTML de nuestro <li>/botones tal cual (jQuery SÍ
+		// clona el HTML) pero NO copia los event handlers que le habíamos
+		// puesto con .on() (jQuery no los clona salvo que se pida explícito
+		// con .clone(true), y el clonado interno de ACF no lo hace) — la
+		// versión anterior de este código solo desduplicaba y volvía sin
+		// re-vincular nada, así que una fila nueva quedaba con botones "de
+		// utilería" sin click real, hasta guardar la página y recargar (ahí
+		// PHP la vuelve a renderizar de cero, sin el <li> clonado, y el
+		// escaneo normal la arma bien — exactamente el síntoma reportado:
+		// "no funciona hasta que grabo y hago F5"). Re-vincular siempre, haya
+		// o no un grupo ya presente, cierra el caso sin tener que distinguir
+		// "original" de "clon" — da lo mismo, total es idempotente (.off
+		// antes de .on, nunca se acumulan handlers duplicados).
+		function vincularBotones( $grupo, $lista, excluirSelector ) {
+			$grupo.find( 'button.jb3-acf-invertir' ).each( function () {
+				var modo = $( this ).attr( 'data-modo' );
+				$( this ).off( 'click.jb3AcfInvertir' ).on( 'click.jb3AcfInvertir', function ( e ) {
+					e.preventDefault();
+					aplicarModoCheckboxes( $lista, modo, excluirSelector );
+				} );
+			} );
 		}
 
 		// Caso 1: <ul class="acf-checkbox-list"> — grupo de botones como
@@ -95,13 +124,14 @@ add_action( 'acf/input/admin_footer', function () {
 			var $existentes = $lista.children( 'li.jb3-acf-invertir-wrap' );
 			if ( $existentes.length ) {
 				$existentes.slice( 1 ).remove();
+				vincularBotones( $existentes.first().find( '.jb3-acf-botones' ), $lista, '.acf-checkbox-toggle' );
 				return;
 			}
-			var $li = $( '<li class="jb3-acf-invertir-wrap"></li>' );
-			$li.append( crearGrupoBotones( function ( modo ) {
-				aplicarModoCheckboxes( $lista, modo, '.acf-checkbox-toggle' );
-			} ) );
+			var $li    = $( '<li class="jb3-acf-invertir-wrap"></li>' );
+			var $grupo = crearGrupoBotones();
+			$li.append( $grupo );
 			$lista.prepend( $li );
+			vincularBotones( $grupo, $lista, '.acf-checkbox-toggle' );
 		}
 
 		// Caso 2: panel de taxonomía nativo del editor de bloques — grupo de
@@ -110,12 +140,12 @@ add_action( 'acf/input/admin_footer', function () {
 			var $existentes = $lista.prev( '.jb3-acf-invertir-wrap' );
 			if ( $existentes.length ) {
 				$existentes.slice( 1 ).remove();
+				vincularBotones( $existentes.first(), $lista, null );
 				return;
 			}
-			var $grupo = crearGrupoBotones( function ( modo ) {
-				aplicarModoCheckboxes( $lista, modo );
-			} ).addClass( 'jb3-acf-invertir-wrap' );
+			var $grupo = crearGrupoBotones().addClass( 'jb3-acf-invertir-wrap' );
 			$lista.before( $grupo );
+			vincularBotones( $grupo, $lista, null );
 		}
 
 		var SELECTOR_ACF        = 'ul.acf-checkbox-list';

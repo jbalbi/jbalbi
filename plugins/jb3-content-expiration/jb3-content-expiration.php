@@ -10,9 +10,9 @@ const JB3_EXP_META      = '_jb3_fecha_out';
 const JB3_EXP_NONCE     = 'jb3_fecha_out_nonce';
 const JB3_EXP_CRON_HOOK = 'jb3_expirar_contenido';
 
-/** Tipos de contenido con fecha_out disponible: Entradas, Páginas y los 6 CPT del sitio. */
+/** Tipos de contenido con fecha_out disponible: Entradas, Páginas y los CPT del sitio (incluida "pagina_canal", agregado 2026-09-02 junto con el resto de la migración de canal a CPT). */
 function jb3_exp_post_types(): array {
-	return [ 'post', 'page', 'videos', 'op_comerciales', 'series', 'peliculas', 'prod_originales', 'integraciones' ];
+	return [ 'post', 'page', 'videos', 'op_comerciales', 'series', 'peliculas', 'prod_originales', 'integraciones', 'pagina_canal' ];
 }
 
 // ─── METABOX: fecha_out en la barra lateral de edición ─────────────────────

@@ -1,15 +1,16 @@
 <?php
 /**
- * Template Name: Canal
- *
- * Plantilla para las páginas individuales de cada canal (ej. "AXN",
- * "Sony Music"...). A diferencia de single-{cpt}.php, acá el contenido es
- * 100% libre por editor de bloques — cada canal puede tener secciones y
- * módulos completamente distintos, no hay estructura común forzada. Lo
- * único automático es el logo (viene del propio término de "canales", así
- * no hay que volver a subirlo en cada página) y el 404 por país, que ya lo
- * resuelve jb3-geo-targeting mirando el campo ACF "canal" de esta página
- * (ver jb3_geo_page_canal_visible()) antes de llegar acá.
+ * Template para el CPT "pagina_canal" (canal individual: AXN, Sony Music...).
+ * Mismo criterio que tenía page-canal.php (plantilla vieja, ver el
+ * comentario grande en _init_custom_post_types.php sobre por qué se migró
+ * a CPT): el contenido es 100% libre por editor de bloques, cada canal
+ * puede tener secciones y módulos completamente distintos, no hay
+ * estructura común forzada. Lo único automático es el logo (viene del
+ * propio término de "canales", así no hay que volver a subirlo en cada
+ * página) y el 404 por país, que ya lo resuelve jb3-geo-targeting mirando
+ * el campo ACF "canal" de este post (ver jb3_geo_page_canal_visible())
+ * antes de llegar acá — jb3_geo_post_types() en el plugin tiene que incluir
+ * "pagina_canal" para que ese chequeo se dispare.
  *
  * El editor arma el resto del contenido con bloques normales, incluyendo
  * el shortcode [jb3_modulo canal="slug-del-canal" ...] tantas veces como

@@ -21,12 +21,11 @@ function crear_taxonomia_canales() {
     $args = array(
         'hierarchical'      => true,
         'labels'            => $labels,
-        //'show_ui'           => true,
         'show_in_rest'      => true,
         'show_admin_column' => true,
         'query_var'         => true,
-        // Sin permastruct: la página de cada canal ahora es una Página real
-        // de WordPress (plantilla "Canal", ver page-canal.php) vinculada al
+        // Sin permastruct: la página de cada canal es el CPT propio
+        // "pagina_canal" (ver _init_custom_post_types.php) vinculado al
         // término por un campo ACF — el término en sí no tiene URL propia.
         'rewrite'           => false,
     );
@@ -136,35 +135,6 @@ add_action( 'admin_head', function() {
         .acf-gallery-sort { display: none !important; }
         .acf-gallery-side { width: 0 !important; overflow: hidden !important; }
     </style>';
-} );
-
-// ─── PÁGINAS DE CANAL: ocultar el panel nativo "Países" ─────────────────────
-// La restricción por país de un canal vive en el campo ACF "paises" del
-// TÉRMINO de "canales" (jb3_geo_page_canal_visible() en jb3-geo-targeting.php
-// la lee de ahí) — el panel nativo de la taxonomía "pais" es una restricción
-// aparte, directa sobre la Página, que se SUMA (AND) a esa en vez de
-// reemplazarla. Usarlo en una página de canal produciría una restricción
-// más angosta de lo esperado sin que se note por qué. Se oculta solo para
-// páginas ya guardadas con la plantilla "Canal" — el resto de las Páginas
-// (que no son de canal) lo conservan, por si alguna necesita restringirse
-// por país de forma independiente. En una Página nueva (todavía sin
-// guardar con esa plantilla) el panel sigue visible hasta el primer save —
-// mismo comportamiento que ya tiene el campo ACF "Canal" del propio template.
-add_action( 'enqueue_block_editor_assets', function () {
-    $screen = get_current_screen();
-    if ( ! $screen || 'page' !== $screen->post_type ) {
-        return;
-    }
-
-    $post_id = isset( $_GET['post'] ) ? (int) $_GET['post'] : 0;
-    if ( ! $post_id || 'page-canal.php' !== get_page_template_slug( $post_id ) ) {
-        return;
-    }
-
-    wp_add_inline_script(
-        'wp-edit-post',
-        "wp.domReady( function () { wp.data.dispatch( 'core/edit-post' ).removeEditorPanel( 'taxonomy-panel-pais' ); } );"
-    );
 } );
 
 

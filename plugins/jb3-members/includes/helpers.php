@@ -167,6 +167,67 @@ function jb3_sanitize_phone( $phone ) {
 }
 
 /**
+ * Sanitiza y valida los campos de perfil compartidos entre el alta
+ * (class-registration.php) y la edición (class-profile-update.php):
+ * nombre, apellido, empresa, cargo, teléfono, país, sector, newsletter e
+ * intereses. Antes vivía duplicado entero en los dos archivos — factorizado
+ * acá (auditoría de limpieza 2026-09-02) para que agregar o cambiar un
+ * campo compartido solo requiera tocar un lugar. El email NO está acá:
+ * solo se pide/valida en el registro, no se puede editar desde el perfil.
+ *
+ * @return array{0: array<string, mixed>, 1: string[]} [$data, $errors] —
+ *         $data trae siempre las mismas claves, filtradas/saneadas, para
+ *         que el caller las guarde directo si $errors viene vacío.
+ */
+function jb3_sanitize_and_validate_profile_fields(): array {
+    $errors = [];
+
+    $data = [
+        'first_name' => sanitize_text_field( wp_unslash( $_POST['first_name'] ?? '' ) ),
+        'last_name'  => sanitize_text_field( wp_unslash( $_POST['last_name']  ?? '' ) ),
+        'company'    => sanitize_text_field( wp_unslash( $_POST['company']    ?? '' ) ),
+        'job_title'  => sanitize_text_field( wp_unslash( $_POST['job_title']  ?? '' ) ),
+        'phone'      => jb3_sanitize_phone( wp_unslash( $_POST['phone']       ?? '' ) ),
+        'country'    => strtoupper( sanitize_text_field( wp_unslash( $_POST['country'] ?? '' ) ) ),
+        'sector'     => sanitize_text_field( wp_unslash( $_POST['sector']     ?? '' ) ),
+        'newsletter' => ! empty( $_POST['newsletter'] ) ? 1 : 0,
+    ];
+
+    $raw               = isset( $_POST['interests'] ) && is_array( $_POST['interests'] ) ? $_POST['interests'] : [];
+    $data['interests'] = array_map( 'sanitize_text_field', array_map( 'wp_unslash', $raw ) );
+
+    if ( '' === $data['first_name'] ) {
+        $errors[] = __( 'El nombre es obligatorio.', 'jb3-members' );
+    }
+    if ( '' === $data['last_name'] ) {
+        $errors[] = __( 'El apellido es obligatorio.', 'jb3-members' );
+    }
+    if ( '' === $data['company'] ) {
+        $errors[] = __( 'La empresa es obligatoria.', 'jb3-members' );
+    }
+    if ( '' === $data['phone'] ) {
+        $errors[] = __( 'El teléfono es obligatorio.', 'jb3-members' );
+    }
+    if ( ! array_key_exists( $data['country'], jb3_countries() ) ) {
+        $errors[] = __( 'El país seleccionado no es válido.', 'jb3-members' );
+    }
+    if ( ! in_array( $data['job_title'], jb3_job_titles(), true ) ) {
+        $errors[] = __( 'El cargo seleccionado no es válido.', 'jb3-members' );
+    }
+    if ( ! in_array( $data['sector'], jb3_sectors(), true ) ) {
+        $errors[] = __( 'El sector seleccionado no es válido.', 'jb3-members' );
+    }
+
+    // Filter interests to only allowed keys — corre siempre, incluso si hay
+    // otros errores, para que $data quede consistente si el caller igual
+    // lo necesita (ej. re-popular el form).
+    $valid_keys         = array_keys( jb3_interests() );
+    $data['interests']  = array_values( array_filter( $data['interests'], fn( $i ) => in_array( $i, $valid_keys, true ) ) );
+
+    return [ $data, $errors ];
+}
+
+/**
  * Cache-busting query string for a plugin asset, based on the file's own
  * mtime instead of the static JB3_VERSION constant — JB3_VERSION doesn't
  * change on every CSS/JS edit during development, so the browser (and any
