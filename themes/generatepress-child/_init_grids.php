@@ -35,11 +35,13 @@ function jb3_enqueue_grid_mixto_masonry_script() {
 // título en vez de cortarse parejo por los 4 lados.
 //
 // $columnas (ambas funciones): cantidad de columnas en DESKTOP — 0 (default)
-// deja el valor de siempre puesto a mano en style.css (5 posters / 3 thumbs).
-// Tablet/mobile NO se tocan por este parámetro: siguen con los valores ya
+// deja el valor de siempre puesto a mano en style.css (4 posters / 3 thumbs;
+// posters bajado de 5 a 4 el 2026-09-04, múltiplo de las 2 columnas de
+// mobile, para que el default "natural" ya evite el huérfano solo). Tablet/
+// mobile NO se tocan por este parámetro: siguen con los valores ya
 // ajustados (3/2 posters, 2/1 thumbs) sin importar cuántas columnas se pidan
 // en desktop, para no tener que pensar cascada completa cada vez que un
-// módulo puntual necesita, por ejemplo, 8 posters por fila en vez de 5.
+// módulo puntual necesita, por ejemplo, 8 posters por fila en vez de 4.
 
 function jb3_grid_posters( array $posts, int $columnas = 0 ): string {
 	if ( empty( $posts ) ) {

@@ -2454,9 +2454,13 @@ body.error404 .inside-article .search-form {
    _init_grids.php); el fallback de var() de acá abajo es EL MISMO valor que
    ya estaba a mano antes de esto (5 posters / 3 thumbs), así que una grilla
    sin $columnas se ve idéntica a como se veía siempre. Tablet/mobile no
-   dependen de esta variable a propósito — quedan fijos (ver breakpoints). */
+   dependen de esta variable a propósito — quedan fijos (ver breakpoints).
+   4 en vez de 5 (cambiado 2026-09-04): múltiplo de las 2 columnas de
+   mobile, así el default "natural" (sin pedir ninguna cantidad puntual de
+   contenido) ya evita el huérfano solo, sin tener que acordarse de elegir
+   un límite par cada vez. */
 .jb3-grid-posters {
-    grid-template-columns: repeat(var(--jb3-grid-cols, 5), 1fr);
+    grid-template-columns: repeat(var(--jb3-grid-cols, 4), 1fr);
 }
 
 .jb3-grid-thumbs {

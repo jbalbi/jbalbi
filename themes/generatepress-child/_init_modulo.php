@@ -91,8 +91,11 @@ function jb3_modulo_query( array $tipos, array $canal_term_ids = [], int $limite
 
 // $columnas > 0: cantidad de columnas en DESKTOP para la grilla de este
 // módulo (ver jb3_grid_posters()/jb3_grid_thumbs() en _init_grids.php) — 0
-// (default) deja el valor de siempre (5 posters / 3 thumbs). Tablet/mobile
-// no cambian según este parámetro, quedan con los valores ya ajustados.
+// (default) deja el valor de siempre (4 posters / 3 thumbs — posters
+// múltiplo de las 2 columnas de mobile, así un límite elegido igual como
+// múltiplo de 4 no deja huérfano en ningún tamaño de pantalla). Tablet/
+// mobile no cambian según este parámetro, quedan con los valores ya
+// ajustados.
 function jb3_modulo_render(
 	array $tipos,
 	array $canal_term_ids,
