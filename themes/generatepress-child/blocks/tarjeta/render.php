@@ -30,6 +30,10 @@
  * (data-jb3-video, _init_video_modal.php — soporta YouTube, Vimeo o un
  * archivo de la Biblioteca de Medios). El <a href> real sigue apuntando al
  * video igual, para Ctrl+click/sin JS.
+ *
+ * El markup del ítem en sí (imagen + título + texto + link/modal/video) vive
+ * en jb3_render_tarjeta() (_init_tarjeta.php, extraído 2026-09-04) — este
+ * archivo solo resuelve los campos ACF del bloque y se lo pasa.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -69,26 +73,4 @@ if ( $is_preview ) {
 	return;
 }
 
-$page_id = ( ! $video && $modal && $link ) ? url_to_postid( $link ) : 0;
-
-$tag    = ( $video || $link ) ? 'a' : 'div';
-$href   = $video ? ' href="' . esc_url( $video ) . '"' : ( $link ? ' href="' . esc_url( $link ) . '"' : '' );
-$target = ( $link && ! $video && ! $page_id ) ? ' target="_blank" rel="noopener"' : '';
-$data   = $video ? ' data-jb3-video="' . esc_url( $video ) . '"' : ( $page_id ? ' data-jb3-page-modal="' . (int) $page_id . '"' : '' );
-?>
-<<?php echo $tag; ?> class="jb3-tarjeta"<?php echo $href . $target . $data; ?>>
-	<span class="jb3-tarjeta__media">
-		<img src="<?php echo esc_url( $src ); ?>" alt="<?php echo esc_attr( $alt ); ?>">
-		<?php if ( $video ) : ?>
-			<span class="jb3-grid-thumbs__play" aria-hidden="true">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-			</span>
-		<?php endif; ?>
-	</span>
-	<?php if ( $titulo ) : ?>
-		<span class="jb3-tarjeta__titulo"><?php echo esc_html( $titulo ); ?></span>
-	<?php endif; ?>
-	<?php if ( $texto ) : ?>
-		<span class="jb3-tarjeta__texto"><?php echo esc_html( $texto ); ?></span>
-	<?php endif; ?>
-</<?php echo $tag; ?>>
+jb3_render_tarjeta( $src, $alt, $titulo, $texto, $link, $modal, $video );

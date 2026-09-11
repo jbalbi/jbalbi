@@ -20,6 +20,32 @@ function jb3_enqueue_grid_mixto_masonry_script() {
 	);
 }
 
+// ─── CINTILLO (pedido 2026-09-07) ────────────────────────────────────────────
+// Etiqueta chica arriba a la izquierda del afiche/miniatura ("NUEVO", "EN
+// CINES", "PRÓXIMAMENTE", etc.) — campo ACF "cintillo" (group_jb3_cintillo,
+// un solo grupo con 6 reglas de ubicación en OR para Películas/Series/Op.
+// Comerciales/Prod. Originales/Videos/Integraciones). Para Películas/Series
+// puntualmente, el título de Renta/Alquiler ACTIVO para el país del
+// visitante le GANA a este texto manual — jb3_pelicula_renta_titulo_activo()
+// vive en _init_contenido_pelicula.php (misma validación exacta que usa el
+// módulo de Contenido para decidir si Renta se muestra de verdad).
+// function_exists(): _init_contenido_pelicula.php no define esa función para
+// nada que no sea Películas/Series, así que ahí simplemente no hay override
+// posible y se cae directo al campo manual.
+function jb3_grid_cintillo_texto( $post ): string {
+	$post = get_post( $post );
+	if ( ! $post ) {
+		return '';
+	}
+	if ( in_array( $post->post_type, [ 'peliculas', 'series' ], true ) && function_exists( 'jb3_pelicula_renta_titulo_activo' ) ) {
+		$activo = jb3_pelicula_renta_titulo_activo( $post->ID );
+		if ( $activo ) {
+			return $activo;
+		}
+	}
+	return function_exists( 'get_field' ) ? (string) get_field( 'cintillo', $post->ID ) : '';
+}
+
 // ─── GRILLAS DE CONTENIDO ────────────────────────────────────────────────────
 // Dos grillas reutilizables en cualquier página/módulo: posters (vertical,
 // hasta 4 en desktop — Películas/Series/Prod. Originales) y thumbs
@@ -51,11 +77,18 @@ function jb3_grid_posters( array $posts, int $columnas = 0 ): string {
 	ob_start();
 	?>
 	<div class="jb3-grid-posters"<?php echo $style; ?>>
-		<?php foreach ( $posts as $item ) : $post = get_post( $item ); if ( ! $post ) continue; ?>
+		<?php foreach ( $posts as $item ) :
+			$post     = get_post( $item );
+			if ( ! $post ) continue;
+			$cintillo = jb3_grid_cintillo_texto( $post );
+		?>
 			<a class="jb3-grid-posters__item" href="<?php echo esc_url( get_permalink( $post ) ); ?>">
 				<span class="jb3-grid-posters__media">
 					<?php if ( has_post_thumbnail( $post ) ) : ?>
 						<?php echo get_the_post_thumbnail( $post, 'large' ); ?>
+					<?php endif; ?>
+					<?php if ( $cintillo ) : ?>
+						<span class="jb3-grid-cintillo"><?php echo esc_html( $cintillo ); ?></span>
 					<?php endif; ?>
 				</span>
 				<span class="jb3-grid-posters__titulo"><?php echo esc_html( get_the_title( $post ) ); ?></span>
@@ -97,6 +130,7 @@ function jb3_grid_mixto( array $posts, int $columnas = 0 ): string {
 			if ( ! $post ) continue;
 			$es_poster = in_array( $post->post_type, $tipos_poster, true );
 			$video_url = function_exists( 'get_field' ) ? get_field( 'video_url', $post->ID ) : '';
+			$cintillo  = jb3_grid_cintillo_texto( $post );
 		?>
 			<a
 				class="jb3-grid-mixto__item jb3-grid-mixto__item--<?php echo $es_poster ? 'poster' : 'thumb'; ?>"
@@ -111,6 +145,9 @@ function jb3_grid_mixto( array $posts, int $columnas = 0 ): string {
 						<span class="jb3-grid-thumbs__play" aria-hidden="true">
 							<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
 						</span>
+					<?php endif; ?>
+					<?php if ( $cintillo ) : ?>
+						<span class="jb3-grid-cintillo"><?php echo esc_html( $cintillo ); ?></span>
 					<?php endif; ?>
 				</span>
 				<span class="jb3-grid-mixto__titulo"><?php echo esc_html( get_the_title( $post ) ); ?></span>
@@ -133,6 +170,7 @@ function jb3_grid_thumbs( array $posts, int $columnas = 0 ): string {
 			$post      = get_post( $item );
 			if ( ! $post ) continue;
 			$video_url = function_exists( 'get_field' ) ? get_field( 'video_url', $post->ID ) : '';
+			$cintillo  = jb3_grid_cintillo_texto( $post );
 		?>
 			<a
 				class="jb3-grid-thumbs__item"
@@ -147,6 +185,9 @@ function jb3_grid_thumbs( array $posts, int $columnas = 0 ): string {
 						<span class="jb3-grid-thumbs__play" aria-hidden="true">
 							<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
 						</span>
+					<?php endif; ?>
+					<?php if ( $cintillo ) : ?>
+						<span class="jb3-grid-cintillo"><?php echo esc_html( $cintillo ); ?></span>
 					<?php endif; ?>
 				</span>
 				<span class="jb3-grid-thumbs__titulo"><?php echo esc_html( get_the_title( $post ) ); ?></span>

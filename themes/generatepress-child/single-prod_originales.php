@@ -14,6 +14,12 @@
  * buffer (jb3_etiquetas_auto()/jb3_relacionados_auto() registran sus propios
  * ítems de subnav como efecto secundario al renderizar), y recién
  * después se imprime todo en el orden real: hero, título, subnav, resto.
+ *
+ * Contenido: jb3_render_contenido_original() (ver
+ * _init_contenido_original.php) imprime el campo Flexible Content ANTES de
+ * the_content() — el editor de bloques libre sigue disponible debajo para
+ * lo que no entre en ninguno de esos layouts (mismo criterio que
+ * single-peliculas.php/single-series.php).
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -34,6 +40,7 @@ get_header();
 		?>
 		<article <?php post_class(); ?> id="post-<?php the_ID(); ?>">
 			<div class="entry-content">
+				<?php echo jb3_render_contenido_original( get_the_ID() ); ?>
 				<?php the_content(); ?>
 			</div>
 		</article>

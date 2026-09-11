@@ -29,6 +29,12 @@ $posted_interests = isset( $_POST['interests'] ) && is_array( $_POST['interests'
     </div>
 <?php endif; ?>
 
+<?php if ( $delete_requested ) : ?>
+    <div class="jb3-notice jb3-success">
+        <?php esc_html_e( 'Te enviamos un email para confirmar la eliminación de tu cuenta. Revisá tu casilla y hacé clic en el enlace — tu cuenta no se borra hasta que confirmes desde ahí.', 'jb3-members' ); ?>
+    </div>
+<?php endif; ?>
+
 <?php if ( ! jb3_profile_complete( $user->ID ) && ! $success ) : ?>
     <div class="jb3-notice jb3-warning">
         <?php esc_html_e( 'Tu perfil está incompleto. Por favor completá todos los campos obligatorios para acceder al sitio.', 'jb3-members' ); ?>
@@ -155,11 +161,19 @@ $posted_interests = isset( $_POST['interests'] ) && is_array( $_POST['interests'
 
 <!-- Eliminar cuenta -->
 <form method="post" class="jb3-form" style="margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid color-mix(in srgb,currentColor 15%,transparent);"
-      onsubmit="return confirm('<?php esc_attr_e( '¿Estás seguro de que querés eliminar tu cuenta? Esta acción no se puede deshacer.', 'jb3-members' ); ?>');">
+      onsubmit="return confirm('<?php esc_attr_e( '¿Confirmás que querés eliminar tu cuenta? Te vamos a mandar un email — la cuenta se borra recién si hacés clic en el link de ese email, no ahora.', 'jb3-members' ); ?>');">
     <?php wp_nonce_field( 'jb3_delete_account_' . $user->ID, 'jb3_delete_nonce' ); ?>
+    <!-- Campo oculto, NO el name/value del botón: jb3-forms.js deshabilita el
+         botón de submit apenas se dispara el evento 'submit' (para evitar
+         doble clic) — para cuando el navegador arma los datos a enviar, un
+         botón ya deshabilitado queda EXCLUIDO del envío junto con su
+         name/value. Un input oculto nunca se deshabilita, así que siempre
+         llega. Confirmado en vivo 2026-09-09: con el name en el botón,
+         $_POST['jb3_request_delete_account'] nunca llegaba al servidor. -->
+    <input type="hidden" name="jb3_request_delete_account" value="1">
     <h3 style="margin:0 0 .5rem;"><?php esc_html_e( 'Eliminar cuenta', 'jb3-members' ); ?></h3>
-    <p style="margin:0 0 1rem;opacity:.7;"><?php esc_html_e( 'Al eliminar tu cuenta se borrarán todos tus datos del sitio y serás dado de baja de nuestras listas de correo.', 'jb3-members' ); ?></p>
-    <button type="submit" name="jb3_delete_account" value="1"
+    <p style="margin:0 0 1rem;opacity:.7;"><?php esc_html_e( 'Al eliminar tu cuenta se borrarán todos tus datos del sitio y serás dado de baja de nuestras listas de correo. Por seguridad, este botón no borra nada directamente — te vamos a mandar un email con un enlace para confirmar que sos vos quien lo pide.', 'jb3-members' ); ?></p>
+    <button type="submit"
             style="background:#c0392b;color:#fff;border:none;padding:.6rem 1.4rem;cursor:pointer;font-size:.95rem;">
         <?php esc_html_e( 'Eliminar mi cuenta', 'jb3-members' ); ?>
     </button>

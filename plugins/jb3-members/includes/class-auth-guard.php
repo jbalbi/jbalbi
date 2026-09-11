@@ -124,10 +124,15 @@ class JB3_Auth_Guard {
             return;
         }
 
-        // Allow the profile page itself and the login page through.
-        $login_page_id = (int) get_option( 'jb3_login_page_id' );
-        $current_id    = (int) get_queried_object_id();
-        if ( $current_id === $profile_page_id || $current_id === $login_page_id ) {
+        // Allow the profile page, the login page, and the delete-confirmation
+        // page through. Esta última a propósito: alguien que pidió la baja
+        // de su cuenta puede tener el perfil incompleto y aun así tiene que
+        // poder llegar a confirmar/cancelar la baja sin que este guard lo
+        // rebote antes.
+        $login_page_id          = (int) get_option( 'jb3_login_page_id' );
+        $delete_confirm_page_id = (int) get_option( 'jb3_delete_confirm_page_id' );
+        $current_id             = (int) get_queried_object_id();
+        if ( $current_id === $profile_page_id || $current_id === $login_page_id || $current_id === $delete_confirm_page_id ) {
             return;
         }
 

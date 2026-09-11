@@ -44,6 +44,37 @@ add_action( 'after_setup_theme', function () {
     add_editor_style( 'style.css' );
 } );
 
+// El editor de bloques (Gutenberg) NO pasa por este filtro para su propio
+// preview — carga los editor-styles por su cuenta (mecanismo de React del
+// bloque, vía block_editor_settings_all), así que lo de arriba le sigue
+// llegando sin tocar nada. Lo que SÍ pasa por acá es cualquier editor TinyMCE
+// "clásico" de toda la vida (wp_editor()) — en este sitio eso es únicamente
+// los campos WYSIWYG de ACF (Sinopsis/Información/Imagen+Texto, etc.), nunca
+// el contenido principal del post. Ahí SÍ es un problema real (encontrado
+// 2026-09-04): el style.css completo del sitio (3600+ líneas, fondos negros,
+// texto claro) quedaba adentro del iframe de esos campos, y en filas de
+// Flexible Content YA EXISTENTES al recargar la página, esa hoja de estilos
+// a veces no llegaba a tiempo (carrera de carga con varias instancias de
+// TinyMCE en la misma pantalla) — el campo quedaba con el fondo blanco por
+// defecto de TinyMCE pero el texto en el color claro del sitio, invisible
+// (blanco sobre blanco), aunque el contenido seguía intacto en la pestaña
+// "Texto" (esa es un textarea plano, no le llega ningún CSS).
+//
+// Sacarle el content_css a CUALQUIER instancia (sin condicionar por
+// $editor_id: ACF arma su editor 100% por JS, sin pasar por wp_editor() del
+// lado PHP para cada campo puntual — no hay garantía de que su plantilla
+// interna use un $editor_id distinguible acá, así que condicionar por id es
+// arriesgar que el fix no alcance a todos los campos) resuelve esto de raíz
+// para todo TinyMCE clásico del admin (ACF, widgets de texto, bio de
+// usuario, etc.) — quedan con los colores default de TinyMCE, siempre
+// legibles, sin depender de ninguna carrera de carga. Cero impacto en el
+// editor de bloques real (Gutenberg no usa este filtro para su propio
+// preview, ver el comentario de arriba).
+add_filter( 'tiny_mce_before_init', function ( $mce_init ) {
+    unset( $mce_init['content_css'] );
+    return $mce_init;
+} );
+
 // ─── COMPATIBILIDAD CON TÚNELES Y PROXIES ─────────────────────────────────────
 
 add_filter( 'script_loader_src', 'make_relative_url' );
@@ -135,8 +166,10 @@ require_once __DIR__ . '/_init_hero.php';               // jb3_hero_image(): her
 require_once __DIR__ . '/_init_admin_columns.php';      // Columna de miniatura en los listados de admin
 require_once __DIR__ . '/_init_subnav.php';             // [jb3_subnav] / [jb3_subnav_anchor]: motor de navegación dinámica
 require_once __DIR__ . '/_init_grids.php';              // jb3_grid_posters() / jb3_grid_thumbs(): grillas reutilizables
+require_once __DIR__ . '/_init_tarjeta.php';            // jb3_render_tarjeta(): ítem imagen+título+texto+link/modal/video (bloque "Tarjeta" + módulo de Contenido)
 require_once __DIR__ . '/_init_modulo.php';             // [jb3_modulo]: consulta canal+país+tipo, título/bajada/grilla + subnav
-require_once __DIR__ . '/_init_contenido_pelicula.php'; // jb3_render_contenido_pelicula(): Flexible Content (prototipo) para Películas/Series
+require_once __DIR__ . '/_init_contenido_pelicula.php'; // jb3_render_contenido_pelicula(): Flexible Content para Películas/Series
+require_once __DIR__ . '/_init_contenido_original.php'; // jb3_render_contenido_original(): Flexible Content para Prod. Originales
 require_once __DIR__ . '/_init_canales_slider.php';     // [jb3_canales_slider]: "Nuestras Marcas", slider de canales del país
 require_once __DIR__ . '/_init_canal_redes.php';        // jb3_canal_redes_sociales_html(): íconos de redes del canal (campo ACF del término)
 require_once __DIR__ . '/_init_relacionados.php';       // [jb3_relacionados]: contenido cruzado vía ACF Relationship (bidireccional)

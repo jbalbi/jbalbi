@@ -2618,6 +2618,32 @@ body.error404 .inside-article .search-form {
     position: relative;
 }
 
+/* Cintillo (pedido 2026-09-07): etiqueta chica arriba a la izquierda del
+   afiche/miniatura — "NUEVO", "EN CINES", "PRÓXIMAMENTE", o el título de
+   Renta/Alquiler activo (jb3_grid_cintillo_texto(), _init_grids.php).
+   Reusado por las 3 grillas (posters/thumbs/mixto), todas con __media en
+   position:relative ya de por sí. z-index:1: sin esto, el zoom del hover en
+   la imagen (que crece de verdad, no recortado — ver arriba) puede
+   terminar tapándolo según el orden de pintado. */
+.jb3-grid-cintillo {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    max-width: calc(100% - 8px);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    background: var(--color-primary);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    padding: 4px 10px;
+    border-radius: 0 0 6px 0;
+}
+
 .jb3-grid-posters__item:hover,
 .jb3-grid-thumbs__item:hover {
     z-index: 2;
@@ -2839,14 +2865,25 @@ body.error404 .inside-article .search-form {
    (una tarjeta que a veces es un <a>, sin verse como link). */
 .jb3-tarjeta {
     display: block;
+    position: relative; /* para el z-index del hover, ver abajo */
     color: var(--body-text) !important;
     text-decoration: none !important;
+}
+
+/* Hover: mismo z-index que .jb3-grid-posters__item/.jb3-grid-thumbs__item
+   (más arriba, en la sección de esas grillas) — sin esto la tarjeta que
+   crece de verdad (ver abajo) queda tapada por la celda vecina siguiente. */
+.jb3-tarjeta:hover {
+    z-index: 2;
 }
 
 .jb3-tarjeta__media {
     display: block;
     position: relative; /* ancla al ícono de play (.jb3-grid-thumbs__play, inset:0) cuando hay video */
-    overflow: hidden;
+    /* Sin overflow:hidden a propósito — mismo criterio "crecimiento real"
+       que .jb3-grid-posters__media/.jb3-grid-thumbs__media (ver arriba): la
+       imagen se agranda de verdad al hacer hover, por encima de la celda
+       vecina, en vez de quedar recortada dentro de un canvas fijo. */
 }
 
 /* Hover del ícono de play reusado — .jb3-grid-thumbs__item:hover ya lo
@@ -3224,13 +3261,13 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   CONTENIDO ESTRUCTURADO DE PELÍCULA/SERIE (prototipo, 2026-09-03)
-   Estilo mínimo/utilitario a propósito — esto es para evaluar el campo ACF
-   Flexible Content en sí (_init_contenido_pelicula.php), no la versión
-   final de diseño. Vive dentro de .entry-content (columna de lectura
-   normal, sin .jb3-contenedor) — no necesita ancho completo.
+   CONTENIDO ESTRUCTURADO (Flexible Content) — módulo compartido por
+   Películas/Series (_init_contenido_pelicula.php) y Prod. Originales
+   (_init_contenido_original.php), cada uno con su propio campo ACF pero el
+   mismo contenedor/estilo visual. Vive dentro de .entry-content (columna de
+   lectura normal, sin .jb3-contenedor) — no necesita ancho completo.
    ═══════════════════════════════════════════════════════════════════════════ */
-.jb3-contenido-pelicula {
+.jb3-contenido-modulo {
     display: flex;
     flex-direction: column;
     gap: 40px;
@@ -3244,14 +3281,17 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
     margin: 0 0 16px;
 }
 
-.jb3-contenido-bloque--texto .jb3-contenido-bloque__texto {
+.jb3-contenido-bloque--texto .jb3-contenido-bloque__texto,
+.jb3-contenido-bloque--imagen-texto .jb3-contenido-bloque__texto {
     line-height: 1.6;
 }
 
-/* Sinopsis + Información agrupadas (jb3_contenido_render_texto_par): 2
-   columnas SOLO cuando las dos están cargadas — con una sola, el grupo
-   tiene un único <section> hijo y el grid de 1 columna implícito ya la
-   deja a ancho completo, sin necesidad de una regla aparte. */
+/* Grid de 2 columnas compartido por Sinopsis+Información agrupadas
+   (jb3_contenido_render_texto_par: 2 columnas SOLO cuando las dos están
+   cargadas — con una sola, el grid de 1 columna implícito ya la deja a
+   ancho completo) Y por el layout "Imagen + Texto"
+   (jb3_contenido_render_imagen_texto: imagen a la izquierda, texto a la
+   derecha, siempre las 2 columnas juntas). */
 .jb3-contenido-fila--dos-columnas {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -3265,13 +3305,29 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
     }
 }
 
-/* Trailer/Película completa/Especial: mismo triángulo de "play" sobre un
-   rectángulo oscuro — el modal real (video/YouTube/Vimeo/archivo) lo abre
-   _init_video_modal.php, esto es solo el disparador visual. Cada video al
-   100% del ancho disponible (columna central de .entry-content, no
-   full-bleed) — varios videos agrupados (ej. 2 trailers) quedan uno debajo
-   del otro, cada uno con su título propio si lo completaron
-   (jb3_contenido_render_videos), no lado a lado achicados. */
+/* "Imagen + Texto": la imagen PRINCIPAL (la del campo "imagen", hijo DIRECTO
+   de .jb3-contenido-fila--dos-columnas) ocupa toda su columna, sin tope de
+   ancho — a diferencia de "Imagen suelta", acá SIEMPRE comparte fila con
+   texto, no hace falta acotarla. Selector de hijo directo (">"), NO
+   descendiente: sin esto, la regla también agarraba cualquier <img> que el
+   editor pegara ADENTRO del WYSIWYG (.jb3-contenido-bloque__texto, un nivel
+   más abajo) — un logo insertado a 32x37px vía "Agregar objeto" quedaba
+   forzado a 100% del ancho de la columna, gigante y pixelado (bug real
+   2026-09-04, reportado con imágenes de prueba en el texto de "Host"). */
+.jb3-contenido-fila--dos-columnas > img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* Layout "Video" (Trailer/Ver completo/Especiales/etc., título libre):
+   mismo triángulo de "play" sobre un rectángulo oscuro — el modal real
+   (video/YouTube/Vimeo/archivo) lo abre _init_video_modal.php, esto es
+   solo el disparador visual. Cada video al 100% del ancho disponible
+   (columna central de .entry-content, no full-bleed) — varios videos
+   dentro del mismo repetidor (ej. 2 trailers) quedan uno debajo del otro,
+   cada uno con su subtítulo propio si lo completaron
+   (jb3_contenido_render_video), no lado a lado achicados. */
 .jb3-contenido-videos {
     display: flex;
     flex-direction: column;

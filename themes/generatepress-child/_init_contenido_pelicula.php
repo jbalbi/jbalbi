@@ -5,21 +5,29 @@ defined( 'ABSPATH' ) || exit;
 // Alternativa al editor de bloques libre para Películas/Series: un campo
 // ACF Flexible Content ("Contenido de la película/serie", grupo creado por
 // script — group_jb3_contenido_pelicula) con un layout por tipo de
-// contenido (Sinopsis, Información, Trailer, Película completa, Especial,
-// Galería, Imagen suelta, Banner, Integraciones, Contenido libre,
-// Renta/Alquiler). El editor arma la página
+// contenido (Sinopsis, Información, Video, Galería, Imagen suelta,
+// Imagen + Texto, Banner, Integraciones, Contenido libre, Renta/Alquiler).
+// El editor arma la página
 // agregando/reordenando esos layouts por drag-and-drop, en el orden que
 // quiera — misma libertad de orden que un builder, pero cada bloque sigue
 // siendo un campo estructurado (no HTML libre).
 //
-// AGRUPACIÓN (conversación 2026-09-03): Trailer/Película completa/Especial/
-// Galería se pueden repetir tantas veces como haga falta (ej. 2 trailers) —
-// jb3_contenido_agrupar() junta las filas CONSECUTIVAS del mismo tipo para
-// que el título de sección salga una sola vez, no una por fila. Sinopsis +
-// Información se agrupan entre sí (aunque son layouts distintos) para
-// quedar en 2 columnas cuando las dos están cargadas. "Imagen suelta" e
-// "Integraciones" NUNCA se agrupan — cada fila es su propia sección, así el
-// editor puede intercalar una entre dos trailers sin que se mezclen.
+// "Video" (unificado 2026-09-04, reemplaza a los viejos layouts fijos
+// Trailer/Película completa/Especial): título de sección 100% libre —
+// el editor escribe "Trailer", "Ver completo", "Especiales", "Grabaciones"
+// o lo que corresponda — con un repetidor interno de video(s), así varios
+// videos que comparten un mismo título de sección van TODOS dentro de un
+// solo bloque "Video" en vez de agrupar filas repetidas del mismo layout
+// por código. Ver jb3_contenido_render_video() más abajo.
+//
+// AGRUPACIÓN (conversación 2026-09-03): Galería se puede repetir tantas
+// veces como haga falta (ej. 2 galerías) pero NUNCA agrupa (cada fila ya es
+// su propio slider con su propio título) — jb3_contenido_agrupar() solo
+// junta Sinopsis + Información entre sí (aunque son layouts distintos) para
+// quedar en 2 columnas cuando las dos están cargadas. "Imagen suelta",
+// "Integraciones" y "Video" NUNCA se agrupan — cada fila es su propia
+// sección, así el editor puede intercalar una entre dos videos sin que se
+// mezclen.
 //
 // jb3_render_contenido_pelicula() se imprime ANTES de the_content() en
 // single-peliculas.php/single-series.php — el editor de bloques sigue
@@ -61,27 +69,24 @@ function jb3_render_contenido_pelicula( int $post_id ): string {
 
 	ob_start();
 	?>
-	<div class="jb3-contenido-pelicula">
+	<div class="jb3-contenido-modulo">
 		<?php foreach ( jb3_contenido_agrupar( $filas ) as $grupo ) : ?>
 			<?php
 			switch ( $grupo['tipo'] ) {
 				case 'texto_par':
 					jb3_contenido_render_texto_par( $grupo['filas'] );
 					break;
-				case 'trailer':
-					jb3_contenido_render_videos( 'Trailer', $grupo['filas'] );
-					break;
-				case 'pelicula_completa':
-					jb3_contenido_render_videos( 'Ver completo', $grupo['filas'] );
-					break;
-				case 'especial':
-					jb3_contenido_render_videos( 'Especiales', $grupo['filas'], 'Especial' );
+				case 'video':
+					jb3_contenido_render_video( $grupo['filas'][0] );
 					break;
 				case 'galeria':
 					jb3_contenido_render_galeria( $grupo['filas'][0] );
 					break;
 				case 'imagen':
 					jb3_contenido_render_imagen( $grupo['filas'][0] );
+					break;
+				case 'imagen_texto':
+					jb3_contenido_render_imagen_texto( $grupo['filas'][0] );
 					break;
 				case 'banner':
 					jb3_contenido_render_banner( $grupo['filas'][0] );
@@ -108,27 +113,28 @@ function jb3_render_contenido_pelicula( int $post_id ): string {
 // "texto_par": sinopsis + informacion comparten grupo aunque sean layouts
 // distintos, tope de 2 filas (una de cada una) — un 3er texto consecutivo
 // arranca grupo nuevo en vez de intentar una fila de 3 columnas.
-// "imagen"/"banner"/"integraciones"/"contenido_libre"/"renta"/"galeria"
-// nunca agrupan: cada fila es siempre su propio grupo, para poder intercalarlas
-// libremente entre cualquier otro bloque. "galeria" en particular usa el
-// carrusel compartido (jb3_render_galeria_slider(), _init_galeria_slider.php)
-// — cada fila ya es un slider completo con su propio título, agruparlas no
-// tendría sentido (a diferencia de Trailer/Especial, que sí comparten un
-// único título de sección).
+// "imagen"/"banner"/"integraciones"/"contenido_libre"/"renta"/"galeria"/
+// "video" nunca agrupan: cada fila es siempre su propio grupo, para poder
+// intercalarlas libremente entre cualquier otro bloque. "galeria" en
+// particular usa el carrusel compartido (jb3_render_galeria_slider(),
+// _init_galeria_slider.php) — cada fila ya es un slider completo con su
+// propio título, agruparlas no tendría sentido. "video" (unificado
+// 2026-09-04) tampoco agrupa por código: el propio layout ya trae un
+// repetidor interno de videos, así que varios videos bajo un mismo título
+// de sección van todos DENTRO de una sola fila del campo, no en filas
+// separadas que haya que agrupar acá.
 function jb3_contenido_agrupar( array $filas ): array {
-	$agrupables = [ 'trailer', 'pelicula_completa', 'especial' ];
-	$grupos     = [];
-	$actual     = null;
+	$grupos = [];
+	$actual = null;
 
 	foreach ( $filas as $fila ) {
 		$layout     = $fila['layout'];
 		$es_texto   = in_array( $layout, [ 'sinopsis', 'informacion' ], true );
 		$tipo_grupo = $es_texto ? 'texto_par' : $layout;
-		$se_agrupa  = $es_texto || in_array( $layout, $agrupables, true );
 
 		$topo_texto_lleno = $es_texto && $actual && count( $actual['filas'] ) >= 2;
 
-		if ( $se_agrupa && $actual && $actual['tipo'] === $tipo_grupo && ! $topo_texto_lleno ) {
+		if ( $es_texto && $actual && $actual['tipo'] === $tipo_grupo && ! $topo_texto_lleno ) {
 			$actual['filas'][] = $fila;
 			continue;
 		}
@@ -242,7 +248,7 @@ function jb3_contenido_vimeo_thumb( string $url ): ?string {
 	return $thumb ?: null;
 }
 
-// Punto único que usa jb3_contenido_render_videos() — prueba YouTube
+// Punto único que usa jb3_contenido_render_video() — prueba YouTube
 // primero (no pega a ninguna API, es gratis) y recién si no matchea prueba
 // Vimeo (si tampoco matchea, ni siquiera intenta la llamada HTTP). Un
 // archivo propio no tiene forma de sacar un frame sin procesarlo del lado
@@ -252,21 +258,32 @@ function jb3_contenido_video_thumb( string $url ): ?string {
 	return jb3_contenido_youtube_thumb( $url ) ?? jb3_contenido_vimeo_thumb( $url );
 }
 
-// ─── Grupo: Trailer / Película completa / Especial ─────────────────────────
-// $video_url va tal cual al modal de video ya existente (_init_video_modal.php,
-// data-jb3-video) — mismo campo/comportamiento que Videos/Op. Comerciales:
-// el JS del modal detecta solo si es YouTube, Vimeo o un archivo propio.
-// $titulo_item_default: "Especial" (los que no completaron el título propio
-// muestran ese texto genérico en vez de quedar sin etiqueta).
-function jb3_contenido_render_videos( string $titulo_grupo, array $filas, string $titulo_item_default = '' ) {
+// ─── Fila individual: Video ──────────────────────────────────────────────
+// Reemplaza a los viejos layouts fijos Trailer/Película completa/Especial
+// (unificados 2026-09-04, ver comentario de cabecera del archivo). Título
+// de sección 100% libre — el editor escribe el que corresponda — con una
+// "bajada" opcional (mismo estilo que ya usa el módulo/galería,
+// .jb3-modulo__bajada) y un repetidor interno "videos" donde CADA fila
+// tiene su propio subtítulo opcional (solo hace falta si hay más de uno) y
+// su propio $video_url, que va tal cual al modal de video ya existente
+// (_init_video_modal.php, data-jb3-video) — mismo campo/comportamiento que
+// Videos/Op. Comerciales: el JS del modal detecta solo si es YouTube,
+// Vimeo o un archivo propio.
+function jb3_contenido_render_video( array $fila ) {
+	$data   = $fila['data'];
+	$titulo = $data['titulo'] ?? '';
+	if ( ! $titulo ) {
+		return; // Layout agregado pero sin título de sección — no imprime una sección sin nombre.
+	}
+
 	$items = [];
-	foreach ( $filas as $fila ) {
-		$url = $fila['data']['video_url'] ?? '';
+	foreach ( (array) ( $data['videos'] ?? [] ) as $fila_video ) {
+		$url = $fila_video['video_url'] ?? '';
 		if ( ! $url ) {
 			continue;
 		}
 		$items[] = [
-			'titulo'    => ( $fila['data']['titulo'] ?? '' ) ?: $titulo_item_default,
+			'titulo'    => $fila_video['titulo'] ?? '',
 			'video_url' => $url,
 			'thumb'     => jb3_contenido_video_thumb( $url ),
 		];
@@ -274,9 +291,14 @@ function jb3_contenido_render_videos( string $titulo_grupo, array $filas, string
 	if ( ! $items ) {
 		return;
 	}
+
+	$bajada = $data['bajada'] ?? '';
 	?>
-	<section id="<?php echo esc_attr( jb3_contenido_subnav_id( $titulo_grupo ) ); ?>" class="jb3-contenido-bloque jb3-contenido-bloque--video">
-		<h2 class="jb3-contenido-bloque__titulo"><?php echo esc_html( $titulo_grupo ); ?></h2>
+	<section id="<?php echo esc_attr( jb3_contenido_subnav_id( $titulo ) ); ?>" class="jb3-contenido-bloque jb3-contenido-bloque--video">
+		<h2 class="jb3-contenido-bloque__titulo"><?php echo esc_html( $titulo ); ?></h2>
+		<?php if ( $bajada ) : ?>
+			<div class="jb3-modulo__bajada"><?php echo wp_kses_post( wpautop( $bajada ) ); ?></div>
+		<?php endif; ?>
 		<div class="jb3-contenido-videos">
 			<?php foreach ( $items as $item ) : ?>
 				<div class="jb3-contenido-videos__item">
@@ -353,6 +375,53 @@ function jb3_contenido_render_imagen( array $fila ) {
 			<figcaption class="jb3-contenido-bloque__epigrafe"><?php echo esc_html( $epigrafe ); ?></figcaption>
 		<?php endif; ?>
 	</figure>
+	<?php
+}
+
+// ─── Fila individual: Imagen + Texto ────────────────────────────────────────
+// Genérico a propósito (pedido 2026-09-04, en vez de un layout puntual
+// "Host"): imagen a la izquierda + texto libre a la derecha, 2 columnas
+// (mismo grid que ya usa Sinopsis+Información, .jb3-contenido-fila--dos-
+// columnas), título de sección libre. Sirve tanto para el bloque "Host" de
+// Prod. Originales (nombre + bio del conductor) como para cualquier otro
+// contenido futuro con esta misma forma — si algún día hace falta soportar
+// más de una persona a la vez (ej. 2 co-hosts), por ahora alcanza con que el
+// editor escriba las dos bios en el mismo campo de texto; no hace falta un
+// repetidor todavía.
+//
+// Campo 'texto' tipo 'wysiwyg' (cambiado 2026-09-04 a pedido del usuario,
+// pese al riesgo conocido de TinyMCE en filas de Flexible Content agregadas
+// dinámicamente que motivó el textarea de "Contenido libre" — acá SÍ hace
+// falta negrita/links reales, no alcanza con texto plano). Mismo criterio
+// que Sinopsis/Información (jb3_contenido_render_texto_par): el wysiwyg ya
+// devuelve HTML con párrafos armados solo (ACF aplica su propio wpautop
+// interno al formatear el valor), así que NO hace falta wpautop() acá — a
+// diferencia de "Contenido libre"/"Video" (bajada), que sí son texto plano.
+// Si en el futuro se confirma que este campo queda roto en filas agregadas
+// con el "+" (mismo bug), hay que volver a textarea.
+function jb3_contenido_render_imagen_texto( array $fila ) {
+	$data   = $fila['data'];
+	$titulo = $data['titulo'] ?? '';
+	$img    = $data['imagen'] ?? null;
+	$texto  = $data['texto'] ?? '';
+	if ( ! is_array( $img ) || ! $texto ) {
+		return; // Layout agregado pero sin imagen o sin texto — no imprime un bloque a medias.
+	}
+	$id = $titulo ? jb3_contenido_subnav_id( $titulo ) : '';
+	?>
+	<section<?php echo $id ? ' id="' . esc_attr( $id ) . '"' : ''; ?> class="jb3-contenido-bloque jb3-contenido-bloque--imagen-texto">
+		<?php if ( $titulo ) : ?>
+			<h2 class="jb3-contenido-bloque__titulo"><?php echo esc_html( $titulo ); ?></h2>
+		<?php endif; ?>
+		<div class="jb3-contenido-fila--dos-columnas">
+			<img
+				src="<?php echo esc_url( $img['sizes']['large'] ?? $img['url'] ); ?>"
+				alt="<?php echo esc_attr( $img['alt'] ?? '' ); ?>"
+				loading="lazy"
+			>
+			<div class="jb3-contenido-bloque__texto"><?php echo wp_kses_post( $texto ); ?></div>
+		</div>
+	</section>
 	<?php
 }
 
@@ -463,47 +532,77 @@ function jb3_contenido_render_libre( array $fila ) {
 }
 
 // ─── Fila individual: Renta / Alquiler ──────────────────────────────────────
-// Lista fija de plataformas (pedido explícito 2026-09-03, a diferencia del
-// título que sí se dejó abierto por país) — UN SOLO lugar en código que
-// alimenta tanto las choices del checkbox del campo ACF (ver script que lo
-// creó) como el repeater de logos de Ajustes del sitio. Agregar una
-// plataforma nueva más adelante implica tocar acá Y reimportar el campo
-// ACF con la choice nueva — no hay forma de que quede 100% sin tocar código,
-// a diferencia del título por país que si es 100% configurable sin deploy.
-function jb3_contenido_plataformas_renta(): array {
-	return [
-		'google_play'  => 'Google Play',
-		'apple_tv'     => 'Apple TV',
-		'amazon_prime' => 'Amazon Prime Video',
-		'claro_video'  => 'Claro Video',
-		'movistar_tv'  => 'Movistar TV',
-		'flow'         => 'Flow',
-		'nuevo_siglo'  => 'Nuevo Siglo',
-	];
-}
-
-// Logos cargados UNA sola vez en Ajustes del sitio → Plataformas de
-// streaming (repeater slug+nombre+logo, sembrado por script) — no en cada
-// película, mismo criterio que el logo del canal. Cacheado en memoria: se
-// puede pedir varias veces en la misma request si hay más de un módulo de
-// Renta en la página.
-function jb3_contenido_plataforma_logo( string $slug ): string {
+// Plataformas 100% dinámicas desde Ajustes del sitio → "Plataformas de
+// streaming" (cambiado 2026-09-07, a pedido del usuario — antes era una
+// lista fija en código, que obligaba a tocar código Y reimportar el campo
+// ACF cada vez que hacía falta una plataforma nueva). Un solo loop
+// compartido (jb3_contenido_plataformas_streaming_filas()) arma slug→
+// {nombre, logo} leyendo esa tabla en vivo; tanto el desplegable "Plataforma"
+// del campo Renta (filtro acf/load_field más abajo) como el logo que se
+// pinta en el front (jb3_contenido_plataforma_logo()) salen de ahí. Cacheado
+// en memoria por request: la tabla no cambia en el medio de una misma carga
+// de página, no hace falta re-consultarla más de una vez aunque haya varios
+// módulos de Renta o Grid de personas en la misma página.
+function jb3_contenido_plataformas_streaming_filas(): array {
 	static $cache = null;
-	if ( null === $cache ) {
-		$cache = [];
-		if ( function_exists( 'have_rows' ) && have_rows( 'plataformas_streaming_logos', 'option' ) ) {
-			while ( have_rows( 'plataformas_streaming_logos', 'option' ) ) {
-				the_row();
-				$fila_slug = get_sub_field( 'slug' );
-				$logo      = get_sub_field( 'logo' );
-				if ( $fila_slug && is_array( $logo ) && ! empty( $logo['url'] ) ) {
-					$cache[ $fila_slug ] = $logo['url'];
-				}
+	if ( null !== $cache ) {
+		return $cache;
+	}
+	$cache = [];
+	if ( function_exists( 'have_rows' ) && have_rows( 'plataformas_streaming_logos', 'option' ) ) {
+		while ( have_rows( 'plataformas_streaming_logos', 'option' ) ) {
+			the_row();
+			$slug = get_sub_field( 'slug' );
+			if ( ! $slug ) {
+				continue;
 			}
+			$logo           = get_sub_field( 'logo' );
+			$cache[ $slug ] = [
+				'nombre' => (string) get_sub_field( 'nombre' ),
+				'logo'   => ( is_array( $logo ) && ! empty( $logo['url'] ) ) ? $logo['url'] : '',
+			];
 		}
 	}
-	return $cache[ $slug ] ?? '';
+	return $cache;
 }
+
+// Devuelve slug => nombre de las plataformas con nombre cargado — usado
+// tanto para la etiqueta que se ve en el <img alt="..."> del logo
+// (jb3_contenido_render_renta()) como para armar el desplegable "Plataforma"
+// (filtro acf/load_field más abajo).
+function jb3_contenido_plataformas_renta(): array {
+	$out = [];
+	foreach ( jb3_contenido_plataformas_streaming_filas() as $slug => $fila ) {
+		if ( $fila['nombre'] ) {
+			$out[ $slug ] = $fila['nombre'];
+		}
+	}
+	return $out;
+}
+
+function jb3_contenido_plataforma_logo( string $slug ): string {
+	$filas = jb3_contenido_plataformas_streaming_filas();
+	return $filas[ $slug ]['logo'] ?? '';
+}
+
+// Arma el desplegable "Plataforma" del campo Renta con lo que haya cargado
+// en Ajustes del sitio en ESE momento — agregar/sacar una fila ahí se
+// refleja solo la próxima vez que se abre el editor, sin tocar código ni
+// reimportar el grupo ACF.
+add_filter( 'acf/load_field/key=field_jb3_renta_plataformas_plataforma', function ( $field ) {
+	$field['choices'] = jb3_contenido_plataformas_renta();
+	return $field;
+} );
+
+// El "Slug" de cada plataforma se usa como clave de array (jb3_contenido_
+// plataforma_logo(), y lo que el editor eligió en el campo Renta de cada
+// película se compara contra esto) — sanitize_key() lo deja en minúsculas y
+// solo [a-z0-9_-], mismo criterio que ya usan los slugs del resto del sitio
+// (canales, países), para que un typo con mayúsculas/espacios no rompa el
+// match en silencio.
+add_filter( 'acf/update_value/key=field_jb3_plataformas_logos_slug', function ( $value ) {
+	return sanitize_key( $value );
+} );
 
 // Título por país: busca en "titulos_por_pais" un match con el país del
 // visitante; sin match, cae al "titulo_defecto". Recibe el país del
@@ -609,4 +708,47 @@ function jb3_contenido_render_renta( array $fila ) {
 		</div>
 	</section>
 	<?php
+}
+
+// ─── Cintillo de grilla: título de Renta activa (pedido 2026-09-07) ─────────
+// Para Películas/Series, el cintillo que se ve en .jb3-grid-posters/
+// .jb3-grid-thumbs tiene que mostrar el título de Renta/Alquiler (ej.
+// "Alquiler") en vez del texto manual del campo "cintillo" (group_jb3_
+// cintillo) CUANDO la película/serie tiene una fila "renta" vigente para el
+// país del visitante — misma validación exacta que usa
+// jb3_contenido_render_renta() (fecha vigente + al menos una plataforma con
+// país permitido y logo cargado), para no mostrar el cintillo de Renta si
+// esa sección en realidad no se va a ver. Devuelve null (no string vacío) si
+// no aplica, así jb3_grid_cintillo_texto() (_init_grids.php) sabe que tiene
+// que caer al campo manual en vez de mostrar "nada" a propósito.
+function jb3_pelicula_renta_titulo_activo( int $post_id ): ?string {
+	if ( ! function_exists( 'have_rows' ) || ! have_rows( 'contenido', $post_id ) ) {
+		return null;
+	}
+
+	$pais_visitante = function_exists( 'jb3_geo_visitor_country' ) ? jb3_geo_visitor_country() : '';
+
+	while ( have_rows( 'contenido', $post_id ) ) {
+		the_row();
+		if ( 'renta' !== get_row_layout() ) {
+			continue;
+		}
+		$data = get_row( true );
+		if ( ! jb3_contenido_fecha_vigente( (string) ( $data['fecha_in'] ?? '' ), (string) ( $data['fecha_out'] ?? '' ) ) ) {
+			continue;
+		}
+		foreach ( (array) ( $data['plataformas'] ?? [] ) as $fila_plataforma ) {
+			$slug        = $fila_plataforma['plataforma'] ?? '';
+			$link        = $fila_plataforma['link'] ?? '';
+			$paises_fila = (array) ( $fila_plataforma['paises'] ?? [] );
+			if ( ! $slug || ! $link || ! jb3_contenido_pais_permitido( $paises_fila, $pais_visitante ) ) {
+				continue;
+			}
+			if ( ! jb3_contenido_plataforma_logo( $slug ) ) {
+				continue;
+			}
+			return jb3_contenido_renta_titulo( $data, $pais_visitante );
+		}
+	}
+	return null;
 }

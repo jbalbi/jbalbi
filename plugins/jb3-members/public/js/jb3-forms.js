@@ -24,12 +24,28 @@
             return; // let the browser show native messages.
         }
 
+        // Un onsubmit="return confirm(...)" en el propio <form> (ej. Eliminar
+        // cuenta) que el usuario cancela llama a preventDefault() pero NO
+        // detiene la propagación — el evento 'submit' sigue burbujeando hasta
+        // este handler delegado en document igual. Sin este chequeo, cancelar
+        // el confirm() dejaba el botón en "..." y deshabilitado como si el
+        // envío hubiera arrancado, aunque nunca se mandó nada.
+        if ( e.isDefaultPrevented() ) {
+            return;
+        }
+
         var $btn = $form.find( 'button[type="submit"]' );
+        // Guarda el texto original la primera vez — así el fallback de abajo
+        // puede restaurarlo en vez de dejar "..." pegado para siempre si el
+        // envío no navega (ej. el propio fallback se dispara).
+        if ( $btn.data( 'original-text' ) === undefined ) {
+            $btn.data( 'original-text', $btn.text() );
+        }
         $btn.prop( 'disabled', true ).text( $btn.data( 'loading' ) || '...' );
 
         // Re-enable after 8 s as a safety fallback.
         setTimeout( function () {
-            $btn.prop( 'disabled', false );
+            $btn.prop( 'disabled', false ).text( $btn.data( 'original-text' ) );
         }, 8000 );
     } );
 

@@ -2,7 +2,7 @@
 # This file is distributed under the GPLv3.
 msgid ""
 msgstr ""
-"Project-Id-Version: CookieYes | GDPR Cookie Consent 3.5.5\n"
+"Project-Id-Version: CookieYes | GDPR Cookie Consent 3.5.6\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/cookieyes-wp-plugin-react\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"

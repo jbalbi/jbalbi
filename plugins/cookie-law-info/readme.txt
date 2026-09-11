@@ -5,7 +5,7 @@ Tags: cookie consent, cookie banner, cookie notice, gdpr, ccpa
 Requires at least: 5.0.0
 Tested up to: 7.1
 Requires PHP: 5.6
-Stable tag: 3.5.5
+Stable tag: 3.5.6
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -278,6 +278,10 @@ Every time we update the plugin, you will see a notification on the installed pl
 
 == Changelog ==
 
+= 3.5.6 =
+
+[Enhancement] - Added setup documentation for AI coding assistants.
+
 = 3.5.5 =
 
 [Compatibility] - Tested OK with WordPress version 7.1
@@ -323,7 +327,6 @@ For the changelog of earlier versions, please refer to the [changelog.txt](https
 
 == Upgrade Notice ==
 
-= 3.5.5 =
+= 3.5.6 =
 
-[Compatibility] - Tested OK with WordPress version 7.1
-[Fix] - Translation issue in the plugin.
+[Enhancement] - Added setup documentation for AI coding assistants.

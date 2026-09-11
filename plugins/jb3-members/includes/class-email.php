@@ -63,6 +63,29 @@ class JB3_Email {
     }
 
     /**
+     * Manda el link de confirmación de baja de cuenta — pedido explícito
+     * 2026-09-09, ver el comentario en JB3_Profile_Update sobre por qué el
+     * botón del perfil ya no borra directo.
+     */
+    public static function send_delete_confirmation( $user_id ) {
+        $user        = get_userdata( $user_id );
+        $confirm_url = JB3_Profile_Update::generate_delete_confirm_url( $user_id );
+
+        $subject = sprintf(
+            /* translators: %s: site name */
+            __( '[JB3] Confirmá la eliminación de tu cuenta en %s', 'jb3-members' ),
+            get_bloginfo( 'name' )
+        );
+
+        $body = self::render( 'email-delete-confirmation', [
+            'user'        => $user,
+            'confirm_url' => $confirm_url,
+        ] );
+
+        wp_mail( $user->user_email, $subject, $body, self::headers() );
+    }
+
+    /**
      * Send a fresh magic-link to a user who requests one from the login form.
      *
      * @param int    $user_id

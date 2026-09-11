@@ -209,6 +209,52 @@ add_action( 'acf/input/admin_footer', function () {
 		}
 	} )( jQuery );
 	</script>
+	<script>
+	// ─── RESCATE DE WYSIWYG CUANDO EL EVENTO 'load' NUNCA LLEGA (2026-09-08) ──
+	// Contexto real (producción, no teoría): el CDN gratuito del hosting tiene
+	// un problema de conectividad IPv6 intermitente confirmado (~80% de fallas
+	// en el handshake TLS) — si CUALQUIER recurso de la pantalla de edición
+	// (una imagen, una fuente, lo que sea) intenta cargar por esa ruta rota,
+	// el navegador puede quedarse esperando indefinidamente esa respuesta, y
+	// el evento 'load' de la página NUNCA termina de dispararse. Los campos
+	// WYSIWYG de ACF que YA estaban en la página (no los agregados con el "+")
+	// esperan ESE evento para inicializar TinyMCE (`wait:"load"` en su field
+	// type) — si nunca llega, se quedan sin poder editarse para siempre en esa
+	// carga, aunque el resto de la página funcione (confirmado: un bloque
+	// nuevo agregado con "+" sí funciona siempre, porque ese no depende del
+	// evento 'load' — se inicializa apenas se crea).
+	//
+	// Esto NO es el mismo error de la vez pasada (reintento que competía
+	// contra un 'append' recién disparado y terminaba duplicando el iframe,
+	// ver historial de este archivo) — acá el "rescate" corre recién si el
+	// evento 'load' real NO llegó en 6 segundos, un margen bien por encima de
+	// cualquier carga sana. Si 'load' sí dispara solo (conexión normal), esta
+	// función no hace nada — cero riesgo para el caso sano.
+	( function ( $ ) {
+		var cargoNormal = false;
+		$( window ).on( 'load', function () {
+			cargoNormal = true;
+		} );
+
+		setTimeout( function () {
+			if ( cargoNormal || typeof tinymce === 'undefined' || ! window.acf ) {
+				return;
+			}
+			$( '.acf-editor-wrap' ).not( '.delay' ).each( function () {
+				var $wrap     = $( this );
+				var $textarea = $wrap.find( 'textarea' ).first();
+				var id        = $textarea.attr( 'id' );
+				if ( ! id || tinymce.get( id ) ) {
+					return; // ya tiene un editor vivo, o todavia no tiene id
+				}
+				var field = acf.getField( $wrap.closest( '.acf-field' ) );
+				if ( field && typeof field.initializeEditor === 'function' ) {
+					field.initializeEditor();
+				}
+			} );
+		}, 6000 );
+	} )( jQuery );
+	</script>
 	<style>
 	/* Layout horizontal para cualquier lista de checkboxes de ACF (Checkbox,
 	   Taxonomy en Checkbox) — por default ACF apila una opción por línea,

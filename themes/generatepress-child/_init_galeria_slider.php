@@ -264,8 +264,26 @@ function jb3_render_galeria_slider( array $slides, string $titulo = '', string $
 							animando = true;
 							ir( mejorIndice, true );
 						}
+						// pointercancel: el navegador le sacó el gesto a este elemento
+						// para otra cosa — en mobile, típicamente porque decidió que era
+						// un scroll vertical de la página (mismo caso que touch-action:
+						// pan-y de arriba está pensado para dejar pasar). Reusar
+						// terminarArrastre() acá era el bug real (2026-09-07): con
+						// "huboArrastre" en false (el delta medido es solo horizontal, y
+						// un swipe vertical casi no mueve ese eje) lo trataba como
+						// "toque real" y abría la foto en pantalla completa, tapando el
+						// scroll que el usuario estaba intentando hacer. Un cancel NUNCA
+						// es un toque real — separado en su propia función, que solo
+						// reacomoda el carrusel en el slide actual sin abrir nada.
+						function cancelarArrastre() {
+							if ( ! arrastrando ) return;
+							arrastrando = false;
+							actualizarAutoplay();
+							animando = true;
+							ir( actual, true );
+						}
 						wrapEl.addEventListener( 'pointerup', terminarArrastre );
-						wrapEl.addEventListener( 'pointercancel', terminarArrastre );
+						wrapEl.addEventListener( 'pointercancel', cancelarArrastre );
 
 						arrancarAutoplay();
 					}

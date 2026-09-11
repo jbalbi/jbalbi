@@ -96,6 +96,14 @@ class JB3_Admin {
         );
         add_submenu_page(
             'jb3-members',
+            __( 'Ayuda', 'jb3-members' ),
+            __( 'Ayuda', 'jb3-members' ),
+            'manage_options',
+            'jb3-help',
+            [ __CLASS__, 'page_help' ]
+        );
+        add_submenu_page(
+            'jb3-members',
             __( 'Configuración', 'jb3-members' ),
             __( 'Configuración', 'jb3-members' ),
             'manage_options',
@@ -165,6 +173,7 @@ class JB3_Admin {
         register_setting( 'jb3_settings', 'jb3_login_page_id',        [ 'type' => 'integer', 'sanitize_callback' => 'absint' ] );
         register_setting( 'jb3_settings', 'jb3_profile_page_id',      [ 'type' => 'integer', 'sanitize_callback' => 'absint' ] );
         register_setting( 'jb3_settings', 'jb3_dashboard_page_id',    [ 'type' => 'integer', 'sanitize_callback' => 'absint' ] );
+        register_setting( 'jb3_settings', 'jb3_delete_confirm_page_id', [ 'type' => 'integer', 'sanitize_callback' => 'absint' ] );
         register_setting( 'jb3_settings', 'jb3_email_from',      [ 'type' => 'string', 'sanitize_callback' => 'sanitize_email' ] );
         register_setting( 'jb3_settings', 'jb3_email_from_name', [ 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ] );
         register_setting( 'jb3_settings', 'jb3_mc_api_key',  [ 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ] );
@@ -669,6 +678,7 @@ class JB3_Admin {
                         [ 'jb3_login_page_id',     __( 'Página de Login',                 'jb3-members' ), __( 'Debe contener el shortcode [jb3_login].',   'jb3-members' ) ],
                         [ 'jb3_profile_page_id',   __( 'Página de Perfil / Actualización', 'jb3-members' ), __( 'Debe contener el shortcode [jb3_profile].', 'jb3-members' ) ],
                         [ 'jb3_dashboard_page_id', __( 'Página de Inicio (post-login)',    'jb3-members' ), __( 'Adónde se redirige al usuario después de loguearse.', 'jb3-members' ) ],
+                        [ 'jb3_delete_confirm_page_id', __( 'Página de Confirmar Baja de Cuenta', 'jb3-members' ), __( 'Debe contener el shortcode [jb3_confirmar_baja]. Adónde apunta el link del email de confirmación de baja.', 'jb3-members' ) ],
                     ] as [ $opt, $label, $desc ] ) : ?>
                     <tr>
                         <th><label><?php echo esc_html( $label ); ?></label></th>
@@ -1286,18 +1296,18 @@ class JB3_Admin {
 
             fputcsv( $out, [
                 $uid,
-                $user->first_name,
-                $user->last_name,
+                self::csv_safe( $user->first_name ),
+                self::csv_safe( $user->last_name ),
                 $user->user_email,
                 $status === 'approved' ? 'Aprobado' : 'Pendiente',
                 get_user_meta( $uid, 'jb3_country', true ),
-                get_user_meta( $uid, 'jb3_company',   true ),
-                get_user_meta( $uid, 'jb3_job_title', true ),
-                get_user_meta( $uid, 'jb3_phone',     true ),
-                get_user_meta( $uid, 'jb3_sector',    true ),
+                self::csv_safe( get_user_meta( $uid, 'jb3_company',   true ) ),
+                self::csv_safe( get_user_meta( $uid, 'jb3_job_title', true ) ),
+                self::csv_safe( get_user_meta( $uid, 'jb3_phone',     true ) ),
+                self::csv_safe( get_user_meta( $uid, 'jb3_sector',    true ) ),
                 get_user_meta( $uid, 'jb3_newsletter', true ) ? 'Sí' : 'No',
-                implode( ', ', $nlc_labels ),
-                implode( ', ', $int_labels ),
+                self::csv_safe( implode( ', ', $nlc_labels ) ),
+                self::csv_safe( implode( ', ', $int_labels ) ),
                 $user->user_registered,
                 get_user_meta( $uid, 'jb3_registered_at', true ),
                 get_user_meta( $uid, 'jb3_approved_at',   true ),
@@ -1306,6 +1316,25 @@ class JB3_Admin {
 
         fclose( $out );
         exit;
+    }
+
+    /**
+     * Neutraliza "CSV injection" (fórmulas en Excel/Sheets, ej. alguien
+     * registrándose con "=cmd|'/c calc'!A1" en Empresa) — antepone un
+     * apóstrofe si el valor empieza con un carácter que Excel/Sheets/
+     * LibreOffice interpreta como inicio de fórmula. Solo se aplica a
+     * campos de texto libre cargados por el usuario (nombre, apellido,
+     * empresa, cargo, teléfono, sector, y las listas de newsletter/
+     * intereses armadas más arriba) — no a IDs, fechas, ni valores fijos
+     * del propio código (Aprobado/Pendiente/Sí/No), que nunca son
+     * controlados por quien se registra.
+     */
+    private static function csv_safe( $value ): string {
+        $value = (string) $value;
+        if ( '' !== $value && in_array( $value[0], [ '=', '+', '-', '@', "\t", "\r" ], true ) ) {
+            return "'" . $value;
+        }
+        return $value;
     }
 
     // -------------------------------------------------------------------------
@@ -1355,6 +1384,101 @@ class JB3_Admin {
              LEFT JOIN {$wpdb->usermeta} um ON um.user_id = u.ID AND um.meta_key = 'nickname'
              WHERE um.user_id IS NULL"
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Help: admin page (guía en español para el admin, no el README técnico)
+    // -------------------------------------------------------------------------
+
+    public static function page_help() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Sin permiso.', 'jb3-members' ) );
+        }
+        ?>
+        <div class="wrap">
+            <h1><?php esc_html_e( 'JB3 Members — Ayuda', 'jb3-members' ); ?></h1>
+            <p><?php esc_html_e( 'Guía rápida de cómo usar cada pantalla del plugin, en qué orden, y qué hacer si algo no se ve reflejado donde esperabas.', 'jb3-members' ); ?></p>
+
+            <h2><?php esc_html_e( 'Flujo recomendado para actualizar la base de un país', 'jb3-members' ); ?></h2>
+            <ol style="max-width:760px;">
+                <li>
+                    <strong><?php esc_html_e( '(Opcional) Exportar Usuarios', 'jb3-members' ); ?></strong> —
+                    <?php esc_html_e( 'descargá un respaldo de la base actual antes de importar algo nuevo, por si hay que revertir.', 'jb3-members' ); ?>
+                </li>
+                <li>
+                    <strong><?php esc_html_e( 'Importar Usuarios', 'jb3-members' ); ?></strong> —
+                    <?php esc_html_e( 'subís el CSV actualizado. Por cada fila: si el email ya existe, ACTUALIZA sus datos; si no existe, CREA un usuario nuevo (auto-aprobado). A quien NO esté en el archivo no lo toca — no borra ni afecta a usuarios de otros países.', 'jb3-members' ); ?>
+                </li>
+                <li>
+                    <strong><?php esc_html_e( 'Sincronizar Mailchimp — SIEMPRE, después de importar o borrar', 'jb3-members' ); ?></strong> —
+                    <?php esc_html_e( 'este es el paso que más se olvida: importar o borrar usuarios NUNCA toca Mailchimp por sí solo. Si no corrés esta sincronización después, los cambios quedan solo en WordPress y Mailchimp sigue mostrando los datos viejos (o el contacto sigue archivado).', 'jb3-members' ); ?>
+                </li>
+                <li>
+                    <strong><?php esc_html_e( '(Si hace falta) Borrar Miembros', 'jb3-members' ); ?></strong> —
+                    <?php esc_html_e( 'para dar de baja usuarios que ya no están en la base nueva de un país. Usá "Lista CSV" con esos emails puntuales — nunca los filtros "Todos/Pendientes/Aprobados" si solo querés afectar a un país, porque esos filtros no distinguen país, afectan a TODA la base.', 'jb3-members' ); ?>
+                </li>
+            </ol>
+
+            <h2><?php esc_html_e( 'Qué hace cada pantalla', 'jb3-members' ); ?></h2>
+            <table class="widefat" style="max-width:900px;">
+                <thead><tr><th><?php esc_html_e( 'Pantalla', 'jb3-members' ); ?></th><th><?php esc_html_e( 'Para qué sirve', 'jb3-members' ); ?></th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><a href="<?php echo esc_url( admin_url( 'admin.php?page=jb3-members' ) ); ?>"><?php esc_html_e( 'Representantes', 'jb3-members' ); ?></a></td>
+                        <td><?php esc_html_e( 'Contactos de referencia por país (no son usuarios del sitio).', 'jb3-members' ); ?></td>
+                    </tr>
+                    <tr>
+                        <td><a href="<?php echo esc_url( admin_url( 'admin.php?page=jb3-export' ) ); ?>"><?php esc_html_e( 'Exportar Usuarios', 'jb3-members' ); ?></a></td>
+                        <td><?php esc_html_e( 'Descarga un CSV con todos los miembros y todos sus campos. Sirve también como plantilla para armar un import.', 'jb3-members' ); ?></td>
+                    </tr>
+                    <tr>
+                        <td><a href="<?php echo esc_url( admin_url( 'admin.php?page=jb3-import' ) ); ?>"><?php esc_html_e( 'Importar Usuarios', 'jb3-members' ); ?></a></td>
+                        <td><?php esc_html_e( 'Sube un CSV: crea usuarios nuevos y actualiza los existentes (por email). No borra a nadie. No sincroniza con Mailchimp por sí sola.', 'jb3-members' ); ?></td>
+                    </tr>
+                    <tr>
+                        <td><a href="<?php echo esc_url( admin_url( 'admin.php?page=jb3-sync' ) ); ?>"><?php esc_html_e( 'Sincronizar Mailchimp', 'jb3-members' ); ?></a></td>
+                        <td><?php esc_html_e( 'Sube a Mailchimp el estado real de WordPress (suscribe o archiva según el newsletter de cada usuario), y archiva en Mailchimp a quien ya no tenga cuenta en el sitio. Correrla después de cualquier import o borrado masivo.', 'jb3-members' ); ?></td>
+                    </tr>
+                    <tr>
+                        <td><a href="<?php echo esc_url( admin_url( 'admin.php?page=jb3-delete' ) ); ?>"><?php esc_html_e( 'Borrar Miembros', 'jb3-members' ); ?></a></td>
+                        <td><?php esc_html_e( 'Borra usuarios en lote: por rol/estado (todo el sitio) o por una lista CSV puntual de emails. Nunca borra administradores. Borrar por lista CSV archiva en Mailchimp de inmediato; por rol/estado hay que correr la sincronización después.', 'jb3-members' ); ?></td>
+                    </tr>
+                    <tr>
+                        <td><a href="<?php echo esc_url( admin_url( 'admin.php?page=jb3-settings' ) ); ?>"><?php esc_html_e( 'Configuración', 'jb3-members' ); ?></a></td>
+                        <td><?php esc_html_e( 'Páginas del sitio que usa el plugin (login, perfil, dashboard) y credenciales de Mailchimp/Google Sheets.', 'jb3-members' ); ?></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2><?php esc_html_e( 'Newsletter por país — cómo funciona', 'jb3-members' ); ?></h2>
+            <p style="max-width:760px;">
+                <?php esc_html_e( 'El usuario común solo elige "recibir newsletter: sí/no" en su perfil. Si lo activa, el sistema le tilda automáticamente ÚNICAMENTE el país que puso como propio — el usuario nunca elige países a mano. Solo el administrador puede agregar o quitar países específicos para un usuario puntual, desde su ficha en Usuarios → sección "Newsletter por País" — y esa selección manual se respeta mientras el usuario no cambie su check de sí/no (si lo cambia, la regla automática vuelve a aplicarse y pisa la selección manual).', 'jb3-members' ); ?>
+            </p>
+
+            <h2><?php esc_html_e( 'Problemas comunes', 'jb3-members' ); ?></h2>
+            <table class="widefat" style="max-width:900px;">
+                <thead><tr><th><?php esc_html_e( 'Síntoma', 'jb3-members' ); ?></th><th><?php esc_html_e( 'Qué hacer', 'jb3-members' ); ?></th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><?php esc_html_e( 'Importé usuarios y no veo el cambio en Mailchimp.', 'jb3-members' ); ?></td>
+                        <td><?php esc_html_e( 'Correr "Sincronizar Mailchimp" — el import nunca sincroniza por sí solo, es un paso aparte siempre.', 'jb3-members' ); ?></td>
+                    </tr>
+                    <tr>
+                        <td><?php esc_html_e( 'Ya sincronicé, pero un contacto puntual sigue apareciendo "Archivado" en Mailchimp.', 'jb3-members' ); ?></td>
+                        <td><?php esc_html_e( 'No hace falta esperar para CORRER la sincronización — hacela apenas termines de importar/borrar. La espera es DESPUÉS: cuando la sincronización termina y dice "completado", eso confirma que Mailchimp RECIBIÓ el pedido, no que ya lo aplicó — puede tardar unos minutos en mostrar el cambio real en su propia web. Si esperaste unos minutos y seguís viéndolo archivado ahí, recién entonces abrí la ficha de ese usuario en Usuarios y dale "Actualizar" sin cambiar nada — eso fuerza una sincronización directa e inmediata de ese usuario puntual.', 'jb3-members' ); ?></td>
+                    </tr>
+                    <tr>
+                        <td><?php esc_html_e( 'El CSV no importa ninguna fila, o los acentos salen raros (í, é, ñ rotos).', 'jb3-members' ); ?></td>
+                        <td><?php esc_html_e( 'Al guardar desde Excel, elegí "CSV UTF-8 (delimitado por comas)" en vez de "CSV" a secas — el formato "CSV" común de Excel en Windows no usa UTF-8 y rompe los acentos.', 'jb3-members' ); ?></td>
+                    </tr>
+                    <tr>
+                        <td><?php esc_html_e( 'Necesito actualizar la base de UN país sin afectar a los demás.', 'jb3-members' ); ?></td>
+                        <td><?php esc_html_e( 'Importar solo crea/actualiza según lo que traiga el archivo — nunca borra por ausencia. Si además hay que dar de baja a quien ya no está en la base nueva de ese país, hacelo aparte con "Borrar Miembros → Lista CSV" (nunca con los filtros Todos/Pendientes/Aprobados, que no distinguen país).', 'jb3-members' ); ?></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <?php
     }
 
     // -------------------------------------------------------------------------
@@ -1451,6 +1575,26 @@ class JB3_Admin {
             wp_send_json_error( __( 'No se pudo guardar el archivo temporal.', 'jb3-members' ) );
         }
 
+        // Excel en Windows guarda "CSV" en ANSI/Windows-1252, no UTF-8 — los
+        // acentos quedan como bytes inválidos para UTF-8. wp_options y
+        // wp_users/wp_usermeta son utf8mb4: un INSERT/UPDATE con esos bytes
+        // es rechazado por MySQL sin lanzar ninguna excepción PHP
+        // (update_option()/wpdb devuelven false en silencio) — confirmado en
+        // vivo: el estado de la importación nunca llegaba a guardarse pese a
+        // que este mismo pedido respondía éxito, y el siguiente pedido
+        // (ajax_import_chunk) encontraba "no hay importación en curso".
+        // Se convierte todo el archivo a UTF-8 real ACÁ, una sola vez, así
+        // el resto del código (headers, filas, altas/actualizaciones de
+        // usuario más abajo) sigue asumiendo UTF-8 sin cambios.
+        $raw_content = file_get_contents( $tmp_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents
+        if ( false !== $raw_content && '' !== $raw_content && ! mb_check_encoding( $raw_content, 'UTF-8' ) ) {
+            $converted = @mb_convert_encoding( $raw_content, 'UTF-8', 'Windows-1252' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+            if ( false !== $converted ) {
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+                file_put_contents( $tmp_file, $converted );
+            }
+        }
+
         // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
         $handle = fopen( $tmp_file, 'r' );
         if ( ! $handle ) {
@@ -1502,7 +1646,14 @@ class JB3_Admin {
             'phase'     => 'running',
         ];
 
-        update_option( self::import_state_key(), $state, false );
+        // Chequeado explícitamente — antes de la conversión a UTF-8 de acá
+        // arriba, esto podía devolver false en silencio (contenido no-UTF-8
+        // rechazado por MySQL) y el código seguía como si nada, dejando al
+        // siguiente pedido (ajax_import_chunk) sin ningún estado para leer.
+        if ( ! update_option( self::import_state_key(), $state, false ) ) {
+            @unlink( $tmp_file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+            wp_send_json_error( __( 'No se pudo guardar el estado de la importación.', 'jb3-members' ) );
+        }
         wp_send_json_success( $state );
     }
 
@@ -1870,6 +2021,14 @@ class JB3_Admin {
 
         $has_mc     = get_option( 'jb3_mc_api_key' ) && get_option( 'jb3_mc_list_id' );
         $state      = JB3_Sync::get_state();
+        // "done" no necesita reanudarse — es un resultado viejo, no un proceso a
+        // medias. Sin este filtro, entrar a esta página mostraba el resultado de
+        // la ÚLTIMA corrida (aunque fuera de horas antes) como si acabara de pasar
+        // con solo abrir la pantalla, dando la falsa impresión de que sincronizó
+        // sola. Solo "en curso" (wp_to_mc/mc_to_wp) amerita el flujo de reanudar.
+        if ( is_array( $state ) && 'done' === ( $state['phase'] ?? '' ) ) {
+            $state = null;
+        }
         $nonce      = wp_create_nonce( 'jb3_sync_nonce' );
         $wp_members = count( get_users( [ 'role' => 'jb3_member', 'number' => -1, 'fields' => 'ID' ] ) );
         $wp_admins  = count( get_users( [ 'role' => 'administrator', 'number' => -1, 'fields' => 'ID' ] ) );
@@ -2363,6 +2522,17 @@ class JB3_Admin {
                     html += '</ul>';
                 }
                 html += '</div>';
+
+                // El import nunca sincroniza con Mailchimp por sí solo — sin este
+                // recordatorio, el admin no tiene ninguna señal de que falta ese
+                // paso y los cambios quedan solo en WordPress.
+                if ( ( s.created + s.updated ) > 0 ) {
+                    html += '<div class="notice notice-warning inline" style="margin-top:8px;padding:10px 14px;">'
+                        + '<p style="margin:0 0 8px;"><?php echo esc_js( __( '⚠ El import no sincroniza con Mailchimp por sí solo. Si vas a importar varias listas/países, podés hacerlas todas primero y sincronizar una sola vez al final — este link solo te lleva a esa pantalla, no ejecuta nada por su cuenta; ahí todavía hay que apretar "Iniciar sincronización".', 'jb3-members' ) ); ?></p>'
+                        + '<p style="margin:0;"><a href="<?php echo esc_url( admin_url( 'admin.php?page=jb3-sync' ) ); ?>" class="button"><?php echo esc_js( __( 'Ir a Sincronizar Mailchimp', 'jb3-members' ) ); ?></a></p>'
+                        + '</div>';
+                }
+
                 divResults.innerHTML = html;
             }
 
@@ -2823,14 +2993,31 @@ class JB3_Admin {
                     + '<strong><?php echo esc_js( __( 'Completado.', 'jb3-members' ) ); ?></strong> '
                     + escHtml(s.deleted) + ' <?php echo esc_js( __( 'miembros borrados.', 'jb3-members' ) ); ?>'
                     + '</p></div>';
+
+                // Solo "Lista CSV" archiva en Mailchimp al momento de borrar (ver
+                // ajax_delete_chunk()) — "Todos/Pendientes/Aprobados" borran directo
+                // en WordPress sin tocar Mailchimp, así que sin este aviso el admin
+                // no se entera de que falta correr la sincronización después.
+                var needsSyncReminder = (s.filter !== 'list' && s.deleted > 0);
+                if (needsSyncReminder) {
+                    divRes.innerHTML += '<div class="notice notice-warning inline" style="margin-top:8px;padding:10px 14px;">'
+                        + '<p style="margin:0 0 8px;"><?php echo esc_js( __( '⚠ Este modo no archiva en Mailchimp al momento de borrar. Si vas a borrar de varias listas/países, podés hacerlo todo primero y sincronizar una sola vez al final — este link solo te lleva a esa pantalla, no ejecuta nada por su cuenta; ahí todavía hay que apretar "Iniciar sincronización".', 'jb3-members' ) ); ?></p>'
+                        + '<p style="margin:0;"><a href="<?php echo esc_url( admin_url( 'admin.php?page=jb3-sync' ) ); ?>" class="button"><?php echo esc_js( __( 'Ir a Sincronizar Mailchimp', 'jb3-members' ) ); ?></a></p>'
+                        + '</div>';
+                }
+
                 showErrors(s.errors);
                 btnStart.disabled       = false;
                 btnStart.textContent    = <?php echo wp_json_encode( __( 'Borrar de nuevo', 'jb3-members' ) ); ?>;
                 btnCancel.style.display = 'none';
                 setSpinner(false);
                 running = false;
-                // Reload page to update member counts.
-                setTimeout(function(){ location.reload(); }, 1500);
+                // Reload page to update member counts — salteado cuando se muestra
+                // el aviso de arriba, para no hacerlo desaparecer antes de que el
+                // admin llegue a leerlo o hacer clic en el botón.
+                if (!needsSyncReminder) {
+                    setTimeout(function(){ location.reload(); }, 1500);
+                }
             }
             function post(action, extra, cb) {
                 var fd = new FormData();

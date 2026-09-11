@@ -25,11 +25,15 @@ add_action( 'admin_enqueue_scripts', function( string $hook ) {
     }
 
     wp_enqueue_script( 'jquery-ui-sortable' );
+    // Versión por mtime del archivo, no un string fijo — con '1.0' fijo,
+    // el navegador podía seguir sirviendo un admin.js viejo desde caché
+    // después de actualizar el plugin, sin ningún aviso de que el archivo
+    // en el servidor ya había cambiado.
     wp_enqueue_script(
         'jb3-tax-order',
         plugin_dir_url( __FILE__ ) . 'admin.js',
         [ 'jquery', 'jquery-ui-sortable' ],
-        '1.0',
+        file_exists( __DIR__ . '/admin.js' ) ? filemtime( __DIR__ . '/admin.js' ) : '1.0',
         true
     );
     wp_localize_script( 'jb3-tax-order', 'jb3TaxOrder', [
