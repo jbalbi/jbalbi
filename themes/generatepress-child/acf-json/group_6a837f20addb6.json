@@ -1,0 +1,120 @@
+{
+    "key": "group_6a837f20addb6",
+    "title": "Galería con Slider",
+    "fields": [
+        {
+            "key": "field_6a837f20b3a49",
+            "label": "Título",
+            "name": "gs_titulo",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "Opcional. Con contenido, se ve con la rayita vertical y entra a la navegación (subnav) de la página.",
+            "required": 0,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_6a84750464851",
+            "label": "Países",
+            "name": "gs_paises",
+            "aria-label": "",
+            "type": "taxonomy",
+            "instructions": "Vacio = NO se ve para nadie todavia. Marca los paises que SI la pueden ver.",
+            "required": 0,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "taxonomy": "pais",
+            "field_type": "checkbox",
+            "return_format": "id",
+            "add_term": 0,
+            "save_terms": 0,
+            "load_terms": 0,
+            "multiple": 0,
+            "allow_null": 0,
+            "bidirectional_target": []
+        },
+        {
+            "key": "field_6a837f21cf09a",
+            "label": "Bajada",
+            "name": "gs_bajada",
+            "aria-label": "",
+            "type": "wysiwyg",
+            "instructions": "Opcional, con editor de texto enriquecido. Nunca entra a la navegación.",
+            "required": 0,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "tabs": "all",
+            "toolbar": "full",
+            "media_upload": 1,
+            "delay": 0,
+            "default_value": ""
+        },
+        {
+            "key": "field_6a837f22ec429",
+            "label": "Imágenes",
+            "name": "gs_imagenes",
+            "aria-label": "",
+            "type": "gallery",
+            "instructions": "Las fotos del carrusel.",
+            "required": 1,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "array",
+            "preview_size": "medium",
+            "library": "all",
+            "insert": "append",
+            "min": 0,
+            "max": 0,
+            "min_width": 0,
+            "min_height": 0,
+            "min_size": 0,
+            "max_width": 0,
+            "max_height": 0,
+            "max_size": 0,
+            "mime_types": ""
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "block",
+                "operator": "==",
+                "value": "acf\/galeria-slider"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": false,
+    "display_title": "",
+    "allow_ai_access": false,
+    "ai_description": "",
+    "modified": 1787002656
+}

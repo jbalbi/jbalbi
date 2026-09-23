@@ -1,0 +1,80 @@
+{
+    "key": "group_6a7380580d08d",
+    "title": "Contenido relacionado",
+    "fields": [
+        {
+            "key": "field_6a73805857736",
+            "label": "Contenido relacionado",
+            "name": "contenido_relacionado",
+            "aria-label": "",
+            "type": "relationship",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "post_type": [
+                "peliculas",
+                "prod_originales",
+                "page",
+                "series",
+                "post"
+            ],
+            "post_status": "",
+            "taxonomy": "",
+            "filters": [
+                "search",
+                "post_type",
+                "taxonomy"
+            ],
+            "return_format": "object",
+            "min": "",
+            "max": "",
+            "allow_in_bindings": 0,
+            "elements": "",
+            "bidirectional": 1,
+            "bidirectional_target": [
+                "field_6a73805857736"
+            ]
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "op_comerciales"
+            }
+        ],
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "videos"
+            }
+        ],
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "integraciones"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": 0,
+    "display_title": "",
+    "allow_ai_access": false,
+    "ai_description": "",
+    "modified": 1786207804
+}

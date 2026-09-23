@@ -149,9 +149,18 @@ class JB3_AISearch_Client_Gemini {
 		] );
 
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
-			$detalle = is_wp_error( $response ) ? $response->get_error_message() : 'HTTP ' . wp_remote_retrieve_response_code( $response );
+			$code    = is_wp_error( $response ) ? 0 : wp_remote_retrieve_response_code( $response );
+			$detalle = is_wp_error( $response ) ? $response->get_error_message() : 'HTTP ' . $code;
 			jb3_aisearch_debug_log( 'Gemini falló: ' . $detalle );
+			if ( function_exists( 'jb3ia_registrar_uso' ) ) {
+				$motivo = is_wp_error( $response ) ? 'red' : ( 429 === $code ? 'cuota' : 'error' );
+				jb3ia_registrar_uso( 'gemini', 'jb3-ai-search', false, $motivo );
+			}
 			return null;
+		}
+
+		if ( function_exists( 'jb3ia_registrar_uso' ) ) {
+			jb3ia_registrar_uso( 'gemini', 'jb3-ai-search', true );
 		}
 
 		$data       = json_decode( wp_remote_retrieve_body( $response ), true );

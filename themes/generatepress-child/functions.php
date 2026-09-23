@@ -150,6 +150,17 @@ add_filter( 'wp_headers', function ( $headers ) {
     return $headers;
 } );
 
+// ─── ACF LOCAL JSON ───────────────────────────────────────────────────────────
+
+// La DEFINICIÓN de los grupos de campos ACF (no los valores cargados) vive
+// en acf-json/ dentro de este tema y va a git: si se pierde la base, los
+// campos se recuperan desde ahí (ACF > Grupos de campos > "Sincronización
+// disponible" > Sincronizar). ACF ya usa esta carpeta por defecto; se deja
+// explícito para que no dependa de ese default ni pase desapercibido.
+// Cada vez que se guarda un grupo en el admin, ACF actualiza su .json solo
+// — hay que commitear esos cambios como cualquier otro archivo del tema.
+add_filter( 'acf/settings/save_json', fn() => get_stylesheet_directory() . '/acf-json' );
+
 // ─── INCLUDES ─────────────────────────────────────────────────────────────────
 
 require_once __DIR__ . '/_init_taxonomias.php';         // Taxonomías personalizadas

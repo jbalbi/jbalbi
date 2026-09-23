@@ -1,0 +1,147 @@
+{
+    "key": "group_6a820ff5d7f71",
+    "title": "Tarjeta",
+    "fields": [
+        {
+            "key": "field_6a820ff5de0a3",
+            "label": "Imagen",
+            "name": "t_imagen",
+            "aria-label": "",
+            "type": "image",
+            "instructions": "",
+            "required": 1,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "array",
+            "preview_size": "medium",
+            "library": "all",
+            "min_width": 0,
+            "min_height": 0,
+            "min_size": 0,
+            "max_width": 0,
+            "max_height": 0,
+            "max_size": 0,
+            "mime_types": ""
+        },
+        {
+            "key": "field_6a820ff7051d8",
+            "label": "Título",
+            "name": "t_titulo",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "Opcional.",
+            "required": 0,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_6a820ff82083b",
+            "label": "Texto",
+            "name": "t_texto",
+            "aria-label": "",
+            "type": "textarea",
+            "instructions": "Opcional.",
+            "required": 0,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "rows": 3,
+            "default_value": "",
+            "new_lines": "",
+            "maxlength": "",
+            "placeholder": ""
+        },
+        {
+            "key": "field_6a820ff93b290",
+            "label": "Link",
+            "name": "t_link",
+            "aria-label": "",
+            "type": "url",
+            "instructions": "Opcional. Con link, la tarjeta entera es clickeable y abre en pestaña nueva.",
+            "required": 0,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": ""
+        },
+        {
+            "key": "field_6a8212df8af7e",
+            "label": "Abrir en modal",
+            "name": "t_modal",
+            "aria-label": "",
+            "type": "true_false",
+            "instructions": "El Link tiene que ser una Página del sitio. Al tildar esto, el click abre el contenido de esa Página en un modal en vez de navegar. Sin tildar, el Link se comporta normal.",
+            "required": 0,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": 0,
+            "ui": 1,
+            "message": "",
+            "ui_on_text": "",
+            "ui_off_text": ""
+        },
+        {
+            "key": "field_6a83226edd99e",
+            "label": "Video",
+            "name": "t_video",
+            "aria-label": "",
+            "type": "url",
+            "instructions": "Opcional — YouTube, Vimeo o un archivo de la Biblioteca de Medios. Con esto cargado, la tarjeta muestra el ícono de play y abre el video a pantalla completa EN VEZ de Link\/Modal (tiene prioridad sobre esos dos).",
+            "required": 0,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": ""
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "block",
+                "operator": "==",
+                "value": "acf\/tarjeta"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": false,
+    "display_title": "",
+    "allow_ai_access": false,
+    "ai_description": "",
+    "modified": 1786908661
+}

@@ -1,0 +1,875 @@
+{
+    "key": "group_jb3_contenido_pelicula",
+    "title": "Contenido de la película\/serie",
+    "fields": [
+        {
+            "key": "field_jb3_contenido",
+            "label": "Contenido",
+            "name": "contenido",
+            "aria-label": "",
+            "type": "flexible_content",
+            "instructions": "Armá la página agregando los bloques que necesites, en el orden que quieras. Trailer\/Especial\/Galería\/Imagen se pueden repetir — si agregás dos \"Trailer\" seguidos, el título sale una sola vez y los dos videos se listan juntos.",
+            "required": false,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "button_label": "Agregar bloque",
+            "layouts": [
+                {
+                    "key": "layout_jb3_sinopsis",
+                    "name": "sinopsis",
+                    "label": "Sinopsis",
+                    "display": "block",
+                    "sub_fields": [
+                        {
+                            "key": "field_jb3_sinopsis_texto",
+                            "label": "Texto",
+                            "name": "texto",
+                            "aria-label": "",
+                            "type": "wysiwyg",
+                            "instructions": "",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "tabs": "visual",
+                            "media_upload": 1,
+                            "toolbar": "full",
+                            "default_value": "",
+                            "delay": 0
+                        }
+                    ],
+                    "min": "",
+                    "max": ""
+                },
+                {
+                    "key": "layout_jb3_informacion",
+                    "name": "informacion",
+                    "label": "Información",
+                    "display": "block",
+                    "sub_fields": [
+                        {
+                            "key": "field_jb3_informacion_texto",
+                            "label": "Texto",
+                            "name": "texto",
+                            "aria-label": "",
+                            "type": "wysiwyg",
+                            "instructions": "",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "tabs": "visual",
+                            "media_upload": 1,
+                            "toolbar": "full",
+                            "default_value": "",
+                            "delay": 0
+                        }
+                    ],
+                    "min": "",
+                    "max": ""
+                },
+                {
+                    "key": "layout_jb3_galeria",
+                    "name": "galeria",
+                    "label": "Galería de imágenes",
+                    "display": "block",
+                    "sub_fields": [
+                        {
+                            "key": "field_jb3_galeria_titulo",
+                            "label": "Título opcional (si tenés más de una galería y querés distinguirlas)",
+                            "name": "titulo",
+                            "aria-label": "",
+                            "type": "text",
+                            "instructions": "",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "default_value": "",
+                            "maxlength": "",
+                            "placeholder": "",
+                            "prepend": "",
+                            "append": ""
+                        },
+                        {
+                            "key": "field_jb3_galeria_imagenes",
+                            "label": "Imágenes",
+                            "name": "imagenes",
+                            "aria-label": "",
+                            "type": "gallery",
+                            "instructions": "",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "return_format": "array",
+                            "preview_size": "medium",
+                            "insert": "append",
+                            "library": "all",
+                            "min": 0,
+                            "max": 0,
+                            "min_width": 0,
+                            "min_height": 0,
+                            "min_size": 0,
+                            "max_width": 0,
+                            "max_height": 0,
+                            "max_size": 0,
+                            "mime_types": ""
+                        }
+                    ],
+                    "min": "",
+                    "max": ""
+                },
+                {
+                    "key": "layout_jb3_imagen",
+                    "name": "imagen",
+                    "label": "Imagen suelta",
+                    "display": "block",
+                    "sub_fields": [
+                        {
+                            "key": "field_jb3_imagen_imagen",
+                            "label": "Imagen",
+                            "name": "imagen",
+                            "aria-label": "",
+                            "type": "image",
+                            "instructions": "",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "return_format": "array",
+                            "preview_size": "medium",
+                            "library": "all",
+                            "min_width": 0,
+                            "min_height": 0,
+                            "min_size": 0,
+                            "max_width": 0,
+                            "max_height": 0,
+                            "max_size": 0,
+                            "mime_types": ""
+                        },
+                        {
+                            "key": "field_jb3_imagen_epigrafe",
+                            "label": "Epígrafe (opcional)",
+                            "name": "epigrafe",
+                            "aria-label": "",
+                            "type": "text",
+                            "instructions": "",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "default_value": "",
+                            "maxlength": "",
+                            "placeholder": "",
+                            "prepend": "",
+                            "append": ""
+                        }
+                    ],
+                    "min": "",
+                    "max": ""
+                },
+                {
+                    "key": "layout_jb3_integraciones",
+                    "name": "integraciones",
+                    "label": "Integraciones",
+                    "display": "block",
+                    "sub_fields": [
+                        {
+                            "key": "field_jb3_integraciones_titulo",
+                            "label": "Título de la sección",
+                            "name": "titulo",
+                            "aria-label": "",
+                            "type": "text",
+                            "instructions": "",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "default_value": "Integraciones",
+                            "maxlength": "",
+                            "placeholder": "",
+                            "prepend": "",
+                            "append": ""
+                        },
+                        {
+                            "key": "field_jb3_integraciones_limite",
+                            "label": "Cantidad máxima a mostrar",
+                            "name": "limite",
+                            "aria-label": "",
+                            "type": "number",
+                            "instructions": "",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "default_value": 5,
+                            "min": "",
+                            "max": "",
+                            "step": "",
+                            "placeholder": "",
+                            "prepend": "",
+                            "append": ""
+                        }
+                    ],
+                    "min": "",
+                    "max": ""
+                },
+                {
+                    "key": "layout_jb3_contenido_libre",
+                    "name": "contenido_libre",
+                    "label": "Contenido libre",
+                    "display": "block",
+                    "sub_fields": [
+                        {
+                            "key": "field_jb3_libre_texto",
+                            "label": "Contenido",
+                            "name": "texto",
+                            "aria-label": "",
+                            "type": "textarea",
+                            "instructions": "Para lo que no entre en ningún otro bloque: texto, un shortcode como [jb3_modulo tipo=\"videos\" titulo=\"Más contenido\"], o HTML simple. Cada línea en blanco separa párrafos.",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "new_lines": "",
+                            "rows": 6,
+                            "default_value": "",
+                            "maxlength": "",
+                            "placeholder": ""
+                        }
+                    ],
+                    "min": "",
+                    "max": ""
+                },
+                {
+                    "key": "layout_jb3_renta",
+                    "name": "renta",
+                    "label": "Renta \/ Alquiler",
+                    "display": "block",
+                    "sub_fields": [
+                        {
+                            "key": "field_jb3_renta_titulo_defecto",
+                            "label": "Título por defecto",
+                            "name": "titulo_defecto",
+                            "aria-label": "",
+                            "type": "text",
+                            "instructions": "Se usa para cualquier país que no tenga un título propio en la lista de abajo.",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "default_value": "Renta",
+                            "maxlength": "",
+                            "placeholder": "",
+                            "prepend": "",
+                            "append": ""
+                        },
+                        {
+                            "key": "field_jb3_renta_titulos_pais",
+                            "label": "Título por país (opcional)",
+                            "name": "titulos_por_pais",
+                            "aria-label": "",
+                            "type": "repeater",
+                            "instructions": "Ej.: Argentina → \"Alquiler\". Cualquier país sin fila acá usa el título por defecto de arriba.",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "layout": "table",
+                            "button_label": "Agregar país",
+                            "min": 0,
+                            "max": 0,
+                            "rows_per_page": 20,
+                            "collapsed": "",
+                            "sub_fields": [
+                                {
+                                    "key": "field_jb3_renta_titulos_pais_pais",
+                                    "label": "País",
+                                    "name": "pais",
+                                    "aria-label": "",
+                                    "type": "taxonomy",
+                                    "instructions": "",
+                                    "required": false,
+                                    "conditional_logic": false,
+                                    "wrapper": {
+                                        "width": "",
+                                        "class": "",
+                                        "id": ""
+                                    },
+                                    "taxonomy": "pais",
+                                    "field_type": "select",
+                                    "return_format": "id",
+                                    "multiple": 0,
+                                    "allow_null": 0,
+                                    "add_term": 1,
+                                    "load_terms": 0,
+                                    "save_terms": 0,
+                                    "bidirectional_target": [],
+                                    "parent_repeater": "field_jb3_renta_titulos_pais"
+                                },
+                                {
+                                    "key": "field_jb3_renta_titulos_pais_titulo",
+                                    "label": "Título",
+                                    "name": "titulo",
+                                    "aria-label": "",
+                                    "type": "text",
+                                    "instructions": "",
+                                    "required": false,
+                                    "conditional_logic": false,
+                                    "wrapper": {
+                                        "width": "",
+                                        "class": "",
+                                        "id": ""
+                                    },
+                                    "default_value": "",
+                                    "maxlength": "",
+                                    "placeholder": "",
+                                    "prepend": "",
+                                    "append": "",
+                                    "parent_repeater": "field_jb3_renta_titulos_pais"
+                                }
+                            ]
+                        },
+                        {
+                            "key": "field_jb3_renta_plataformas",
+                            "label": "Links por plataforma",
+                            "name": "plataformas",
+                            "aria-label": "",
+                            "type": "repeater",
+                            "instructions": "Una fila por link — la misma plataforma puede repetirse varias veces con países distintos (ej. Apple TV AR\/UY en una fila, Apple TV Brasil en otra).",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "layout": "table",
+                            "button_label": "Agregar link",
+                            "min": 0,
+                            "max": 0,
+                            "rows_per_page": 20,
+                            "collapsed": "",
+                            "sub_fields": [
+                                {
+                                    "key": "field_jb3_renta_plataformas_plataforma",
+                                    "label": "Plataforma",
+                                    "name": "plataforma",
+                                    "aria-label": "",
+                                    "type": "select",
+                                    "instructions": "",
+                                    "required": false,
+                                    "conditional_logic": false,
+                                    "wrapper": {
+                                        "width": "20",
+                                        "class": "",
+                                        "id": ""
+                                    },
+                                    "choices": {
+                                        "google_play": "Google Play",
+                                        "apple_tv": "Apple TV",
+                                        "amazon_prime": "Amazon Prime Video",
+                                        "claro_video": "Claro Video",
+                                        "movistar_tv": "Movistar TV",
+                                        "flow": "Flow",
+                                        "nuevo_siglo": "Nuevo Siglo"
+                                    },
+                                    "ui": 1,
+                                    "allow_null": 0,
+                                    "multiple": 0,
+                                    "default_value": false,
+                                    "ajax": 0,
+                                    "placeholder": "",
+                                    "return_format": "value",
+                                    "create_options": 0,
+                                    "save_options": 0,
+                                    "parent_repeater": "field_jb3_renta_plataformas"
+                                },
+                                {
+                                    "key": "field_jb3_renta_plataformas_link",
+                                    "label": "Link",
+                                    "name": "link",
+                                    "aria-label": "",
+                                    "type": "url",
+                                    "instructions": "",
+                                    "required": false,
+                                    "conditional_logic": false,
+                                    "wrapper": {
+                                        "width": "30",
+                                        "class": "",
+                                        "id": ""
+                                    },
+                                    "default_value": "",
+                                    "placeholder": "",
+                                    "parent_repeater": "field_jb3_renta_plataformas"
+                                },
+                                {
+                                    "key": "field_jb3_renta_plataformas_paises",
+                                    "label": "Países",
+                                    "name": "paises",
+                                    "aria-label": "",
+                                    "type": "taxonomy",
+                                    "instructions": "Sin ningún país tildado, ESTE link no se muestra a nadie (fail-closed, mismo criterio que el resto del geo-targeting del sitio).",
+                                    "required": false,
+                                    "conditional_logic": false,
+                                    "wrapper": {
+                                        "width": "50",
+                                        "class": "",
+                                        "id": ""
+                                    },
+                                    "taxonomy": "pais",
+                                    "field_type": "checkbox",
+                                    "return_format": "id",
+                                    "multiple": 0,
+                                    "allow_null": 0,
+                                    "add_term": 1,
+                                    "load_terms": 0,
+                                    "save_terms": 0,
+                                    "bidirectional_target": [],
+                                    "parent_repeater": "field_jb3_renta_plataformas"
+                                }
+                            ]
+                        },
+                        {
+                            "key": "field_jb3_renta_fecha_in",
+                            "label": "Fecha de inicio",
+                            "name": "fecha_in",
+                            "aria-label": "",
+                            "type": "date_picker",
+                            "instructions": "Vacío = ya está disponible (sin fecha de inicio). Aplica a todo el módulo, no por plataforma.",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "50",
+                                "class": "",
+                                "id": ""
+                            },
+                            "display_format": "d\/m\/Y",
+                            "return_format": "Ymd",
+                            "first_day": 1,
+                            "default_to_current_date": 0
+                        },
+                        {
+                            "key": "field_jb3_renta_fecha_out",
+                            "label": "Fecha de fin",
+                            "name": "fecha_out",
+                            "aria-label": "",
+                            "type": "date_picker",
+                            "instructions": "Vacío = no vence nunca. Aplica a todo el módulo, no por plataforma.",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "50",
+                                "class": "",
+                                "id": ""
+                            },
+                            "display_format": "d\/m\/Y",
+                            "return_format": "Ymd",
+                            "first_day": 1,
+                            "default_to_current_date": 0
+                        }
+                    ],
+                    "min": "",
+                    "max": ""
+                },
+                {
+                    "key": "layout_jb3_banner",
+                    "name": "banner",
+                    "label": "Banner",
+                    "display": "block",
+                    "sub_fields": [
+                        {
+                            "key": "field_jb3_banner_imagen_desktop",
+                            "label": "Imagen (desktop)",
+                            "name": "imagen_desktop",
+                            "aria-label": "",
+                            "type": "image",
+                            "instructions": "",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "return_format": "array",
+                            "preview_size": "medium",
+                            "library": "all",
+                            "min_width": 0,
+                            "min_height": 0,
+                            "min_size": 0,
+                            "max_width": 0,
+                            "max_height": 0,
+                            "max_size": 0,
+                            "mime_types": ""
+                        },
+                        {
+                            "key": "field_jb3_banner_imagen_mobile",
+                            "label": "Imagen (mobile)",
+                            "name": "imagen_mobile",
+                            "aria-label": "",
+                            "type": "image",
+                            "instructions": "Opcional — si no se carga, usa la imagen de desktop también en mobile.",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "return_format": "array",
+                            "preview_size": "medium",
+                            "library": "all",
+                            "min_width": 0,
+                            "min_height": 0,
+                            "min_size": 0,
+                            "max_width": 0,
+                            "max_height": 0,
+                            "max_size": 0,
+                            "mime_types": ""
+                        },
+                        {
+                            "key": "field_jb3_banner_link",
+                            "label": "Link",
+                            "name": "link",
+                            "aria-label": "",
+                            "type": "url",
+                            "instructions": "",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "default_value": "",
+                            "placeholder": ""
+                        },
+                        {
+                            "key": "field_jb3_banner_paises",
+                            "label": "Países donde se muestra",
+                            "name": "paises",
+                            "aria-label": "",
+                            "type": "taxonomy",
+                            "instructions": "Sin ningún país tildado, el banner NO se muestra en ningún lado (mismo criterio fail-closed que el resto del geo-targeting del sitio).",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "taxonomy": "pais",
+                            "field_type": "checkbox",
+                            "return_format": "id",
+                            "multiple": 0,
+                            "allow_null": 0,
+                            "add_term": 1,
+                            "load_terms": 0,
+                            "save_terms": 0,
+                            "bidirectional_target": []
+                        },
+                        {
+                            "key": "field_jb3_banner_fecha_in",
+                            "label": "Fecha de inicio",
+                            "name": "fecha_in",
+                            "aria-label": "",
+                            "type": "date_picker",
+                            "instructions": "Vacío = ya está disponible (sin fecha de inicio).",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "50",
+                                "class": "",
+                                "id": ""
+                            },
+                            "display_format": "d\/m\/Y",
+                            "return_format": "Ymd",
+                            "first_day": 1,
+                            "default_to_current_date": 0
+                        },
+                        {
+                            "key": "field_jb3_banner_fecha_out",
+                            "label": "Fecha de fin",
+                            "name": "fecha_out",
+                            "aria-label": "",
+                            "type": "date_picker",
+                            "instructions": "Vacío = no vence nunca.",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "50",
+                                "class": "",
+                                "id": ""
+                            },
+                            "display_format": "d\/m\/Y",
+                            "return_format": "Ymd",
+                            "first_day": 1,
+                            "default_to_current_date": 0
+                        }
+                    ],
+                    "min": "",
+                    "max": ""
+                },
+                {
+                    "key": "layout_jb3_video",
+                    "name": "video",
+                    "label": "Video",
+                    "display": "block",
+                    "sub_fields": [
+                        {
+                            "key": "field_jb3_video_titulo",
+                            "label": "Título de la sección",
+                            "name": "titulo",
+                            "aria-label": "",
+                            "type": "text",
+                            "instructions": "",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "default_value": "",
+                            "maxlength": "",
+                            "placeholder": "",
+                            "prepend": "",
+                            "append": ""
+                        },
+                        {
+                            "key": "field_jb3_video_bajada",
+                            "label": "Bajada (opcional)",
+                            "name": "bajada",
+                            "aria-label": "",
+                            "type": "textarea",
+                            "instructions": "Texto corto arriba del\/de los video(s), si hace falta.",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "default_value": "",
+                            "new_lines": "",
+                            "maxlength": "",
+                            "placeholder": "",
+                            "rows": ""
+                        },
+                        {
+                            "key": "field_jb3_video_videos",
+                            "label": "Video(s)",
+                            "name": "videos",
+                            "aria-label": "",
+                            "type": "repeater",
+                            "instructions": "",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "layout": "table",
+                            "button_label": "Agregar video",
+                            "min": 0,
+                            "max": 0,
+                            "rows_per_page": 20,
+                            "collapsed": "",
+                            "sub_fields": [
+                                {
+                                    "key": "field_jb3_video_videos_titulo",
+                                    "label": "Subtítulo (opcional)",
+                                    "name": "titulo",
+                                    "aria-label": "",
+                                    "type": "text",
+                                    "instructions": "Solo hace falta si hay más de un video en la lista.",
+                                    "required": false,
+                                    "conditional_logic": false,
+                                    "wrapper": {
+                                        "width": "",
+                                        "class": "",
+                                        "id": ""
+                                    },
+                                    "default_value": "",
+                                    "maxlength": "",
+                                    "placeholder": "",
+                                    "prepend": "",
+                                    "append": "",
+                                    "parent_repeater": "field_jb3_video_videos"
+                                },
+                                {
+                                    "key": "field_jb3_video_videos_url",
+                                    "label": "Video (YouTube, Vimeo o archivo de la Biblioteca de medios)",
+                                    "name": "video_url",
+                                    "aria-label": "",
+                                    "type": "url",
+                                    "instructions": "",
+                                    "required": false,
+                                    "conditional_logic": false,
+                                    "wrapper": {
+                                        "width": "",
+                                        "class": "",
+                                        "id": ""
+                                    },
+                                    "default_value": "",
+                                    "placeholder": "",
+                                    "parent_repeater": "field_jb3_video_videos"
+                                }
+                            ]
+                        }
+                    ],
+                    "min": "",
+                    "max": "",
+                    "instructions": "Sirve para Trailer, \"Ver completo\", un Especial, o cualquier sección de video con nombre propio — vos ponés el título. Si hay más de un video (ej. \"Mini Aventura - Spin Offs\"), agregalos todos DENTRO de la lista de abajo, no como bloques \"Video\" separados: así comparten el mismo título de sección y cada uno puede tener su propio subtítulo."
+                },
+                {
+                    "key": "layout_jb3_imagen_texto",
+                    "name": "imagen_texto",
+                    "label": "Imagen + Texto",
+                    "display": "block",
+                    "sub_fields": [
+                        {
+                            "key": "field_jb3_imagen_texto_titulo",
+                            "label": "Título de la sección",
+                            "name": "titulo",
+                            "aria-label": "",
+                            "type": "text",
+                            "instructions": "Ej. \"Host\". Si hay más de una persona, escribí \"Hosts\" y las dos bios en el mismo campo de texto de abajo.",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "default_value": "",
+                            "maxlength": "",
+                            "placeholder": "",
+                            "prepend": "",
+                            "append": ""
+                        },
+                        {
+                            "key": "field_jb3_imagen_texto_imagen",
+                            "label": "Imagen",
+                            "name": "imagen",
+                            "aria-label": "",
+                            "type": "image",
+                            "instructions": "",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "return_format": "array",
+                            "preview_size": "medium",
+                            "library": "all",
+                            "min_width": 0,
+                            "min_height": 0,
+                            "min_size": 0,
+                            "max_width": 0,
+                            "max_height": 0,
+                            "max_size": 0,
+                            "mime_types": ""
+                        },
+                        {
+                            "key": "field_jb3_imagen_texto_texto",
+                            "label": "Texto",
+                            "name": "texto",
+                            "aria-label": "",
+                            "type": "wysiwyg",
+                            "instructions": "",
+                            "required": false,
+                            "conditional_logic": false,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "default_value": "",
+                            "tabs": "all",
+                            "toolbar": "full",
+                            "media_upload": 1,
+                            "delay": 0
+                        }
+                    ],
+                    "min": "",
+                    "max": "",
+                    "instructions": "Genérico: imagen a la izquierda + texto a la derecha, 2 columnas. Sirve para el bloque \"Host\" (nombre + bio del conductor) o cualquier otro contenido con esta misma forma."
+                }
+            ],
+            "min": "",
+            "max": ""
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "peliculas"
+            }
+        ],
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "series"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": [],
+    "active": true,
+    "description": "",
+    "show_in_rest": false,
+    "display_title": "",
+    "allow_ai_access": false,
+    "ai_description": "",
+    "modified": 1788872938
+}

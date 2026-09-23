@@ -1,0 +1,54 @@
+{
+    "key": "group_6a765d849c3ca",
+    "title": "Página de Canal",
+    "fields": [
+        {
+            "key": "field_6a765d8559f9d",
+            "label": "Canal",
+            "name": "canal",
+            "aria-label": "",
+            "type": "taxonomy",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "taxonomy": "canales",
+            "add_term": 0,
+            "save_terms": 0,
+            "load_terms": 0,
+            "return_format": "id",
+            "field_type": "select",
+            "allow_null": 0,
+            "allow_in_bindings": 0,
+            "bidirectional": 0,
+            "multiple": 0,
+            "bidirectional_target": []
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "pagina_canal"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": 0,
+    "display_title": "",
+    "allow_ai_access": false,
+    "ai_description": "",
+    "modified": 1788358375
+}

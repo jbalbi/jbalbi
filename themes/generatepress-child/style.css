@@ -270,13 +270,67 @@ body {
     width: 100%; /* mismo motivo que #page — ver comentario de arriba. */
 }
 
-a {
+/* :where(:not(#wpadminbar *)) — sin esto, este selector global también pisa
+   los links DENTRO de la barra de admin de WordPress (que se renderiza en
+   el front-end para usuarios logueados, ej. el desplegable "Viendo como" de
+   jb3-geo-targeting): quedaban en el violeta oscuro de la marca en vez del
+   gris claro de WP core, prácticamente ilegibles sobre el fondo negro de
+   la barra. OJO: tiene que ser :where(), no :not() a secas — un ID adentro
+   de :not() le suma a ESTA regla la especificidad de un ID, y con eso pasa
+   a ganarle a todas las reglas de color de la navegación del sitio
+   (--nav-text, --nav-hover, etc., que son solo clases) rompiendo los
+   colores del menú del sitio. :where() vale cero de especificidad siempre,
+   así que el filtro sigue funcionando pero esta regla queda exactamente
+   tan "débil" como el "a" simple que tenía antes. */
+a:where(:not(#wpadminbar *)) {
     color: var(--link-color) !important;
 }
 
-a:hover,
-a:focus {
+a:where(:not(#wpadminbar *)):hover,
+a:where(:not(#wpadminbar *)):focus {
     color: var(--link-hover-color) !important;
+}
+
+/* Reposo: blanco en TODOS los links de la barra de admin (top-level y
+   flyouts, ej. la lista de países de "Viendo como") — no alcanza con solo
+   excluirlos de la regla de arriba porque el core de WP ya de por sí deja
+   algunos ítems (los de los submenús desplegables, a diferencia de los de
+   primer nivel) en un gris que puede quedar poco legible según el tema. */
+#wpadminbar .ab-item,
+#wpadminbar a.ab-item {
+    color: #ffffff !important;
+}
+
+/* Hover / submenú abierto: el celeste nativo de WP core (mismo #72aee6 y
+   fondo #2c3338 de wp-includes/css/admin-bar.css), pero forzado acá con
+   !important para que se vea IGUAL en todos los ítems de primer nivel —
+   con solo el CSS de core, algunos (ej. "Viendo como", agregado por
+   jb3-geo-targeting) no lo estaban recibiendo consistente con los que ya
+   lo traen de fábrica (Agregar, Duplicate Post). El estado abierto no es
+   el :hover del link en sí sino el propio WP core marcando el <li> padre
+   con la clase ".hover" por JS al abrir el flyout — de ahí el selector
+   ".hover" además de ":hover". */
+#wpadminbar .ab-top-menu > li:hover > .ab-item,
+#wpadminbar .ab-top-menu > li.hover > .ab-item,
+#wpadminbar .ab-top-menu > li > .ab-item:focus,
+#wpadminbar .ab-top-menu > li:hover > .ab-item .ab-icon,
+#wpadminbar .ab-top-menu > li.hover > .ab-item .ab-icon,
+#wpadminbar .ab-top-menu > li:hover > .ab-item:before,
+#wpadminbar .ab-top-menu > li.hover > .ab-item:before {
+    background: #2c3338 !important;
+    color: #72aee6 !important;
+}
+
+/* Mismo celeste, pero para los ítems DENTRO de un submenú abierto (ej. cada
+   país de la lista de "Viendo como", o "Entrada"/"Página" bajo "+ Agregar")
+   — sin esto quedaban en blanco fijo (por la regla de reposo de arriba) sin
+   ningún cambio al pasar el mouse dentro del propio desplegable. */
+#wpadminbar .ab-submenu .ab-item:hover,
+#wpadminbar .ab-submenu .ab-item:focus,
+#wpadminbar .ab-submenu li:hover > .ab-item,
+#wpadminbar .ab-submenu li.hover > .ab-item {
+    background: #2c3338 !important;
+    color: #72aee6 !important;
 }
 
 /* Botones nativos de WordPress/Gutenberg (botón "Enviar" de formularios,

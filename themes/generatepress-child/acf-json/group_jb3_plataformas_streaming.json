@@ -1,0 +1,121 @@
+{
+    "key": "group_jb3_plataformas_streaming",
+    "title": "Plataformas de streaming",
+    "fields": [
+        {
+            "key": "field_jb3_plataformas_logos",
+            "label": "Logos",
+            "name": "plataformas_streaming_logos",
+            "aria-label": "",
+            "type": "repeater",
+            "instructions": "Un logo por plataforma, se carga una sola vez acá y se usa en el módulo de Renta de todas las películas\/series. No cambiar el \"Slug\" de ninguna fila (tiene que matchear con el código) ni borrar\/agregar filas — si hace falta una plataforma nueva, avisar para agregarla en código primero.",
+            "required": false,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "layout": "table",
+            "min": 0,
+            "max": 0,
+            "rows_per_page": 20,
+            "button_label": "Add Row",
+            "collapsed": "",
+            "sub_fields": [
+                {
+                    "key": "field_jb3_plataformas_logos_slug",
+                    "label": "Slug",
+                    "name": "slug",
+                    "aria-label": "",
+                    "type": "text",
+                    "instructions": "",
+                    "required": false,
+                    "conditional_logic": false,
+                    "wrapper": {
+                        "width": "",
+                        "class": "",
+                        "id": ""
+                    },
+                    "readonly": 0,
+                    "default_value": "",
+                    "maxlength": "",
+                    "placeholder": "",
+                    "prepend": "",
+                    "append": "",
+                    "parent_repeater": "field_jb3_plataformas_logos"
+                },
+                {
+                    "key": "field_jb3_plataformas_logos_nombre",
+                    "label": "Nombre",
+                    "name": "nombre",
+                    "aria-label": "",
+                    "type": "text",
+                    "instructions": "",
+                    "required": false,
+                    "conditional_logic": false,
+                    "wrapper": {
+                        "width": "",
+                        "class": "",
+                        "id": ""
+                    },
+                    "readonly": 0,
+                    "default_value": "",
+                    "maxlength": "",
+                    "placeholder": "",
+                    "prepend": "",
+                    "append": "",
+                    "parent_repeater": "field_jb3_plataformas_logos"
+                },
+                {
+                    "key": "field_jb3_plataformas_logos_logo",
+                    "label": "Logo",
+                    "name": "logo",
+                    "aria-label": "",
+                    "type": "image",
+                    "instructions": "",
+                    "required": false,
+                    "conditional_logic": false,
+                    "wrapper": {
+                        "width": "",
+                        "class": "",
+                        "id": ""
+                    },
+                    "return_format": "array",
+                    "preview_size": "medium",
+                    "library": "all",
+                    "min_width": 0,
+                    "min_height": 0,
+                    "min_size": 0,
+                    "max_width": 0,
+                    "max_height": 0,
+                    "max_size": 0,
+                    "mime_types": "",
+                    "parent_repeater": "field_jb3_plataformas_logos"
+                }
+            ]
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "options_page",
+                "operator": "==",
+                "value": "jb3-ajustes-sitio"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": [],
+    "active": true,
+    "description": "",
+    "show_in_rest": false,
+    "display_title": "",
+    "allow_ai_access": false,
+    "ai_description": "",
+    "modified": 1788808883
+}

@@ -57,8 +57,17 @@ class JB3_AISearch_Client_Claude {
 			] ),
 		] );
 
-		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+		$code = is_wp_error( $response ) ? 0 : wp_remote_retrieve_response_code( $response );
+		if ( is_wp_error( $response ) || 200 !== $code ) {
+			if ( function_exists( 'jb3ia_registrar_uso' ) ) {
+				$motivo = is_wp_error( $response ) ? 'red' : ( 429 === $code ? 'cuota' : 'error' );
+				jb3ia_registrar_uso( 'claude', 'jb3-ai-search', false, $motivo );
+			}
 			return null;
+		}
+
+		if ( function_exists( 'jb3ia_registrar_uso' ) ) {
+			jb3ia_registrar_uso( 'claude', 'jb3-ai-search', true );
 		}
 
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
@@ -114,8 +123,17 @@ class JB3_AISearch_Client_Claude {
 			] ),
 		] );
 
-		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+		$code = is_wp_error( $response ) ? 0 : wp_remote_retrieve_response_code( $response );
+		if ( is_wp_error( $response ) || 200 !== $code ) {
+			if ( function_exists( 'jb3ia_registrar_uso' ) ) {
+				$motivo = is_wp_error( $response ) ? 'red' : ( 429 === $code ? 'cuota' : 'error' );
+				jb3ia_registrar_uso( 'claude', 'jb3-ai-search', false, $motivo );
+			}
 			return null;
+		}
+
+		if ( function_exists( 'jb3ia_registrar_uso' ) ) {
+			jb3ia_registrar_uso( 'claude', 'jb3-ai-search', true );
 		}
 
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
