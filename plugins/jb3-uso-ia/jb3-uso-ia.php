@@ -1,13 +1,13 @@
 <?php
 /**
  * Plugin Name: JB3 Uso de IA
- * Description: Registra cada llamado que los plugins del sitio (jb3-ai-search, jb3-contenido-ia) hacen a Gemini/Claude, y muestra un panel en Herramientas → Uso de IA con pedidos OK/Error por día y motivos de error. No consulta ninguna API externa — solo cuenta lo que YA se llama; no puede mostrar el saldo/cuota oficial de Google/Anthropic (eso solo existe en sus propios paneles).
+ * Description: Registra cada llamado que los plugins del sitio (hoy jb3-ai-search) hacen a Gemini/Claude, y muestra un panel en Herramientas → Uso de IA con pedidos OK/Error por día y motivos de error. No consulta ninguna API externa — solo cuenta lo que YA se llama; no puede mostrar el saldo/cuota oficial de Google/Anthropic (eso solo existe en sus propios paneles).
  * Version:     1.0
  */
 defined( 'ABSPATH' ) || exit;
 
 const JB3IA_USO_DIAS_HISTORIAL = 14; // cuántos días atrás muestra el gráfico principal.
-const JB3IA_USO_MOTIVOS        = [ 'cuota', 'sin_clave', 'red', 'error' ]; // mismo vocabulario que jbcia_ultimo_error() (jb3-contenido-ia).
+const JB3IA_USO_MOTIVOS        = [ 'cuota', 'sin_clave', 'red', 'error' ]; // motivos de fallo que reportan los clientes de IA.
 
 // ─── API pública — llamada por otros plugins ────────────────────────────────
 
@@ -17,7 +17,7 @@ const JB3IA_USO_MOTIVOS        = [ 'cuota', 'sin_clave', 'red', 'error' ]; // mi
  * el que llama sigue funcionando igual, solo sin quedar registrado.
  *
  * @param string $proveedor 'gemini' | 'claude' | el que corresponda.
- * @param string $origen    Qué plugin/función hizo el llamado (ej. 'jb3-ai-search', 'jb3-contenido-ia').
+ * @param string $origen    Qué plugin/función hizo el llamado (ej. 'jb3-ai-search').
  * @param bool   $exito     true si la llamada devolvió un resultado usable.
  * @param string $motivo    Si $exito es false: 'cuota' | 'sin_clave' | 'red' | 'error' (u otro texto libre).
  */

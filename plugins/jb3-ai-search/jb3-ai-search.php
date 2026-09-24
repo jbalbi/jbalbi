@@ -21,7 +21,11 @@ const JB3_AISEARCH_CHAT_HISTORIAL_MAX  = 4; // intercambios (pregunta/respuesta)
 
 /**
  * ─── PROVEEDOR DE IA: interruptor único ─────────────────────────────────────
- * 'gemini' hoy porque la API de Gemini tiene capa gratuita real (Anthropic y
+ * 'claude' desde 2026-09-24 — pedido del usuario: dejar de depender de la
+ * cuenta gratuita de Gemini (ya se había cargado crédito de API de Claude).
+ * Techo de gasto: el freno global de 300 llamadas/hora de abajo. Historia:
+ *
+ * 'gemini' hasta entonces porque la API de Gemini tiene capa gratuita real (Anthropic y
  * OpenAI no) y arrancamos el proyecto sin presupuesto para esto. El día que
  * se quiera pasar a Claude (mejor calidad esperable, o ya en producción con
  * presupuesto asignado) alcanza con:
@@ -38,7 +42,7 @@ const JB3_AISEARCH_CHAT_HISTORIAL_MAX  = 4; // intercambios (pregunta/respuesta)
  * el lugar natural para sumar un tercer modo, sin tocar class-search.php
  * (que ya recibe los filtros ya resueltos, no le importa de dónde salieron).
  */
-const JB3_AISEARCH_PROVIDER = 'gemini';
+const JB3_AISEARCH_PROVIDER = 'claude';
 
 // define(), no const: plugin_dir_url() es una llamada a función, no una
 // expresión constante en tiempo de compilación.

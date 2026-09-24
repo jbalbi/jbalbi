@@ -2,13 +2,9 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Cliente de Claude (Anthropic) — NO es el que está en uso hoy (ver
- * JB3_AISEARCH_PROVIDER en jb3-ai-search.php, hoy en 'gemini' porque la API
- * de Anthropic no tiene capa gratuita y arrancamos sin presupuesto para
- * esto). Queda listo y probado para el día que se quiera pasar a Claude
- * (por calidad de resultados, o al escalar a producción) — para activarlo
- * alcanza con cambiar esa constante a 'claude' y cargar la clave
- * correspondiente en el archivo de credenciales (ver jb3_aisearch_api_key()).
+ * Cliente de Claude (Anthropic) — proveedor activo desde 2026-09-24 (ver
+ * JB3_AISEARCH_PROVIDER en jb3-ai-search.php). Clave en el archivo de
+ * credenciales (ver jb3_aisearch_api_key()).
  *
  * Traduce una pregunta en lenguaje natural a filtros estructurados usando la
  * Messages API de Claude, sin SDK (mismo criterio que JB3_Google_Sheets en
@@ -23,7 +19,7 @@ defined( 'ABSPATH' ) || exit;
 class JB3_AISearch_Client_Claude {
 
 	const API_URL   = 'https://api.anthropic.com/v1/messages';
-	const MODEL     = 'claude-haiku-4-5-20251001'; // tarea de extracción simple, no hace falta un modelo grande.
+	const MODEL     = 'claude-haiku-4-5'; // tarea de extracción simple, no hace falta un modelo grande.
 	const TOOL_NAME = 'extraer_filtros_busqueda';
 	const TOOL_NAME_CHAT = 'redactar_respuesta_chat';
 
