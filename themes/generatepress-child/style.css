@@ -114,6 +114,10 @@ Text Domain: generatepress-child
        valores para probar tamaños sin tener que buscar la regla. */
     --slider-logo-width:  240px;
     --slider-logo-height: 87px;
+    /* Escala del logo del canal en el slide: 1 = tamaño de desktop. Se
+       achica en mobile (ver el breakpoint ≤767 más abajo) — ese es el ÚNICO
+       número a tocar para agrandar/achicar los logos en el celular. */
+    --slider-logo-escala: 1;
 
     /* Padding lateral del texto sobre el slide — mismos 3 valores que
        --footer-padding-x (ver breakpoints acá abajo), para que el
@@ -148,8 +152,12 @@ Text Domain: generatepress-child
         --footer-padding-x:      20px;
         --slider-text-padding-x: 20px;
         --jb3-modulo-padding-x:  20px;
-        --slider-logo-width:     180px;
-        --slider-logo-height:    65px;
+        /* Logos del slide 35% más chicos en el celular (pedido 2026-09-30:
+           primero 25%, después "un poco más"). .65 = 65% del tamaño de
+           desktop. Antes esto se hacía bajando --slider-logo-width/height
+           a 180×65, pero eso no alcanzaba a los canales con
+           "logo_proporcion" cargada (ver .jb3-home-slider__canal-logo). */
+        --slider-logo-escala:    .65;
         /* --footer-bar-height quedaba fija en 48px (el valor de desktop) —
            afecta tanto el padding-bottom del body como los elementos
            reposicionados por encima de la barra (badge de reCAPTCHA,
@@ -1797,8 +1805,13 @@ body.admin-bar .jb3-home-slider-wrap {
        campo ACF "logo_proporcion" del canal (ver jb3_slide_canal() en
        _init_home_slider.php) — sin ese campo cargado, no vienen y se cae al
        tamaño fijo de siempre. */
-    width: var(--logo-w, var(--slider-logo-width));
-    height: var(--logo-h, var(--slider-logo-height));
+    /* × --slider-logo-escala (1 en desktop/tablet, menor en mobile — ver
+       :root): --logo-w/--logo-h llegan en px calculados contra la caja de
+       DESKTOP, así que sin este factor los canales con "logo_proporcion"
+       cargada se veían a tamaño desktop en el celular. Un solo factor para
+       los dos casos (con y sin proporción). */
+    width: calc(var(--logo-w, var(--slider-logo-width)) * var(--slider-logo-escala));
+    height: calc(var(--logo-h, var(--slider-logo-height)) * var(--slider-logo-escala));
     margin-bottom: 28px;
 }
 
