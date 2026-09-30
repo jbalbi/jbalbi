@@ -2,27 +2,79 @@
 defined( 'ABSPATH' ) || exit;
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ESPECIFICACIÓN DE IMÁGENES PARA DISEÑO (campos "imagen_desktop"/"imagen_mobile"
-// del repeater ACF "HOME HEADER SLIDER")
+// ROTADOR DE LA HOME — ESPECIFICACIÓN DE IMÁGENES Y COMPORTAMIENTO
+// (campos "imagen_desktop" / "imagen_mobile" del repeater ACF "HOME HEADER
+// SLIDER"). Definido con el usuario el 2026-09-30; el CSS está en style.css,
+// sección "SLIDER HOME".
 //
-// Ambas imágenes se muestran con object-fit:cover dentro de una caja de alto
-// fijo (ver .jb3-home-slider-wrap en style.css) — si no respetan la
-// proporción de abajo, el recorte automático se come costados o cabezas.
+// REGLA DE ORO (pedido explícito): es el elemento más importante del sitio
+// y la imagen NUNCA se recorta de los costados ni de arriba. Va siempre a
+// ancho completo de pantalla, anclada arriba, con el alto que le da su
+// propia proporción. Lo ÚNICO que puede quedar afuera es la franja de abajo.
 //
-// DESKTOP (imagen_desktop):
-//   - 1920 × 1080 px (16:9).
+// ─── MEDIDAS A PEDIRLE AL DISEÑADOR ────────────────────────────────────────
 //
-// MOBILE (imagen_mobile):
-//   - 1080 × 2400 px (≈ 9:20, alto/ancho ≈ 2.22) — esa proporción cubre el
-//     celular más "alto" real (ej. Samsung Galaxy S22 ≈ 2.22); si es más
-//     baja que eso, el recorte automático empieza a comerse los costados en
-//     vez de arriba/abajo. Si en duda, mejor pasarse de alto: el excedente
-//     se recorta arriba/abajo sin costo, nunca de los costados.
-//   - Zona segura: el foco principal (cara, logo, elemento clave) tiene que
-//     quedar centrado dentro de los ~1900px del medio del archivo — los
-//     ~250px de arriba y los ~250px de abajo pueden perderse según el
-//     celular (proporción más "ancha", ej. iPhone SE ≈ 1.78), así que ahí
-//     solo debería haber fondo/relleno, nunca lo importante de la foto.
+// DESKTOP y TABLET (imagen_desktop) — la tablet usa la de desktop:
+//   - 2560 × 1440 px (16:9). Máximo acordado: 2560 de ancho (con 3840 los
+//     archivos pesan 2-3 veces más y la mejora casi no se nota).
+//   - 1920 × 1080 (lo que se venía subiendo) sigue funcionando igual; solo
+//     se ve un poco "blando" en monitores 4K.
+//   - El ~20% INFERIOR es zona de degradé hacia el color de fondo de la
+//     página (negro): nada importante ahí. En ventanas más bajas que 16:9
+//     esa franja queda fuera de pantalla, y encima va el bloque
+//     logo + texto + botón + copyright (alineado a la izquierda).
+//
+// MOBILE (imagen_mobile) — solo celular en vertical:
+//   - 1080 × 1920 px (9:16).
+//   - Lo importante (caras, título del arte) en el ~60% SUPERIOR.
+//   - El ~40% INFERIOR es degradé hacia negro: ahí se monta el bloque
+//     logo + texto + botón + copyright.
+//   - Casi todos los celulares actuales son más alargados que 9:16, así que
+//     la imagen queda ~150px más corta que la pantalla y debajo sigue el
+//     fondo negro — por eso el degradé es obligatorio: es lo que hace que
+//     no se note dónde termina. (Se evaluó pedir 1080 × 2400 para llenar
+//     siempre; se eligió 1080 × 1920 con degradé.)
+//   - Las 1000 × 1333 (3:4) ya subidas siguen funcionando: foto arriba,
+//     más fondo negro debajo.
+//   - Sin imagen mobile cargada, en celular se muestra la de desktop.
+//
+// ─── CÓMO SE COMPORTA EN CADA PANTALLA ─────────────────────────────────────
+//
+//   Celular vertical (hasta 767px de ancho):
+//     el rotador ocupa el 100% del alto de la pantalla. Imagen mobile
+//     arriba; si queda corta sigue el fondo, si sobra se corta abajo.
+//     Texto y botón al pie, sobre la barra violeta fija.
+//   Celular apaisado (hasta 767px, horizontal):
+//     usa la imagen de DESKTOP (la vertical no entra) + franja de fondo
+//     debajo para el texto, que queda más abajo y se llega scrolleando.
+//   Tablet (768 a 1023px):
+//     imagen de desktop completa + franja de 230px de fondo debajo, donde
+//     cae el bloque de texto (si no, tapaba las caras y chocaba con el
+//     header: a 768px de ancho la imagen mide solo 432px de alto).
+//   Desktop (1024px o más):
+//     alto = el de la imagen, con techo = alto de la ventana (para no tener
+//     que scrollear de más hasta el contenido que sigue). En ventanas más
+//     bajas que 16:9 se pierde solo la franja inferior: ~15% en una
+//     notebook de 1366, ~12% en 1920, ~10% en 2560. Texto y botón siempre
+//     visibles sobre la barra violeta.
+//
+// ─── SI UNA IMAGEN NO RESPETA LA PROPORCIÓN ────────────────────────────────
+//
+// No se rompe ni se recorta: el alto del rotador se calcula a partir de
+// las dimensiones REALES de los adjuntos (ver jb3_slide_imagen_ratio() y
+// --jb3-slider-ratio más abajo), tomando la más alta entre los slides
+// vigentes. Un slide con otra proporción se ve completo, pegado arriba,
+// con fondo debajo. Conviene igual que todos los slides compartan medida.
+//
+// ─── POR QUÉ SE CAMBIÓ (medido con Playwright el 2026-09-30) ───────────────
+//
+// Antes el rotador tenía alto fijo = pantalla completa y la imagen se
+// agrandaba hasta llenarlo (object-fit:cover centrado). Resultado medido:
+//   - celular (360/390/430 de ancho): se perdía 35-38% del ANCHO — de las 7
+//     personas de la foto de Shark Tank se veían 5;
+//   - celular apaisado: se perdía 64% del alto;
+//   - desktop: 10-15% repartido entre arriba y abajo;
+//   - tablet vertical: el logo del slide se encimaba con el logo del sitio.
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── [home_slider]: lee el repeater ACF "HOME HEADER SLIDER" de la Home ────
@@ -93,6 +145,15 @@ function jb3_slide_canal( $canal ) {
 	];
 }
 
+/** @return float Alto/ancho del adjunto (ej. 0.5625 para 1920×1080), o 0 si no se conoce. */
+function jb3_slide_imagen_ratio( $attachment_id ): float {
+	$meta = $attachment_id ? wp_get_attachment_metadata( (int) $attachment_id ) : false;
+	if ( empty( $meta['width'] ) || empty( $meta['height'] ) ) {
+		return 0;
+	}
+	return $meta['height'] / $meta['width'];
+}
+
 add_shortcode( 'home_slider', 'jb3_home_slider_shortcode' );
 function jb3_home_slider_shortcode() {
 	if ( ! function_exists( 'have_rows' ) ) {
@@ -107,6 +168,13 @@ function jb3_home_slider_shortcode() {
 	$today          = current_time( 'Ymd' );
 	$pais_visitante = function_exists( 'jb3_geo_visitor_country' ) ? jb3_geo_visitor_country() : '';
 	$slides         = [];
+
+	// Proporción (alto/ancho) más alta entre los slides vigentes, por
+	// breakpoint — es la que define el alto del rotador (ver
+	// .jb3-home-slider-wrap en style.css), así TODOS los slides entran
+	// completos, sin recorte.
+	$ratio_desktop = 0;
+	$ratio_mobile  = 0;
 
 	while ( have_rows( 'slide', $front_page_id ) ) {
 		the_row();
@@ -151,6 +219,14 @@ function jb3_home_slider_shortcode() {
 		$link_target = is_array( $link ) ? ( $link['target'] ?? '' ) : '';
 
 		$canal = jb3_slide_canal( get_sub_field( 'canal' ) );
+
+		// get_sub_field( ..., false ) = valor crudo (ID del adjunto), sin
+		// importar el "formato de retorno" del campo (hoy URL). Sin imagen
+		// mobile, en mobile se muestra la de desktop (ver <picture> abajo).
+		$r_desktop     = jb3_slide_imagen_ratio( get_sub_field( 'imagen_desktop', false ) );
+		$r_mobile      = jb3_slide_imagen_ratio( get_sub_field( 'imagen_mobile', false ) ) ?: $r_desktop;
+		$ratio_desktop = max( $ratio_desktop, $r_desktop );
+		$ratio_mobile  = max( $ratio_mobile, $r_mobile );
 
 		$slides[] = [
 			'imagen_desktop'    => $imagen_desktop,
@@ -205,16 +281,28 @@ function jb3_home_slider_shortcode() {
 		} );
 	", 'after' );
 
+	// Sin dimensiones conocidas (adjunto sin metadata) no se imprime la
+	// variable y style.css cae a la proporción de las medidas pedidas al
+	// diseñador (16:9 desktop, 9:16 mobile — ver la especificación arriba).
+	$wrap_style = '';
+	if ( $ratio_desktop ) {
+		$wrap_style .= '--jb3-slider-ratio:' . round( $ratio_desktop, 5 ) . ';';
+	}
+	if ( $ratio_mobile ) {
+		$wrap_style .= '--jb3-slider-ratio-mobile:' . round( $ratio_mobile, 5 ) . ';';
+	}
+
 	ob_start();
 	?>
-	<div class="jb3-home-slider-wrap">
+	<div class="jb3-home-slider-wrap"<?php echo $wrap_style ? ' style="' . esc_attr( $wrap_style ) . '"' : ''; ?>>
 		<div class="jb3-home-slider swiper">
 			<div class="swiper-wrapper">
 				<?php foreach ( $slides as $slide ) : ?>
 					<div class="swiper-slide">
 						<picture class="jb3-home-slider__picture">
 							<?php if ( $slide['imagen_mobile'] ) : ?>
-								<source media="(max-width: 767px)" srcset="<?php echo esc_url( $slide['imagen_mobile'] ); ?>">
+								<?php // Mismo media query que --jb3-slider-ratio-mobile en style.css — tienen que coincidir. ?>
+								<source media="(max-width: 767px) and (orientation: portrait)" srcset="<?php echo esc_url( $slide['imagen_mobile'] ); ?>">
 							<?php endif; ?>
 							<img src="<?php echo esc_url( $slide['imagen_desktop'] ); ?>" alt="">
 						</picture>

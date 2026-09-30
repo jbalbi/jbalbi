@@ -1468,11 +1468,28 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   SLIDER HOME — V1: solo imagen + flechas ([home_slider], en construcción)
+   SLIDER HOME ([home_slider], _init_home_slider.php)
+
+   Medidas para diseño, comportamiento por pantalla y el porqué de cada
+   decisión: ver la especificación completa al principio de
+   _init_home_slider.php (definida con el usuario el 2026-09-30).
+
+   Resumen de lo que implementa este bloque:
+   ┌────────────────────────┬──────────────────────────┬───────────────────┐
+   │ Pantalla               │ Alto del rotador         │ Imagen            │
+   ├────────────────────────┼──────────────────────────┼───────────────────┤
+   │ Celular vertical ≤767  │ 100% de la pantalla      │ mobile (9:16)     │
+   │ Celular apaisado ≤767  │ imagen + 230px de fondo  │ desktop (16:9)    │
+   │ Tablet 768-1023        │ imagen + 230px de fondo  │ desktop (16:9)    │
+   │ Desktop ≥1024          │ imagen, techo = ventana  │ desktop (16:9)    │
+   └────────────────────────┴──────────────────────────┴───────────────────┘
+   En todos: imagen a ancho completo y anclada arriba; nunca se recortan
+   los costados ni el borde superior. Donde el alto tiene techo (celular
+   vertical, desktop) solo puede quedar afuera la franja de abajo.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Proporción exacta de las imágenes reales (1920×1080 desktop, 1000×1333
-   mobile) con la técnica del "padding-top trick". Ya se probaron TRES
+/* Alto proporcional al ancho con la técnica del "padding-top trick" (la
+   proporción sale de la imagen real, ver más abajo). Ya se probaron TRES
    formas de que el alto salga solo de la imagen — aspect-ratio en CSS,
    height:auto puesto a mano, y autoHeight:true de Swiper (que mide por
    JS) — y las tres rompen apenas hay 2+ slides: Chrome calcula un ancho
@@ -1483,59 +1500,93 @@ body {
    del contenedor, nada que ver con flex/aspect-ratio/JS — así que no
    dispara nada de esto. .jb3-home-slider queda con position:absolute +
    inset:0 llenando la caja que arma el ::before, así que Swiper mide un
-   elemento con ancho/alto ya resueltos de entrada, sin cálculo circular.
-   Trade-off aceptado: cambiar el alto real requiere editar estos dos
-   porcentajes (no solo subir otra imagen), a cambio de que sea estable
-   sin importar cuántos slides tenga el repeater. */
-/* max-height + overflow acá (no cambia el mecanismo de arriba, solo le
-   pone un techo): en ventanas anchas pero bajas (pestañas + barra de
-   favoritos + poco alto real de navegador), el 56.25% del ANCHO puede dar
-   más alto del que realmente se ve en pantalla, empujando el bloque de
-   texto/botón del slider fuera de la vista sin hacer scroll. dvh (no vh)
-   porque es la unidad que refleja el alto real visible, más confiable en
-   mobile que vh cuando la barra de direcciones aparece/desaparece.
-   100dvh (no 85dvh): con el hero pasando detrás del nav, un techo más
-   chico que la pantalla completa dejaba asomar el próximo módulo sin
-   scroll — con 100dvh el hero llena toda la pantalla visible al entrar. */
+   elemento con ancho/alto ya resueltos de entrada, sin cálculo circular,
+   estable sin importar cuántos slides tenga el repeater. */
+/* LA IMAGEN NUNCA SE RECORTA DE LOS COSTADOS NI DE ARRIBA (pedido explícito
+   2026-09-30): va siempre a ancho completo, anclada arriba, con el alto que
+   le da su proporción real. Antes había un max-height:100dvh (+ 240% en
+   mobile para forzar pantalla completa) que, combinado con un
+   object-fit:cover centrado, recortaba ~38% de los costados en celular y
+   ~10-15% repartido entre arriba y abajo en desktop (medido con Playwright).
+   Hoy, por breakpoint:
+   - desktop (≥1024): alto = el de la imagen, con techo = alto de ventana;
+   - tablet / celular apaisado: alto = imagen + franja extra para el texto;
+   - celular vertical (≤767): alto = 100% de la pantalla.
+   Donde hay techo, lo único que queda afuera es la franja de abajo (la del
+   degradé que el arte trae para fundir con el fondo de la página).
+   --jb3-slider-ratio / --jb3-slider-ratio-mobile (alto/ancho, sin unidad)
+   las imprime _init_home_slider.php inline a partir de las dimensiones
+   reales de los adjuntos (la más alta entre los slides vigentes); los
+   fallback de acá son las proporciones pedidas al diseñador (16:9 desktop =
+   .5625, 9:16 mobile = 1.7778) y solo rigen si el adjunto no tiene metadata.
+   --jb3-slider-ratio-actual es la que rige en cada breakpoint — la usan el
+   ::before (alto de la caja), el <img> y el overlay (ver más abajo). */
 .jb3-home-slider-wrap {
+    --jb3-slider-ratio-actual: var(--jb3-slider-ratio, .5625);
+    --jb3-slider-extra: 0px;
     position: relative;
     width: 100%;
-    max-height: 100dvh;
     overflow: hidden;
 }
 
-/* Con la barra de admin de WordPress arriba (32px desktop, 46px en su
-   propio breakpoint ≤782px), 100dvh sigue midiendo la ventana completa,
-   pero la página queda corrida hacia abajo esos px — mismo ajuste que ya
-   se usa para el header sticky (body.admin-bar .site-header más abajo),
-   para que el botón/copyright del final del bloque no quede tapado por el
-   borde de la ventana. Sin efecto para un visitante real (sin admin bar). */
-body.admin-bar .jb3-home-slider-wrap {
-    max-height: calc(100dvh - 32px);
-}
-
-@media screen and (max-width: 782px) {
-    body.admin-bar .jb3-home-slider-wrap {
-        max-height: calc(100dvh - 46px);
+/* --jb3-slider-extra: franja de fondo de página que se suma DEBAJO de la
+   imagen en tablet (y celular apaisado). Ahí la imagen completa queda más
+   baja que el bloque logo+texto+botón+copyright que lleva encima: en
+   tablet vertical (768px → imagen de 432px) llegaba a chocar con el
+   header y a tapar las caras. Con esta franja el bloque
+   (anclado abajo del slide) cae mayormente sobre el fondo y solo pisa el
+   borde inferior de la imagen, donde el arte ya trae su degradé hacia el
+   color de fondo. La imagen queda pegada arriba (object-position:top). */
+@media (max-width: 1023px) {
+    .jb3-home-slider-wrap {
+        --jb3-slider-extra: 230px;
     }
 }
 
 .jb3-home-slider-wrap::before {
     content: "";
     display: block;
-    padding-top: 56.25%; /* 1080 / 1920 */
+    padding-top: calc(var(--jb3-slider-ratio-actual) * 100% + var(--jb3-slider-extra));
 }
 
-/* 133.3% (1333/1000) quedaba por debajo del alto real de casi cualquier
-   celular (que suelen andar en 180-230% ancho/alto) — como ese porcentaje
-   es MENOR al 100dvh, terminaba siendo el propio techo (ver max-height más
-   arriba) y el slider quedaba corto, sin llegar a llenar la pantalla. Subido
-   bien por encima de cualquier proporción real de teléfono a propósito:
-   así el que manda siempre es el max-height:100dvh (mismo comportamiento
-   que ya funciona en desktop), sin que dependa de asumir un modelo puntual. */
-@media (max-width: 767px) {
+/* Celular vertical: el rotador ocupa SIEMPRE el 100% del alto de la
+   pantalla (pedido 2026-09-30, mismo criterio que desktop), con la imagen a
+   ancho completo y anclada arriba:
+   - imagen más corta que la pantalla (1000×1333 de hoy, o 1080×1920 en
+     celulares más alargados que 9:16, que son casi todos): debajo sigue el
+     fondo de la página, fundido con el degradé (ver ::after más abajo);
+   - imagen más alta que la pantalla: se corta solo la franja de abajo.
+   Nunca se recortan los costados. El bloque de texto queda al pie.
+   svh (no dvh): alto con la barra de direcciones visible, que es como abre
+   la página — llena justo la pantalla al entrar y NO cambia de tamaño
+   cuando la barra se esconde al scrollear (con dvh el rotador "saltaba").
+   "and (orientation: portrait)": la imagen mobile es vertical — con el
+   celular apaisado entra mucho mejor la de desktop, que sigue la regla de
+   tablet de arriba. Mismo media query en el <source> del <picture>
+   (_init_home_slider.php): tienen que coincidir siempre. */
+@media (max-width: 767px) and (orientation: portrait) {
+    .jb3-home-slider-wrap {
+        --jb3-slider-ratio-actual: var(--jb3-slider-ratio-mobile, 1.7778);
+        --jb3-slider-extra: 0px;
+        height: calc(100svh - var(--jb3-adminbar-h, 0px));
+    }
+
     .jb3-home-slider-wrap::before {
-        padding-top: 240%;
+        display: none;
+    }
+}
+
+/* Con la barra de admin de WordPress arriba (32px; 46px en su propio
+   breakpoint ≤782px) la página queda corrida hacia abajo esos px — el
+   overlay lo descuenta al calcular qué parte del slide se ve (ver
+   .jb3-home-slider__overlay). Sin efecto para un visitante real. */
+body.admin-bar .jb3-home-slider-wrap {
+    --jb3-adminbar-h: 32px;
+}
+
+@media screen and (max-width: 782px) {
+    body.admin-bar .jb3-home-slider-wrap {
+        --jb3-adminbar-h: 46px;
     }
 }
 
@@ -1545,15 +1596,59 @@ body.admin-bar .jb3-home-slider-wrap {
     overflow: hidden;
 }
 
-/* Las proporciones de arriba ya coinciden exactamente con las imágenes
-   reales, así que "cover" no debería recortar nada — solo ajusta
-   diferencias de redondeo mínimas entre el cálculo en % y el píxel real. */
-.jb3-home-slider__picture,
-.jb3-home-slider__picture img {
+/* La imagen va SIEMPRE a ancho completo y anclada arriba, con su alto
+   natural (ancho × proporción) — no "100% de la caja": la caja del slide
+   puede ser más baja que la imagen (desktop/celular con techo de pantalla:
+   se corta lo de abajo, overflow:hidden del wrap) o más alta (celular con
+   imagen corta, tablet con franja extra: debajo queda el fondo). contain +
+   top: si un slide tiene otra proporción que el resto (la variable toma la
+   más alta de todos), se ve completo igual, pegado arriba. */
+.jb3-home-slider__picture {
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+}
+
+.jb3-home-slider__picture img {
+    display: block;
+    width: 100%;
+    height: calc(var(--jb3-slider-ratio-actual) * 100vw);
+    object-fit: contain;
+    object-position: top center;
+}
+
+/* Desktop: techo = alto de la ventana (pedido 2026-09-30: sin techo, en
+   ventanas más bajas que 16:9 había que scrollear demasiado para llegar al
+   contenido que sigue). Lo único que puede quedar afuera es la franja de
+   abajo de la imagen — la del degradé que funde con el fondo. */
+@media (min-width: 1024px) {
+    .jb3-home-slider-wrap {
+        max-height: calc(100dvh - var(--jb3-adminbar-h, 0px));
+    }
+}
+
+/* Fundido del borde inferior de la imagen hacia el fondo de la página, solo
+   donde puede quedar fondo a la vista debajo de la imagen (celular con
+   imagen más corta que la pantalla, tablet con franja extra): ahí el
+   degradé del overlay no cae sobre el final de la imagen sino más abajo, y
+   si el arte no termina exactamente en el color de fondo (el de desktop
+   termina en azul oscuro, el fondo es negro) quedaba una línea de corte
+   visible. En desktop no hace falta: el overlay tapa esa unión. */
+@media (max-width: 1023px) {
+    .jb3-home-slider__picture {
+        position: relative;
+    }
+
+    .jb3-home-slider__picture::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(var(--jb3-slider-ratio-actual) * 100vw * .7);
+        height: calc(var(--jb3-slider-ratio-actual) * 100vw * .3 + 1px);
+        background: linear-gradient(to bottom, transparent, var(--body-bg));
+        pointer-events: none;
+    }
 }
 
 /* Flechas de Swiper con la paleta del sitio en vez del negro default, y más
@@ -1644,12 +1739,44 @@ body.admin-bar .jb3-home-slider-wrap {
     overflow: hidden;
     box-sizing: border-box;
     padding: 24px var(--slider-text-padding-x);
-    /* Separación extra respecto a la barra fija del pie de pantalla
-       (.jb3-footer-bar, ver más abajo) para que el copyright/botón no
-       queden pegados ni tapados por ella. */
-    padding-bottom: calc(var(--footer-bar-height) + 24px);
+    /* El texto/botón/copyright tienen que verse SIN scrollear aunque la
+       imagen (que ya no tiene techo de pantalla) termine debajo del pliegue
+       y de la barra fija del pie (.jb3-footer-bar): el padding de abajo
+       crece exactamente lo que el borde inferior del slide se pasa de la
+       línea "alto visible − barra del pie". Alto del slide = ancho ×
+       proporción (100vw, el rotador es de ancho completo y arranca en el
+       tope de la página, detrás del header). Si el slide entra entero en
+       pantalla (mobile, tablet, monitores altos), max() da 0 y quedan los
+       24px de siempre. dvh (no vh): alto real visible en mobile. */
+    padding-bottom: calc(24px + max(0px, var(--jb3-slider-ratio-actual) * 100vw + var(--jb3-slider-extra) + var(--jb3-adminbar-h, 0px) - 100dvh + var(--footer-bar-height)));
     background: linear-gradient(to top, rgba(0, 0, 0, .85) 0%, rgba(0, 0, 0, 0) 60%);
     color: #ffffff;
+}
+
+/* Desktop: mismo cálculo, pero el slide ahí tiene techo (alto de la
+   ventana, ver .jb3-home-slider-wrap en min-width:1024px) — su borde
+   inferior es el menor entre "alto natural de la imagen" y "alto visible". */
+@media (min-width: 1024px) {
+    .jb3-home-slider__overlay {
+        padding-bottom: calc(24px + max(0px, min(var(--jb3-slider-ratio-actual) * 100vw + var(--jb3-adminbar-h, 0px), 100dvh) - 100dvh + var(--footer-bar-height)));
+    }
+}
+
+/* Celular vertical: el slide mide justo el alto de la pantalla, así que su
+   pie coincide siempre con la barra fija — se reserva su alto y listo. */
+@media (max-width: 767px) and (orientation: portrait) {
+    .jb3-home-slider__overlay {
+        padding-bottom: calc(24px + var(--footer-bar-height));
+    }
+}
+
+/* Pantallas muy bajas (celular apaisado): el bloque de texto mide casi lo
+   mismo que toda la ventana — forzarlo a "entrar sin scrollear" lo hacía
+   chocar con el header. Ahí se deja al pie del slide y se llega scrolleando. */
+@media (max-height: 500px) and (max-width: 1023px) {
+    .jb3-home-slider__overlay {
+        padding-bottom: 24px;
+    }
 }
 
 /* Caja de tamaño fijo e igual para cualquier logo, sea vertical, horizontal
