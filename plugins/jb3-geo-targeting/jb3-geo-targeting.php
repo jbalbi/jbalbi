@@ -339,14 +339,52 @@ add_action( 'pre_get_posts', function ( WP_Query $query ) {
 		return;
 	}
 
-	$pais = jb3_geo_visitor_country();
-	if ( '' === $pais ) {
-		return;
-	}
-
-	$tax_query = array_merge( $query->get( 'tax_query' ) ?: [], jb3_geo_tax_query_pais( $pais ) );
+	// Sin "if ( '' === $pais ) return;" a propósito — corregido en la
+	// revisión pre-producción 2026-10-01: ese corte dejaba los listados
+	// (archivos, feeds) SIN filtro para un visitante sin país detectado,
+	// o sea mostraba todo el catálogo — lo contrario del fail-closed.
+	// jb3_geo_tax_query_pais('') ya devuelve la cláusula que no matchea
+	// nada; mismo bug que ya se había corregido en jb3_etiquetas_auto().
+	$tax_query = array_merge( $query->get( 'tax_query' ) ?: [], jb3_geo_tax_query_pais( jb3_geo_visitor_country() ) );
 	$query->set( 'tax_query', $tax_query );
 } );
+
+// ─── API REST: mismo filtro por país ────────────────────────────────────────
+// La API REST (/wp-json/wp/v2/peliculas, etc.) no pasa por el pre_get_posts
+// ni por el 404 de arriba — sin esto, cualquiera listaba ahí el catálogo
+// COMPLETO de todos los países (detectado en la revisión pre-producción
+// 2026-10-01). Dos filtros: el listado (mismo tax_query que los archivos,
+// salvo Páginas/Entradas, igual que arriba) y el post puntual
+// (/peliculas/123, mismo chequeo que el 404 de la página real). Quien puede
+// editar contenido queda exceptuado: el editor de bloques usa esta misma API.
+add_action( 'rest_api_init', function () {
+	foreach ( array_diff( jb3_geo_post_types(), [ 'page', 'post' ] ) as $post_type ) {
+		add_filter( "rest_{$post_type}_query", function ( array $args ): array {
+			if ( ! current_user_can( 'edit_posts' ) ) {
+				$args['tax_query'] = array_merge( $args['tax_query'] ?? [], jb3_geo_tax_query_pais( jb3_geo_visitor_country() ) );
+			}
+			return $args;
+		} );
+	}
+} );
+
+// Post puntual: se corta ANTES de que corra el endpoint — OJO, no con
+// rest_prepare_{tipo}: devolver un WP_Error desde ese filtro tira un error
+// fatal dentro de WordPress (probado). Este es el punto donde WordPress sí
+// acepta cortar un pedido con un error.
+add_filter( 'rest_request_before_callbacks', function ( $response, array $handler, WP_REST_Request $request ) {
+	if ( is_wp_error( $response ) || current_user_can( 'edit_posts' ) ) {
+		return $response;
+	}
+	if ( ! ( ( $handler['callback'][0] ?? null ) instanceof WP_REST_Posts_Controller ) ) {
+		return $response;
+	}
+	$post = get_post( (int) $request['id'] );
+	if ( $post && in_array( $post->post_type, jb3_geo_post_types(), true ) && ! jb3_geo_post_visible( $post->ID ) ) {
+		return new WP_Error( 'rest_post_invalid_id', 'No encontrado.', [ 'status' => 404 ] );
+	}
+	return $response;
+}, 10, 3 );
 
 // ─── BÚSQUEDA NATIVA: filtrar resultados por país después de la consulta ────
 // Bug real confirmado 2026-08-21: el comentario del filtro de arriba asumía

@@ -61,15 +61,19 @@ add_action( 'admin_enqueue_scripts', function ( string $hook ) {
 					return;
 				}
 
-				// El campo ACF 'pdf' renderiza un link con este data-name en
-				// cuanto hay un archivo elegido (ver class-acf-field-file.php
-				// del plugin ACF) — sirve aunque el PDF recién se haya
-				// subido y todavía no se guardó el post.
-				var link   = document.querySelector( '.acf-field[data-name=\"pdf\"] a[data-name=\"filename\"]' );
-				var pdfUrl = link ? link.href : '';
-				if ( ! pdfUrl ) {
+				// El campo ACF 'pdf' guarda el ID del adjunto en un input
+				// oculto en cuanto hay un archivo elegido (ver
+				// class-acf-field-file.php del plugin ACF) — sirve aunque el
+				// PDF recién se haya subido y todavía no se guardó el post.
+				// Se pide por AJAX (jb3_pdf_admin, abajo) y no por su URL:
+				// el acceso directo a los .pdf está bloqueado en
+				// wp-content/.htaccess.
+				var input = document.querySelector( '.acf-field[data-name=\"pdf\"] .acf-file-uploader > input[type=\"hidden\"]' );
+				var pdfId = input ? parseInt( input.value, 10 ) : 0;
+				if ( ! pdfId ) {
 					return;
 				}
+				var pdfUrl = ajaxurl + '?action=jb3_pdf_admin&id=' + pdfId + '&nonce=' + " . wp_json_encode( wp_create_nonce( 'jb3_pdf_admin' ) ) . ";
 
 				yaCorriendo = true;
 				pdfjsLib.GlobalWorkerOptions.workerSrc = window.jb3PdfWorkerUrl;
@@ -169,4 +173,25 @@ add_action( 'wp_ajax_jb3_generar_preview_pdf', function () {
 	set_post_thumbnail( $post_id, $attachment_id );
 
 	wp_send_json_success( [ 'attachment_id' => $attachment_id ] );
+} );
+
+// ─── AJAX: el PDF elegido en el campo, para dibujar la página 1 ─────────────
+// Única vía de lectura de un PDF desde el editor — el acceso directo a los
+// .pdf está bloqueado en wp-content/.htaccess (revisión pre-producción
+// 2026-10-01). Solo para quien puede subir archivos (editores/admins).
+add_action( 'wp_ajax_jb3_pdf_admin', function () {
+	check_ajax_referer( 'jb3_pdf_admin', 'nonce' );
+
+	$id   = isset( $_GET['id'] ) ? absint( $_GET['id'] ) : 0;
+	$path = $id ? (string) get_attached_file( $id ) : '';
+	if ( ! current_user_can( 'upload_files' ) || 'application/pdf' !== get_post_mime_type( $id ) || ! is_file( $path ) ) {
+		wp_die( '', '', [ 'response' => 403 ] );
+	}
+
+	nocache_headers();
+	header( 'Content-Type: application/pdf' );
+	header( 'Content-Length: ' . filesize( $path ) );
+	header( 'X-Content-Type-Options: nosniff' );
+	readfile( $path );
+	exit;
 } );

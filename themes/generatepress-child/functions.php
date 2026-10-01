@@ -150,6 +150,40 @@ add_filter( 'wp_headers', function ( $headers ) {
     return $headers;
 } );
 
+// ─── SEGURIDAD BÁSICA (revisión pre-producción 2026-10-01) ────────────────────
+
+// XML-RPC: "xmlrpc_enabled" de arriba solo apaga los métodos con login —
+// xmlrpc.php seguía respondiendo 80 métodos (pingbacks incluidos, usados
+// para ataques). Sin métodos, no queda nada que llamar. El sitio no usa
+// XML-RPC (ni app móvil de WordPress ni Jetpack).
+add_filter( 'xmlrpc_methods', '__return_empty_array' );
+
+// Nombres de usuario: /wp-json/wp/v2/users y /?author=1 → /author/jbalbi/
+// le regalaban a cualquiera el usuario del administrador (la mitad de un
+// ataque de fuerza bruta al login). Solo para visitantes sin sesión: el
+// editor de bloques necesita la lista de usuarios estando logueado.
+add_filter( 'rest_endpoints', function ( $endpoints ) {
+    if ( ! is_user_logged_in() ) {
+        unset( $endpoints['/wp/v2/users'], $endpoints['/wp/v2/users/(?P<id>[\d]+)'] );
+    }
+    return $endpoints;
+} );
+add_action( 'template_redirect', function () {
+    if ( is_author() || isset( $_GET['author'] ) ) {
+        wp_safe_redirect( home_url( '/' ), 301 );
+        exit;
+    }
+}, 1 ); // Prioridad 1: antes de redirect_canonical (10), que si no manda /?author=1 a /author/jbalbi/ y ya mostró el nombre.
+
+// Cabeceras de seguridad: que el sitio no se pueda meter en un <iframe> de
+// otro dominio (clickjacking), que el navegador no "adivine" tipos de
+// archivo, y que al salir a otro sitio no viaje la URL completa.
+add_action( 'send_headers', function () {
+    header( 'X-Frame-Options: SAMEORIGIN' );
+    header( 'X-Content-Type-Options: nosniff' );
+    header( 'Referrer-Policy: strict-origin-when-cross-origin' );
+} );
+
 // ─── ACF LOCAL JSON ───────────────────────────────────────────────────────────
 
 // La DEFINICIÓN de los grupos de campos ACF (no los valores cargados) vive
@@ -184,8 +218,8 @@ require_once __DIR__ . '/_init_contenido_pelicula.php'; // jb3_render_contenido_
 require_once __DIR__ . '/_init_contenido_original.php'; // jb3_render_contenido_original(): Flexible Content para Prod. Originales
 require_once __DIR__ . '/_init_canales_slider.php';     // [jb3_canales_slider]: "Nuestras Marcas", slider de canales del país
 require_once __DIR__ . '/_init_canal_redes.php';        // jb3_canal_redes_sociales_html(): íconos de redes del canal (campo ACF del término)
-require_once __DIR__ . '/_init_relacionados.php';       // [jb3_relacionados]: contenido cruzado vía ACF Relationship (bidireccional)
-require_once __DIR__ . '/_init_etiquetas.php';          // jb3_etiquetas_auto(): "Contenido Relacionado" automático — mismo tipo+canal, taxonomía "etiquetas"
+require_once __DIR__ . '/_init_relacionados.php';       // jb3_relacionados_auto(): módulos de contenido cruzado vía ACF Relationship (+ la relación "de vuelta" por consulta)
+require_once __DIR__ . '/_init_etiquetas.php';          // jb3_etiquetas_auto(): "Te puede interesar" automático — mismo canal + taxonomía "etiquetas", al azar
 require_once __DIR__ . '/_init_pdf_viewer.php';          // jb3_pdf_viewer(): visor de PDF propio (PDF.js autohospedado), sin controles nativos ni de extensiones
 require_once __DIR__ . '/_init_pdf_preview_admin.php';   // Genera la imagen destacada sola desde la página 1 del PDF (PDF.js en el navegador del editor)
 require_once __DIR__ . '/_init_video_modal.php';        // Modal de video (YouTube/Vimeo/archivo propio) para [data-jb3-video]

@@ -7,3 +7,15 @@
 <FilesMatch "\.log$">
 	Require all denied
 </FilesMatch>
+
+# Bloquea el acceso directo por HTTP a cualquier PDF (revisión pre-producción
+# 2026-10-01). Hoy los únicos PDF del sitio son los de Op. Comerciales, que
+# son contenido para usuarios registrados: se sirven SOLO por PHP, con
+# sesión + nonce (ver JB3_Op_Comerciales_Tracking::handle_pdf() en
+# jb3-members, y jb3_pdf_admin_ajax en _init_pdf_preview_admin.php para el
+# editor). Sin esto, la URL real de uploads/ se bajaba sin login para
+# siempre. OJO: si algún día se necesita un PDF público (ej. un press kit),
+# linkearlo desde fuera de wp-content o sumar una excepción acá.
+<FilesMatch "(?i)\.pdf$">
+	Require all denied
+</FilesMatch>

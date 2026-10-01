@@ -10,8 +10,8 @@ defined( 'ABSPATH' ) || exit;
  * modales de video/página del tema (_init_video_modal.php/_init_page_modal.php).
  *
  * Reusa la MISMA acción de nonce que el buscador (JB3_AISEARCH_NONCE) — un
- * nonce autentica "pedido legítimo contra este recurso compartido" (la capa
- * gratuita de Gemini), no "qué botón puntual lo mandó"; los dos endpoints
+ * nonce autentica "pedido legítimo contra este recurso compartido" (la API
+ * paga del proveedor de IA), no "qué botón puntual lo mandó"; los dos endpoints
  * protegen el mismo presupuesto (ver class-chat-ajax.php). La acción AJAX en
  * sí (wp_ajax_jb3_ai_chat) es nueva y propia, porque el handler y la forma
  * de la respuesta son distintos al del buscador.

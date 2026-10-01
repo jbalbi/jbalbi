@@ -15,8 +15,8 @@ defined( 'ABSPATH' ) || exit;
  *
  * Freno por IP: la MISMA función jb3_aisearch_throttle_ok() que ya usa
  * class-ajax.php (mismo transient, misma clave) — a propósito: buscador y
- * chat gastan del mismo recurso compartido (la capa gratuita de Gemini vía
- * jb3_aisearch_extraer_filtros()), así que comparten un solo presupuesto de
+ * chat gastan del mismo recurso compartido (la API paga del proveedor de
+ * IA vía jb3_aisearch_extraer_filtros()), así que comparten un solo presupuesto de
  * 8/min por IP en vez de que alguien duplique su cupo abriendo el otro. El
  * freno GLOBAL (300/hora, todo el sitio) ya está adentro de
  * jb3_aisearch_extraer_filtros() Y de jb3_aisearch_chat_redactar_respuesta()
@@ -153,11 +153,11 @@ function jb3_aisearch_chat_sanitizar_historial( $raw ): array {
 }
 
 /**
- * La respuesta "conversacional" es SIEMPRE una plantilla armada acá con el
- * conteo real de WP_Query — nunca una segunda llamada al modelo generando
- * prosa (cero riesgo de alucinación, cero costo extra de API por mensaje).
- * El rol del LLM en este plugin no cambia: sigue siendo únicamente
- * "pregunta → filtros estructurados".
+ * RESPALDO de la respuesta "conversacional": plantilla armada acá con el
+ * conteo real de WP_Query. Desde 2026-08-31 la respuesta normal la redacta
+ * la IA (jb3_aisearch_chat_redactar_respuesta(), ver comentario de arriba
+ * del archivo); esta plantilla se usa solo si esa segunda llamada falla o
+ * se agotó el presupuesto por hora — así el chat nunca queda sin respuesta.
  *
  * $resumen (campo "resumen" del schema, ver class-schema.php — agregado
  * 2026-08-30) es una frase corta que arma el MISMO llamado que ya extrae los

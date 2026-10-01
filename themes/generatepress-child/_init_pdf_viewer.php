@@ -32,7 +32,14 @@ function jb3_enqueue_pdfjs() {
 		true
 	);
 
-	wp_localize_script( 'pdfjs', 'jb3PdfWorkerUrl', get_stylesheet_directory_uri() . '/assets/vendor/pdfjs/pdf.worker.min.js' );
+	// wp_add_inline_script(), no wp_localize_script(): esta última espera un
+	// array y con un string suelto dejaba un aviso de WordPress en el log en
+	// cada página con PDF. Mismo resultado: la variable global jb3PdfWorkerUrl.
+	wp_add_inline_script(
+		'pdfjs',
+		'var jb3PdfWorkerUrl = ' . wp_json_encode( get_stylesheet_directory_uri() . '/assets/vendor/pdfjs/pdf.worker.min.js' ) . ';',
+		'before'
+	);
 }
 
 /** Markup del visor — todas las páginas del PDF, una debajo de la otra, con scroll vertical normal de la página. */

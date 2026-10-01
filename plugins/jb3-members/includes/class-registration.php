@@ -160,15 +160,28 @@ class JB3_Registration {
     // ─── Representative approval handler ─────────────────────────────────────
 
     /**
-     * Handles ?jb3_approve=1&uid=X&token=Y links sent to representatives.
+     * Links ?jb3_approve=1&uid=X&token=Y del mail a los representantes.
+     *
+     * Dos pasos (revisión pre-producción 2026-10-01), mismo criterio que la
+     * baja de cuenta (JB3_Profile_Update::shortcode_confirm_delete()):
+     *   GET  (abrir el link)    → SOLO muestra los datos y un botón "Aprobar".
+     *   POST (apretar el botón) → recién ahí aprueba.
+     * Antes el GET aprobaba directo, y los escáneres de seguridad de correo
+     * corporativo (Safe Links de Microsoft, Mimecast, Proofpoint...) abren
+     * solos los links de los mails para revisarlos — podían aprobar a un
+     * usuario sin que ningún representante hiciera clic. Ningún escáner
+     * aprieta botones. El link del mail no cambió: los mails ya enviados
+     * siguen funcionando, solo que ahora piden confirmar.
      */
     public static function handle_approval_request() {
-        if ( empty( $_GET['jb3_approve'] ) ) {
+        $es_post = 'POST' === ( $_SERVER['REQUEST_METHOD'] ?? '' ) && ! empty( $_POST['jb3_approve_submit'] );
+        if ( ! $es_post && empty( $_GET['jb3_approve'] ) ) {
             return;
         }
 
-        $user_id = absint( $_GET['uid'] ?? 0 );
-        $token   = sanitize_text_field( wp_unslash( $_GET['token'] ?? '' ) );
+        $origen  = $es_post ? $_POST : $_GET;
+        $user_id = absint( $origen['uid'] ?? 0 );
+        $token   = sanitize_text_field( wp_unslash( $origen['token'] ?? '' ) );
 
         if ( ! $user_id || ! $token ) {
             wp_die(
@@ -188,7 +201,12 @@ class JB3_Registration {
             );
         }
 
-        // Guard against double-approval (multiple reps receiving the same email).
+        // Guard against double-approval (multiple reps receiving the same
+        // email). Va DESPUÉS del token a propósito (si no, cualquiera podría
+        // consultar si un uid está aprobado con un token inventado) — por
+        // eso el token NO se borra al aprobar: el segundo representante
+        // tiene que pasar este chequeo para ver "ya aprobado". Antes se
+        // borraba y este aviso nunca llegaba a mostrarse (veía "inválido").
         if ( jb3_is_approved( $user_id ) ) {
             wp_die(
                 self::approval_page(
@@ -201,16 +219,25 @@ class JB3_Registration {
             );
         }
 
-        // — Approve ——————————————————————————————————————————————
+        $user = get_userdata( $user_id );
+
+        // — Paso 1 (GET): confirmar, sin tocar nada ——————————————————————
+        if ( ! $es_post ) {
+            wp_die(
+                self::approval_confirm_page( $user, $token ),
+                esc_html__( 'Aprobar usuario', 'jb3-members' ),
+                [ 'response' => 200 ]
+            );
+        }
+
+        // — Paso 2 (POST): aprobar ——————————————————————————————————————
         update_user_meta( $user_id, 'jb3_status',      'approved' );
         update_user_meta( $user_id, 'jb3_approved_at', current_time( 'mysql' ) );
-        delete_user_meta( $user_id, 'jb3_approval_token' );
 
         // Send the user their magic-link welcome email.
         JB3_Email::send_user_approved( $user_id );
         do_action( 'jb3_sync_to_mailchimp', $user_id );
 
-        $user = get_userdata( $user_id );
         wp_die(
             self::approval_page(
                 '#2e7d32',
@@ -224,6 +251,35 @@ class JB3_Registration {
             esc_html__( 'Usuario Aprobado', 'jb3-members' ),
             [ 'response' => 200 ]
         );
+    }
+
+    /** Paso 1: datos del usuario + botón que manda el POST que aprueba. */
+    private static function approval_confirm_page( WP_User $user, string $token ) {
+        $countries = function_exists( 'jb3_countries' ) ? jb3_countries() : [];
+        $country   = get_user_meta( $user->ID, 'jb3_country', true );
+        $filas     = [
+            __( 'Nombre', 'jb3-members' )  => $user->display_name,
+            __( 'Email', 'jb3-members' )   => $user->user_email,
+            __( 'Empresa', 'jb3-members' ) => get_user_meta( $user->ID, 'jb3_company', true ),
+            __( 'País', 'jb3-members' )    => $countries[ $country ] ?? $country,
+        ];
+
+        $html = '<div style="font-family:sans-serif;max-width:560px;margin:60px auto;padding:40px;background:#fafafa;border-top:4px solid #0073aa;text-align:center;">'
+            . '<h2 style="color:#0073aa;">' . esc_html__( '¿Aprobar a este usuario?', 'jb3-members' ) . '</h2>'
+            . '<table style="margin:20px auto;text-align:left;font-size:1em;color:#333;">';
+        foreach ( $filas as $etiqueta => $valor ) {
+            $html .= '<tr><td style="padding:4px 12px;color:#777;">' . esc_html( $etiqueta ) . '</td><td style="padding:4px 12px;">' . esc_html( $valor ?: '—' ) . '</td></tr>';
+        }
+        $html .= '</table>'
+            . '<form method="post" action="' . esc_url( home_url( '/' ) ) . '">'
+            . '<input type="hidden" name="jb3_approve_submit" value="1">'
+            . '<input type="hidden" name="uid" value="' . (int) $user->ID . '">'
+            . '<input type="hidden" name="token" value="' . esc_attr( $token ) . '">'
+            . '<button type="submit" style="background:#2e7d32;color:#fff;border:0;padding:14px 36px;font-size:16px;font-weight:700;border-radius:4px;cursor:pointer;">'
+            . esc_html__( '✓ Aprobar usuario', 'jb3-members' ) . '</button>'
+            . '</form></div>';
+
+        return $html;
     }
 
     // ─── Inline HTML for approval result page ────────────────────────────────

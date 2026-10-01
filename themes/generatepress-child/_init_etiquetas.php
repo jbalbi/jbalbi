@@ -1,7 +1,7 @@
 <?php
 defined( 'ABSPATH' ) || exit;
 
-// ─── "CONTENIDO RELACIONADO": automático, mismo canal ───────────────────────
+// ─── "TE PUEDE INTERESAR": automático, mismo canal ──────────────────────────
 // Distinto de jb3_relacionados_auto() (_init_relacionados.php): ahí la
 // relación la carga un editor a mano vía ACF, acá sale sola de la taxonomía
 // "etiquetas" (tags libres, ver _init_taxonomias.php) + el/los canal(es) del

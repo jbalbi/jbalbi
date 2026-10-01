@@ -8,6 +8,14 @@ class JB3_Magic_Link {
     // Sin cambios respecto de antes.
     const TOKEN_VALID_DAYS = 120;
 
+    // Administradores: el link vence en 1 hora (revisión pre-producción
+    // 2026-10-01) — con 120 días, un mail viejo olvidado en una bandeja de
+    // entrada daba acceso de ADMIN al sitio durante 4 meses. Un admin pide
+    // el link y lo usa en el momento; no necesita la ventana larga de un
+    // miembro que vuelve cada tanto. Solo cambia cuánto dura el link sin
+    // usar, no la sesión una vez que entró.
+    const ADMIN_TOKEN_VALID_HOURS = 1;
+
     // Sesión deslizante: se renueva sola en cada visita mientras el
     // usuario siga activo (INACTIVITY_DAYS sin entrar = vence sola), pero
     // nunca más allá de MAX_SESSION_DAYS desde el login real, aunque haya
@@ -36,11 +44,14 @@ class JB3_Magic_Link {
     // ─── Token lifecycle ──────────────────────────────────────────────────────
 
     /**
-     * Generate a one-time token valid for TOKEN_VALID_DAYS and store it in user meta.
+     * Generate a one-time token (TOKEN_VALID_DAYS, or ADMIN_TOKEN_VALID_HOURS
+     * for administrators) and store it in user meta.
      */
     public static function generate_token( $user_id ) {
         $token  = wp_generate_password( 64, false );
-        $expiry = time() + ( self::TOKEN_VALID_DAYS * DAY_IN_SECONDS );
+        $expiry = time() + ( user_can( $user_id, 'manage_options' )
+            ? self::ADMIN_TOKEN_VALID_HOURS * HOUR_IN_SECONDS
+            : self::TOKEN_VALID_DAYS * DAY_IN_SECONDS );
 
         update_user_meta( $user_id, self::TOKEN_META,  $token );
         update_user_meta( $user_id, self::EXPIRY_META, $expiry );
@@ -75,6 +86,24 @@ class JB3_Magic_Link {
         }
 
         return add_query_arg( $args, $base );
+    }
+
+    /**
+     * Frase de los mails con enlace (email-magic-link.php y
+     * email-user-approved.php) sobre cuánto dura el enlace y la sesión —
+     * armada con las constantes de arriba para que el texto no vuelva a
+     * quedar desactualizado (decía "te mantendrá logueado por 120 días": el
+     * enlace dura 120 días, pero la sesión es otra cosa, INACTIVITY_DAYS).
+     */
+    public static function texto_vencimiento( int $user_id ): string {
+        if ( user_can( $user_id, 'manage_options' ) ) {
+            return sprintf( 'Este enlace es de un solo uso y vence en <strong>%d hora</strong> (cuenta de administrador).', self::ADMIN_TOKEN_VALID_HOURS );
+        }
+        return sprintf(
+            'Este enlace es de un solo uso y vale por <strong>%d días</strong>. Una vez que ingresás, la sesión queda abierta mientras sigas usando el sitio — se cierra sola después de %d meses sin entrar.',
+            self::TOKEN_VALID_DAYS,
+            (int) round( self::INACTIVITY_DAYS / 30 )
+        );
     }
 
     // ─── Login handler ────────────────────────────────────────────────────────

@@ -3,8 +3,8 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Endpoint AJAX público (con y sin sesión — es un buscador de cara al
- * público) que orquesta: token de seguridad → freno de abuso → IA (Gemini,
- * con Claude como cliente alternativo listo para activar) → WP_Query
+ * público) que orquesta: token de seguridad → freno de abuso → IA (el
+ * proveedor de JB3_AISEARCH_PROVIDER, hoy Claude) → WP_Query
  * geo-filtrada → HTML de resultados (jb3_grid_mixto(), la misma función
  * que ya usa search.php para resultados de tipos mixtos).
  */

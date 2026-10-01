@@ -9,10 +9,11 @@ defined( 'ABSPATH' ) || exit;
  *
  * "Vistas" es automático (template_redirect, sin cambios en el theme).
  * "Descargas" necesita que el botón del theme apunte a download_url()
- * en vez del PDF directo — es la única integración que pide el theme,
- * porque un <a href="pdf.pdf" download> nunca pasa por PHP: el navegador
- * baja el archivo directo, no hay forma de loguear el click sin routearlo
- * por acá primero.
+ * en vez del PDF directo — un <a href="pdf.pdf" download> nunca pasa por
+ * PHP: el navegador baja el archivo directo, no hay forma de loguear el
+ * click sin routearlo por acá primero. El visor del theme usa view_url()
+ * por la misma razón de fondo: el PDF real no es accesible por URL (ver
+ * handle_pdf()).
  *
  * "Posible bot": heurística, NO una detección certera — escáneres de
  * seguridad de correo (Microsoft Safe Links, Mimecast, Proofpoint,
@@ -30,20 +31,35 @@ defined( 'ABSPATH' ) || exit;
 class JB3_Op_Comerciales_Tracking {
 
 	const DOWNLOAD_PARAM = 'jb3_descargar_op_comercial';
+	const VIEW_PARAM     = 'jb3_ver_op_comercial';
 	const HOJA_VISTAS     = 'oportunidades vistas';
 	const HOJA_DESCARGAS  = 'oportunidades descargadas';
 
 	public static function init() {
 		add_action( 'template_redirect', [ __CLASS__, 'track_view' ] );
-		add_action( 'init', [ __CLASS__, 'handle_download' ] );
+		// wp_loaded, no init: handle_pdf() chequea el país con
+		// jb3_geo_post_visible(), que lee las taxonomías "pais"/"canales" —
+		// el tema las registra en init, DESPUÉS de los hooks de los plugins
+		// (se cargan antes), así que en init todavía no existían y todo
+		// daba "no visible".
+		add_action( 'wp_loaded', [ __CLASS__, 'handle_pdf' ] );
 	}
 
 	/** URL que hay que usar en el botón "Descargar PDF" del theme, en vez del PDF directo. */
 	public static function download_url( int $post_id ): string {
+		return self::pdf_url( self::DOWNLOAD_PARAM, $post_id );
+	}
+
+	/** URL que hay que pasarle al visor de PDF del theme (jb3_pdf_viewer()), en vez del PDF directo. */
+	public static function view_url( int $post_id ): string {
+		return self::pdf_url( self::VIEW_PARAM, $post_id );
+	}
+
+	private static function pdf_url( string $param, int $post_id ): string {
 		return add_query_arg(
 			[
-				self::DOWNLOAD_PARAM => $post_id,
-				'_wpnonce'           => wp_create_nonce( self::DOWNLOAD_PARAM . '_' . $post_id ),
+				$param     => $post_id,
+				'_wpnonce' => wp_create_nonce( $param . '_' . $post_id ),
 			],
 			home_url( '/' )
 		);
@@ -58,57 +74,71 @@ class JB3_Op_Comerciales_Tracking {
 		self::log_evento( self::HOJA_VISTAS, get_queried_object_id() );
 	}
 
-	// ─── Descargas ────────────────────────────────────────────────────────────
+	// ─── PDF: ver (visor de la página) y descargar (botón) ───────────────────
+	//
+	// Los PDF NUNCA se sirven por su URL real de uploads/: wp-content/.htaccess
+	// bloquea cualquier *.pdf por acceso directo (revisión pre-producción
+	// 2026-10-01 — antes el visor recibía la URL real, cualquier miembro la
+	// copiaba del HTML y desde ahí se bajaba sin login, para siempre). Las dos
+	// únicas puertas son estas dos URLs, atadas a la sesión del usuario +
+	// nonce (no sirven compartidas: otra persona no tiene esa sesión).
+	//   - Descargar: además registra la descarga en Sheets y avisa a los
+	//     representantes de su país.
+	//   - Ver: solo sirve el archivo para dibujarlo, sin registrar nada (las
+	//     vistas ya se registran en track_view(), al abrir la página).
 
-	public static function handle_download() {
-		if ( empty( $_GET[ self::DOWNLOAD_PARAM ] ) ) {
+	public static function handle_pdf() {
+		$descargar = ! empty( $_GET[ self::DOWNLOAD_PARAM ] );
+		if ( ! $descargar && empty( $_GET[ self::VIEW_PARAM ] ) ) {
 			return;
 		}
 
-		$post_id = absint( $_GET[ self::DOWNLOAD_PARAM ] );
+		$param   = $descargar ? self::DOWNLOAD_PARAM : self::VIEW_PARAM;
+		$post_id = absint( $_GET[ $param ] );
 
 		if ( ! is_user_logged_in() ) {
-			wp_die( esc_html__( 'Tenés que iniciar sesión para descargar este archivo.', 'jb3-members' ) );
+			wp_die( esc_html__( 'Tenés que iniciar sesión para descargar este archivo.', 'jb3-members' ), '', [ 'response' => 403 ] );
 		}
 
 		$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
-		if ( ! $post_id || ! wp_verify_nonce( $nonce, self::DOWNLOAD_PARAM . '_' . $post_id ) ) {
-			wp_die( esc_html__( 'Enlace de descarga inválido o vencido — volvé a la página e intentá de nuevo.', 'jb3-members' ) );
+		if ( ! $post_id || ! wp_verify_nonce( $nonce, $param . '_' . $post_id ) ) {
+			wp_die( esc_html__( 'Enlace de descarga inválido o vencido — volvé a la página e intentá de nuevo.', 'jb3-members' ), '', [ 'response' => 403 ] );
 		}
 
-		if ( 'op_comerciales' !== get_post_type( $post_id ) || ! function_exists( 'get_field' ) ) {
-			wp_die( esc_html__( 'Contenido no encontrado.', 'jb3-members' ) );
+		// Mismo chequeo de país que el 404 de la página (jb3-geo-targeting).
+		$visible = ! function_exists( 'jb3_geo_post_visible' ) || jb3_geo_post_visible( $post_id );
+		if ( 'op_comerciales' !== get_post_type( $post_id ) || 'publish' !== get_post_status( $post_id ) || ! $visible || ! function_exists( 'get_field' ) ) {
+			wp_die( esc_html__( 'Contenido no encontrado.', 'jb3-members' ), '', [ 'response' => 404 ] );
 		}
 
-		$pdf     = get_field( 'pdf', $post_id );
-		$pdf_url = is_array( $pdf ) ? ( $pdf['url'] ?? '' ) : (string) $pdf;
-		if ( ! $pdf_url ) {
-			wp_die( esc_html__( 'Este contenido no tiene un PDF cargado.', 'jb3-members' ) );
+		$file_path = self::pdf_path( get_field( 'pdf', $post_id ) );
+		if ( ! $file_path ) {
+			wp_die( esc_html__( 'Este contenido no tiene un PDF cargado.', 'jb3-members' ), '', [ 'response' => 404 ] );
 		}
 
-		// Antes se hacía wp_redirect() directo a $pdf_url — el navegador
-		// terminaba mostrando/guardando esa URL real, sin ninguna
-		// protección (cualquiera con esa URL podía bajar el archivo para
-		// siempre, sin login). Sirviendo el archivo acá mismo, la URL que
-		// ve/comparte el usuario sigue siendo siempre la de tracking (atada
-		// a su sesión + nonce) — la ubicación real del archivo nunca viaja
-		// al navegador.
-		$upload_dir = wp_upload_dir();
-		$file_path  = str_replace( $upload_dir['baseurl'], $upload_dir['basedir'], $pdf_url );
-		if ( ! file_exists( $file_path ) || ! is_file( $file_path ) ) {
-			wp_die( esc_html__( 'El archivo no se encontró en el servidor.', 'jb3-members' ) );
+		if ( $descargar ) {
+			self::log_evento( self::HOJA_DESCARGAS, $post_id );
+			self::avisar_representantes( $post_id );
 		}
-
-		self::log_evento( self::HOJA_DESCARGAS, $post_id );
-		self::avisar_representantes( $post_id );
 
 		nocache_headers();
 		header( 'Content-Type: application/pdf' );
-		header( 'Content-Disposition: attachment; filename="' . basename( $file_path ) . '"' );
+		header( 'Content-Disposition: ' . ( $descargar ? 'attachment' : 'inline' ) . '; filename="' . basename( $file_path ) . '"' );
 		header( 'Content-Length: ' . filesize( $file_path ) );
 		header( 'X-Content-Type-Options: nosniff' );
 		readfile( $file_path );
 		exit;
+	}
+
+	/** Ruta en disco del PDF del campo ACF "pdf" (array, ID o URL según el formato de retorno), o '' si no hay archivo. */
+	private static function pdf_path( $pdf ): string {
+		$id   = is_array( $pdf ) ? (int) ( $pdf['ID'] ?? 0 ) : ( is_numeric( $pdf ) ? (int) $pdf : 0 );
+		$path = $id ? (string) get_attached_file( $id ) : '';
+		if ( ! $path && is_string( $pdf ) && $pdf ) {
+			$upload_dir = wp_upload_dir();
+			$path       = str_replace( $upload_dir['baseurl'], $upload_dir['basedir'], $pdf );
+		}
+		return ( $path && is_file( $path ) && 'pdf' === strtolower( pathinfo( $path, PATHINFO_EXTENSION ) ) ) ? $path : '';
 	}
 
 	// ─── Internals ────────────────────────────────────────────────────────────

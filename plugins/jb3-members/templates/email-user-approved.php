@@ -44,7 +44,7 @@ $site_name = get_bloginfo( 'name' );
         </div>
 
         <p style="font-size:14px;color:#555;line-height:1.6;">
-            Este enlace es personal e intransferible. Te mantendrá logueado por <strong>120 días</strong>.
+            <?php echo wp_kses( JB3_Magic_Link::texto_vencimiento( $user->ID ), [ 'strong' => [] ] ); ?> Es personal e intransferible.
             Cuando necesites ingresar nuevamente, solicitá un nuevo enlace desde la página de login.
         </p>
 

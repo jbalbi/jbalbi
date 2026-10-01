@@ -44,7 +44,7 @@ $site_name = get_bloginfo( 'name' );
         </div>
 
         <p style="font-size:14px;color:#555;line-height:1.6;">
-            Este enlace es de un solo uso y te mantendrá logueado por <strong>120 días</strong>.
+            <?php echo wp_kses( JB3_Magic_Link::texto_vencimiento( $user->ID ), [ 'strong' => [] ] ); ?>
             Si no solicitaste este correo, simplemente ignoralo.
         </p>
 

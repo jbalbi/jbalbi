@@ -27,7 +27,10 @@
  * desarrollador lo saca de la pestaña Red, sin importar cuánto se
  * muestre). La única protección real es que el PDF ni siquiera viaje
  * hasta un visitante sin sesión — por eso el gate vive acá, en el if:
- *   - Logueado: jb3_pdf_viewer() con la URL real + botón "Descargar PDF".
+ *   - Logueado: jb3_pdf_viewer() + botón "Descargar PDF", los dos por las
+ *     URLs de jb3-members (view_url()/download_url(), atadas a la sesión)
+ *     — el acceso directo a cualquier .pdf está bloqueado en
+ *     wp-content/.htaccess, la URL real ya no sirve para compartir.
  *   - Sin sesión: la miniatura destacada del post (la misma que ya se usa
  *     en las grillas) + botón a /login/ — el HTML nunca menciona la URL
  *     del PDF en este caso, no hay nada que "ver código fuente" pueda
@@ -84,7 +87,11 @@ get_header();
 			<?php if ( $pdf_url ) : ?>
 				<div class="jb3-op-comercial__pdf">
 					<?php if ( $mostrar_pdf_completo ) : ?>
-						<?php echo jb3_pdf_viewer( $pdf_url ); ?>
+						<?php
+						echo jb3_pdf_viewer( class_exists( 'JB3_Op_Comerciales_Tracking' )
+							? JB3_Op_Comerciales_Tracking::view_url( get_the_ID() )
+							: $pdf_url );
+						?>
 						<p class="jb3-op-comercial__pdf-descarga">
 							<?php
 							// Ruta por JB3_Op_Comerciales_Tracking::download_url() en vez del

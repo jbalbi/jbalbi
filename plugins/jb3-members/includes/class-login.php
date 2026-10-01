@@ -9,23 +9,73 @@ class JB3_Login {
         add_action( 'wp_logout',         [ __CLASS__, 'on_wp_logout' ] );
         // Priority 1 — runs before enforce_complete_profile (priority 5).
         add_action( 'template_redirect', [ __CLASS__, 'handle_logout_page' ], 1 );
-        // Block password-based login for jb3_members — magic link is the only allowed method.
-        add_filter( 'authenticate', [ __CLASS__, 'block_password_login' ], 30, 3 );
+        // Login con contraseña apagado para TODOS — ver block_password_login().
+        add_filter( 'authenticate', [ __CLASS__, 'block_password_login' ], 100, 3 );
+        add_action( 'login_init', [ __CLASS__, 'redirect_wp_login' ] );
+        add_filter( 'allow_password_reset', [ __CLASS__, 'password_login_allowed' ] );
+        add_filter( 'wp_is_application_passwords_available', [ __CLASS__, 'password_login_allowed' ] );
     }
 
-    // ─── Block native WP password login for jb3_members ─────────────────────
+    // ─── Login con contraseña: apagado para todos ────────────────────────────
+    //
+    // El único acceso al sitio es el magic link (página /login/), para
+    // miembros Y administradores — revisión pre-producción 2026-10-01. Antes
+    // solo se bloqueaba a los miembros: wp-login.php seguía aceptando
+    // usuario+contraseña de un ADMIN, que es justamente la puerta que prueban
+    // todos los bots de fuerza bruta. Sin contraseña que funcione, no hay
+    // nada que adivinar (el token del magic link es de 64 caracteres, de un
+    // solo uso, con freno de 3 pedidos cada 10 min por email).
+    //
+    // También se apagan, por el mismo motivo: "¿Olvidaste tu contraseña?"
+    // (allow_password_reset) y las contraseñas de aplicación (usuario+clave
+    // por la API REST). Quedan andando las partes de wp-login.php que no son
+    // login: cerrar sesión (action=logout) y páginas protegidas con
+    // contraseña de WordPress (action=postpass).
+    //
+    // LLAVE DE EMERGENCIA — si el envío de mails se rompe (SMTP caído) nadie
+    // puede pedir un magic link. Para volver a entrar con contraseña, agregar
+    // en wp-config.php (y SACARLA apenas se resuelva):
+    //     define( 'JB3_PERMITIR_LOGIN_CONTRASENA', true );
 
+    public static function password_login_allowed(): bool {
+        return defined( 'JB3_PERMITIR_LOGIN_CONTRASENA' ) && JB3_PERMITIR_LOGIN_CONTRASENA;
+    }
+
+    /**
+     * Prioridad 100 (después de que WordPress validó usuario y contraseña) y
+     * sin mirar el resultado: el mismo error para contraseña correcta,
+     * incorrecta o usuario inexistente — no le confirma a nadie si acertó
+     * ni qué usuarios existen. El magic link no pasa por acá (entra con
+     * wp_set_auth_cookie(), ver JB3_Magic_Link).
+     */
     public static function block_password_login( $user, $username, $password ) {
-        if ( ! is_a( $user, 'WP_User' ) ) {
-            return $user;
+        if ( self::password_login_allowed() || ( '' === (string) $username && '' === (string) $password ) ) {
+            return $user; // Sin credenciales tipeadas: no es un intento de login (ej. wp-login.php abierto sin enviar nada).
         }
-        if ( jb3_is_member( $user->ID ) && ! user_can( $user->ID, 'manage_options' ) ) {
-            return new WP_Error(
-                'jb3_magic_link_only',
-                __( 'Para acceder a tu cuenta usá el enlace de acceso enviado a tu email.', 'jb3-members' )
-            );
+        return new WP_Error(
+            'jb3_magic_link_only',
+            __( 'Para acceder usá el enlace de acceso que te mandamos por email.', 'jb3-members' )
+        );
+    }
+
+    /** wp-login.php (login, contraseña olvidada, reseteo) → página /login/ del magic link, conservando a dónde iba. */
+    public static function redirect_wp_login() {
+        if ( self::password_login_allowed() ) {
+            return;
         }
-        return $user;
+        $action = sanitize_key( $_REQUEST['action'] ?? 'login' );
+        if ( in_array( $action, [ 'logout', 'postpass', 'confirmaction' ], true ) ) {
+            return;
+        }
+
+        $page_id = (int) get_option( 'jb3_login_page_id' );
+        $destino = ( $page_id ? get_permalink( $page_id ) : '' ) ?: home_url( '/' );
+        $volver  = wp_validate_redirect( wp_unslash( $_REQUEST['redirect_to'] ?? '' ), '' );
+        if ( $volver ) {
+            $destino = add_query_arg( 'redirect_to', rawurlencode( $volver ), $destino );
+        }
+        wp_safe_redirect( $destino );
+        exit;
     }
 
     // ─── Shortcode ────────────────────────────────────────────────────────────

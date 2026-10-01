@@ -129,8 +129,8 @@ function jb3_aisearch_throttle_global_ok(): bool {
  *
  *   <?php
  *   return [
- *       'gemini_api_key' => '...',
- *       'claude_api_key' => '...', // opcional hasta que se use
+ *       'claude_api_key' => '...', // el proveedor activo
+ *       'gemini_api_key' => '...', // solo si se vuelve a 'gemini'
  *   ];
  *
  * @param string $proveedor 'gemini' o 'claude'.

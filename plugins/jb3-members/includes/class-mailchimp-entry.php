@@ -79,6 +79,19 @@ class JB3_Mailchimp_Entry {
 			return '' !== $cached ? $cached : null; // '' cacheado = "ya sabemos que no existe".
 		}
 
+		// Freno por IP SOLO para consultas nuevas a la API (revisión
+		// pre-producción 2026-10-01): sin esto, cualquiera podía mandar
+		// ?e= con valores al azar en bucle y cada uno era una llamada
+		// a Mailchimp (la caché de arriba no sirve contra valores siempre
+		// distintos). 10 cada 10 minutos sobra para una persona real, que
+		// llega con UN solo valor. Frenado = "no se pudo resolver": cae al
+		// gate genérico de Ingresar/Registrarte, y no se cachea como "no
+		// existe" (el valor puede ser legítimo).
+		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : 'ip-desconocida';
+		if ( jb3_rate_limited( 'mc_uniqid_' . $ip, 10, 10 ) ) {
+			return null;
+		}
+
 		$email = self::consultar_mailchimp( $uniqid );
 
 		set_transient( $cache_key, $email ?? '', $email ? self::CACHE_TTL_HIT : self::CACHE_TTL_MISS );
