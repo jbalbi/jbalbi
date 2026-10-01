@@ -2800,16 +2800,22 @@ body.error404 .inside-article .search-form {
 /* "Te puede interesar" de posters (_init_etiquetas.php, 2026-10-01).
    REGLA DEL USUARIO: siempre filas completas, nunca un poster suelto en la
    última fila. Trae 6 y se ven según la pantalla:
-     ≥ 1280px                         6 en una fila (--jb3-grid-cols:6 inline)
-     1024–1279px                      4 en una fila (1024 → ~186px)
+     ≥ 1600px                         6 en una fila (--jb3-grid-cols:6 inline)
+     1024–1599px                      4 en una fila (1024 → ~186px, 1599 → ~330px)
      tablet (768–1023px, 3 columnas)  6, en 2 filas de 3
      celular (≤ 767px, 2 columnas)    4, en 2 filas de 2
+   Corte en 1600 (antes 1280, cambiado el mismo día): con 6 por fila, por
+   debajo de 1600 los títulos largos del catálogo ("Ghostbusters Apocalipsis
+   Fantasma", "...aventura gastronomica argentina") quedaban en 3 líneas.
+   Medido con los títulos más largos: desde 1280 hasta arriba ninguno pasa
+   de 2 líneas. Única excepción: 1024–1279 con palabras muy anchas en
+   mayúsculas ("GASTRONOMICA") — ahí ya no hay menos columnas pares posibles.
    Se probó antes con 8 en una fila en desktop: en notebooks (1280-1600px)
    los posters quedaban de 116-153px, demasiado chicos. Los ocultos no se
    descargan (carga diferida). El sizes de las imágenes cuenta 6 columnas
-   en todo desktop: entre 1024 y 1279 (4 columnas) pide de menos, pero la
-   copia de 400 que elige igual alcanza (~186px; ~370 reales en retina). */
-@media (min-width: 1024px) and (max-width: 1279px) {
+   en todo desktop: entre 1024 y 1599 (4 columnas) pide de menos, pero la
+   copia que elige igual alcanza (400 en pantallas comunes, 800 en retina). */
+@media (min-width: 1024px) and (max-width: 1599px) {
     .jb3-relacionados--6 .jb3-grid-posters {
         grid-template-columns: repeat(4, 1fr);
     }

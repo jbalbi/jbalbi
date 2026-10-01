@@ -80,8 +80,8 @@ function jb3_etiquetas_auto( int $post_id ): string {
 		'post_status'    => 'publish',
 		// Posters (Películas/Series/Prod. Originales): 6 (2026-10-01; antes 4,
 		// y antes 10) — regla del usuario: SIEMPRE filas completas, nunca un
-		// poster suelto en la última fila. 6 en una fila en desktop, 4 en
-		// notebooks chicas, 6 en tablet (2×3), 4 en celular (2×2) — ver
+		// poster suelto en la última fila. 6 en una fila desde 1600px, 4 en
+		// notebooks (1024-1599), 6 en tablet (2×3), 4 en celular (2×2) — ver
 		// .jb3-relacionados--6 en style.css. Se probó con 8 en una fila: en
 		// notebooks los posters quedaban de 116-145px, demasiado chicos.
 		// Thumbs (Op. Comerciales): 4, como antes.
