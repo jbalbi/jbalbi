@@ -366,7 +366,11 @@ add_action( 'acf/init', function () {
 		'mode'            => 'preview',
 		'api_version'     => 3, // ver comentario largo en "modulo-contenido" más arriba.
 		'supports'        => array(
-			'align'           => false,
+			// Único bloque del sitio con alineación: botón nativo "Ancho
+			// completo" en la barra del bloque (pedido 2026-10-01) — de borde
+			// a borde de la pantalla. Solo 'full' (no 'wide'/'left'/...): el
+			// banner va contenido (default) o a pantalla completa, nada más.
+			'align'           => array( 'full' ),
 			'customClassName' => false,
 			'anchor'          => false,
 		),

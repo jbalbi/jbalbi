@@ -446,30 +446,52 @@ function jb3_contenido_render_banner( array $fila ) {
 
 	$desktop = $data['imagen_desktop'] ?? null;
 	$mobile  = $data['imagen_mobile'] ?? null;
-	$link    = $data['link'] ?? '';
-	if ( ! is_array( $desktop ) || ! $link ) {
-		return; // Layout agregado pero sin imagen de desktop o sin link — no imprime un banner roto.
+	$link    = (string) ( $data['link'] ?? '' );
+	if ( ! is_array( $desktop ) ) {
+		return; // Layout agregado pero sin imagen de desktop — no imprime un banner roto.
 	}
 
-	// Copia justa por pantalla, al ancho del contenido (no full-bleed):
-	// jb3_picture(), _init_imagenes.php. Mismo render para el layout del
-	// módulo de Contenido y para el bloque Banner de páginas.
+	// Opciones (pedido 2026-10-01):
+	// - link OPCIONAL: sin link el banner se muestra igual, como <div> (no
+	//   clickeable) en vez de <a>. Antes, sin link no se mostraba.
+	// - nueva_pestana: target="_blank" (con rel="noopener" por seguridad);
+	//   apagado = misma ventana, que era el único comportamiento antes.
+	// - ancho_completo: de borde a borde, sin los márgenes laterales del
+	//   contenido (.jb3-contenido-bloque--banner-completo en style.css). En el
+	//   bloque de páginas lo prende el botón nativo "Ancho completo" de la
+	//   barra del bloque (ver blocks/banner/render.php), que llega acá como
+	//   este mismo dato.
+	$nueva_pestana  = ! empty( $data['nueva_pestana'] );
+	$ancho_completo = ! empty( $data['ancho_completo'] );
+
+	// Copia justa por pantalla: al ancho del contenido, o de la pantalla
+	// entera si va de borde a borde — jb3_picture(), _init_imagenes.php.
+	// Mismo render para el layout del módulo de Contenido y para el bloque
+	// Banner de páginas.
 	$picture = jb3_picture(
 		jb3_img_id( $desktop ),
 		jb3_img_id( $mobile ),
 		array(
-			'sizes' => jb3_sizes_ancho_contenido(),
+			'sizes' => $ancho_completo ? jb3_sizes_ancho_completo() : jb3_sizes_ancho_contenido(),
 			'alt'   => (string) ( $desktop['alt'] ?? '' ),
 		)
 	);
 	if ( ! $picture ) {
 		return;
 	}
-	?>
-	<a class="jb3-contenido-bloque jb3-contenido-bloque--banner" href="<?php echo esc_url( $link ); ?>">
-		<?php echo $picture; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_picture() ya escapa todo. ?>
-	</a>
-	<?php
+
+	$clases = 'jb3-contenido-bloque jb3-contenido-bloque--banner' . ( $ancho_completo ? ' jb3-contenido-bloque--banner-completo alignfull' : '' );
+	if ( $link ) {
+		printf(
+			'<a class="%s" href="%s"%s>%s</a>',
+			esc_attr( $clases ),
+			esc_url( $link ),
+			$nueva_pestana ? ' target="_blank" rel="noopener"' : '',
+			$picture // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_picture() ya escapa todo.
+		);
+	} else {
+		printf( '<div class="%s">%s</div>', esc_attr( $clases ), $picture ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_picture() ya escapa todo.
+	}
 }
 
 // ─── Fila individual: Integraciones ─────────────────────────────────────────

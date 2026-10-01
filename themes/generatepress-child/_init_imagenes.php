@@ -135,8 +135,9 @@ defined( 'ABSPATH' ) || exit;
 //     blocks/programacion/render.php      (srcset, 100vw)                              lazy)
 //   Banner (módulo + bloque de páginas)   copia justa         1920×540 / 1000×1333     OK (jb3_picture(),
 //     _init_contenido_pelicula.php        (srcset, ancho                               lazy)
-//     (jb3_contenido_render_banner),        del contenido)
-//     blocks/banner/render.php
+//     (jb3_contenido_render_banner),        del contenido, o
+//     blocks/banner/render.php              100vw si va con
+//                                           "Ancho completo")
 //     · Medido 2026-10-01 (hero Venom, banner Amos del Universo, programación
 //       y fondo de Sony Movies): copia correcta en monitor/notebook/tablet,
 //       sin deformar, alto reservado correcto mientras carga (width/height

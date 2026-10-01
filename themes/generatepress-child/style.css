@@ -3605,6 +3605,27 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
     display: block;
 }
 
+/* Banner "Ancho completo" (pedido 2026-10-01): de borde a borde de la
+   pantalla, sin los márgenes laterales del contenido. Breakout SOLO con
+   márgenes: margin-left/right = 50% − 50vw (la mitad de lo que el
+   contenedor es más angosto que la pantalla, en negativo). Es la MISMA
+   fórmula que ya trae GeneratePress para la clase nativa .alignfull
+   (".no-sidebar .entry-content .alignfull"), que el banner también lleva —
+   así las dos reglas coinciden en vez de sumarse. NO usar acá el otro truco
+   (left:50% + margin-left:-50vw): GeneratePress le pisa el margen y el
+   left:50% quedaba sumado, corriendo el banner media pantalla a la derecha
+   (detectado con Playwright 2026-10-01). Funciona igual suelto en una
+   página (bloque) y dentro del módulo de Contenido de películas/series. */
+.jb3-contenido-bloque--banner-completo {
+    box-sizing: border-box;
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding-left: 0;
+    padding-right: 0;
+}
+
 .jb3-contenido-bloque--banner img {
     display: block;
     width: 100%;

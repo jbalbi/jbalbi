@@ -253,7 +253,7 @@
                             "name": "link",
                             "aria-label": "",
                             "type": "url",
-                            "instructions": "",
+                            "instructions": "Opcional — sin link, el banner se muestra igual pero no se puede hacer clic.",
                             "required": false,
                             "conditional_logic": false,
                             "wrapper": {
@@ -263,6 +263,46 @@
                             },
                             "default_value": "",
                             "placeholder": ""
+                        },
+                        {
+                            "key": "field_jb3o_banner_nueva_pestana",
+                            "label": "Abrir en una pestaña nueva",
+                            "name": "nueva_pestana",
+                            "aria-label": "",
+                            "type": "true_false",
+                            "instructions": "Si está activado, el link se abre en una pestaña nueva (recomendado para sitios externos). Si no, en la misma ventana.",
+                            "required": 0,
+                            "conditional_logic": 0,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "message": "",
+                            "default_value": 0,
+                            "ui": 1,
+                            "ui_on_text": "Sí",
+                            "ui_off_text": "No"
+                        },
+                        {
+                            "key": "field_jb3o_banner_ancho_completo",
+                            "label": "Ancho completo",
+                            "name": "ancho_completo",
+                            "aria-label": "",
+                            "type": "true_false",
+                            "instructions": "Si está activado, el banner va de borde a borde de la pantalla, sin los márgenes laterales del contenido. Imagen recomendada: 2560 × 720.",
+                            "required": 0,
+                            "conditional_logic": 0,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "message": "",
+                            "default_value": 0,
+                            "ui": 1,
+                            "ui_on_text": "Sí",
+                            "ui_off_text": "No"
                         },
                         {
                             "key": "field_jb3o_banner_paises",
@@ -1086,5 +1126,5 @@
     "display_title": "",
     "allow_ai_access": false,
     "ai_description": "",
-    "modified": 1788874853
+    "modified": 1790885988
 }

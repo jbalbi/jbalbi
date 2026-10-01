@@ -16,7 +16,10 @@
  * (grupo creado copiando los sub-campos del layout — acf-json/group_jb3_banner.json)
  *   bn_imagen_desktop (Image, return=Array — sin ella el banner no se imprime)
  *   bn_imagen_mobile  (Image, return=Array, opcional — vacío = usa la de desktop)
- *   bn_link           (URL — sin link el banner no se imprime)
+ *   bn_link           (URL, opcional — sin link el banner se ve igual, sin clic)
+ *   bn_nueva_pestana  (True/False — el link abre en pestaña nueva; apagado = misma ventana)
+ *   Ancho completo: NO es un campo — es el botón nativo "Ancho completo" de la
+ *   barra del bloque (supports align full, _init_acf_blocks.php), llega en $block['align'].
  *   bn_paises         (Taxonomy, taxonomy=pais, Checkbox, return=ID —
  *                      CERRADO por defecto: sin países, no se ve para nadie)
  *   bn_fecha_in       (Date Picker, return=Ymd, opcional)
@@ -25,11 +28,13 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$desktop = get_field( 'bn_imagen_desktop' );
-$mobile  = get_field( 'bn_imagen_mobile' );
-$link    = (string) get_field( 'bn_link' );
-$paises  = get_field( 'bn_paises' );
-$paises  = is_array( $paises ) ? $paises : array(); // Taxonomy vacío devuelve false, no array.
+$desktop        = get_field( 'bn_imagen_desktop' );
+$mobile         = get_field( 'bn_imagen_mobile' );
+$link           = (string) get_field( 'bn_link' );
+$nueva_pestana  = (bool) get_field( 'bn_nueva_pestana' );
+$ancho_completo = 'full' === ( $block['align'] ?? '' ); // botón nativo "Ancho completo" de la barra del bloque.
+$paises         = get_field( 'bn_paises' );
+$paises         = is_array( $paises ) ? $paises : array(); // Taxonomy vacío devuelve false, no array.
 
 if ( $is_preview ) {
 	$nombres_pais = array_filter( array_map( function ( $id ) {
@@ -50,7 +55,8 @@ if ( $is_preview ) {
 		<div style="margin-top:8px; font-size:13px; color:#444; line-height:1.6;">
 			Imagen desktop: <strong><?php echo is_array( $desktop ) ? 'cargada' : 'FALTA — no se va a ver'; ?></strong>
 			· Imagen mobile: <strong><?php echo is_array( $mobile ) ? 'cargada' : 'usa la de desktop'; ?></strong><br>
-			Link: <strong><?php echo $link ? esc_html( $link ) : 'FALTA — no se va a ver'; ?></strong><br>
+			Link: <strong><?php echo $link ? esc_html( $link ) . ( $nueva_pestana ? ' (pestaña nueva)' : ' (misma ventana)' ) : 'sin link (no se puede hacer clic)'; ?></strong><br>
+			Ancho: <strong><?php echo $ancho_completo ? 'completo, de borde a borde' : 'del contenido'; ?></strong><br>
 			Países: <strong><?php echo $nombres_pais ? esc_html( implode( ', ', $nombres_pais ) ) : 'ninguno — NO se ve para nadie todavía'; ?></strong><br>
 			Fechas: <strong><?php echo esc_html( ( $fmt( $fecha_in ) ?: 'desde ya' ) . ' → ' . ( $fmt( $fecha_out ) ?: 'sin vencimiento' ) ); ?></strong>
 		</div>
@@ -68,6 +74,8 @@ jb3_contenido_render_banner( array(
 		'imagen_desktop' => $desktop,
 		'imagen_mobile'  => $mobile,
 		'link'           => $link,
+		'nueva_pestana'  => $nueva_pestana,
+		'ancho_completo' => $ancho_completo,
 		'paises'         => $paises,
 		'fecha_in'       => (string) get_field( 'bn_fecha_in' ),
 		'fecha_out'      => (string) get_field( 'bn_fecha_out' ),
