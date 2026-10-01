@@ -358,7 +358,7 @@ add_action( 'acf/init', function () {
 	acf_register_block_type( array(
 		'name'            => 'banner',
 		'title'           => 'Banner',
-		'description'     => 'Imagen clickeable a ancho completo, con versión mobile opcional, link, países y fechas de vigencia — el mismo banner de Películas/Series.',
+		'description'     => 'Imagen con versión mobile opcional, link opcional (misma ventana o pestaña nueva), al ancho del contenido o de borde a borde, con países y fechas de vigencia — el mismo banner de Películas/Series.',
 		'render_template' => __DIR__ . '/blocks/banner/render.php',
 		'category'        => 'jb3',
 		'icon'            => 'format-image',
@@ -366,11 +366,12 @@ add_action( 'acf/init', function () {
 		'mode'            => 'preview',
 		'api_version'     => 3, // ver comentario largo en "modulo-contenido" más arriba.
 		'supports'        => array(
-			// Único bloque del sitio con alineación: botón nativo "Ancho
-			// completo" en la barra del bloque (pedido 2026-10-01) — de borde
-			// a borde de la pantalla. Solo 'full' (no 'wide'/'left'/...): el
-			// banner va contenido (default) o a pantalla completa, nada más.
-			'align'           => array( 'full' ),
+			// Sin alineación nativa, igual que el resto de los bloques: el
+			// "Ancho completo" del banner es una casilla en el panel de
+			// propiedades (bn_ancho_completo), donde el editor la encuentra
+			// junto al resto de los campos — el botón de la barra del bloque
+			// (primera versión, 2026-10-01) pasaba desapercibido.
+			'align'           => false,
 			'customClassName' => false,
 			'anchor'          => false,
 		),

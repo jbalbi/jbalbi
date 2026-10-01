@@ -18,8 +18,7 @@
  *   bn_imagen_mobile  (Image, return=Array, opcional — vacío = usa la de desktop)
  *   bn_link           (URL, opcional — sin link el banner se ve igual, sin clic)
  *   bn_nueva_pestana  (True/False — el link abre en pestaña nueva; apagado = misma ventana)
- *   Ancho completo: NO es un campo — es el botón nativo "Ancho completo" de la
- *   barra del bloque (supports align full, _init_acf_blocks.php), llega en $block['align'].
+ *   bn_ancho_completo (True/False — de borde a borde, sin los márgenes del contenido)
  *   bn_paises         (Taxonomy, taxonomy=pais, Checkbox, return=ID —
  *                      CERRADO por defecto: sin países, no se ve para nadie)
  *   bn_fecha_in       (Date Picker, return=Ymd, opcional)
@@ -32,7 +31,12 @@ $desktop        = get_field( 'bn_imagen_desktop' );
 $mobile         = get_field( 'bn_imagen_mobile' );
 $link           = (string) get_field( 'bn_link' );
 $nueva_pestana  = (bool) get_field( 'bn_nueva_pestana' );
-$ancho_completo = 'full' === ( $block['align'] ?? '' ); // botón nativo "Ancho completo" de la barra del bloque.
+// Casilla "Ancho completo" del panel de propiedades (2026-10-01). Al
+// principio esto era el botón nativo de alineación de la barra del bloque,
+// pero el editor no lo encontraba (no está con el resto de los campos) — se
+// pasó a casilla, igual que en el módulo de películas. Se respeta igual un
+// align="full" que haya quedado guardado de esa primera versión.
+$ancho_completo = (bool) get_field( 'bn_ancho_completo' ) || 'full' === ( $block['align'] ?? '' );
 $paises         = get_field( 'bn_paises' );
 $paises         = is_array( $paises ) ? $paises : array(); // Taxonomy vacío devuelve false, no array.
 

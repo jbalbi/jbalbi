@@ -90,6 +90,26 @@
             "ui_off_text": "No"
         },
         {
+            "key": "field_jb3_bn_ancho_completo",
+            "label": "Ancho completo",
+            "name": "bn_ancho_completo",
+            "aria-label": "",
+            "type": "true_false",
+            "instructions": "Si está activado, el banner va de borde a borde de la pantalla, sin los márgenes laterales del contenido. Imagen recomendada: 2560 × 720.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "message": "",
+            "default_value": 0,
+            "ui": 1,
+            "ui_on_text": "Sí",
+            "ui_off_text": "No"
+        },
+        {
             "key": "field_jb3_bn_paises",
             "label": "Países donde se muestra",
             "name": "bn_paises",
@@ -173,5 +193,5 @@
     "display_title": "",
     "allow_ai_access": false,
     "ai_description": "",
-    "modified": 1790885988
+    "modified": 1790886691
 }
