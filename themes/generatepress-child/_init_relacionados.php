@@ -51,7 +51,10 @@ function jb3_relacionados_titulos_por_tipo(): array {
 // defecto uno por tipo, pero jb3_etiquetas_auto() (_init_etiquetas.php) le
 // pasa el suyo propio ("etiquetas") para que el ancla de la subnav quede
 // prolija en vez del genérico "relacionados-{tipo}".
-function jb3_relacionados_modulo( string $tipo, array $posts, string $titulo, string $id = '' ): string {
+// $columnas: columnas de la grilla en DESKTOP (0 = la de siempre de cada
+// grilla, ver jb3_grid_posters()/jb3_grid_thumbs()). $clase: clase extra en
+// la <section> (ej. para limitar cuántos se ven por breakpoint en CSS).
+function jb3_relacionados_modulo( string $tipo, array $posts, string $titulo, string $id = '', int $columnas = 0, string $clase = '' ): string {
 	if ( ! $posts ) {
 		return '';
 	}
@@ -68,9 +71,9 @@ function jb3_relacionados_modulo( string $tipo, array $posts, string $titulo, st
 
 	ob_start();
 	?>
-	<section class="jb3-modulo jb3-contenedor" id="<?php echo esc_attr( $id ); ?>">
+	<section class="jb3-modulo jb3-contenedor<?php echo $clase ? ' ' . esc_attr( $clase ) : ''; ?>" id="<?php echo esc_attr( $id ); ?>">
 		<h2 class="jb3-modulo__titulo"><?php echo esc_html( $titulo ); ?></h2>
-		<?php echo $es_poster ? jb3_grid_posters( $posts ) : jb3_grid_thumbs( $posts ); ?>
+		<?php echo $es_poster ? jb3_grid_posters( $posts, $columnas ) : jb3_grid_thumbs( $posts, $columnas ); ?>
 	</section>
 	<?php
 	return ob_get_clean();

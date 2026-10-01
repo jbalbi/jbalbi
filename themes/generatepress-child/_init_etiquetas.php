@@ -47,7 +47,8 @@ function jb3_etiquetas_auto( int $post_id ): string {
 	$tipos_poster = function_exists( 'jb3_modulo_tipos_poster' )
 		? jb3_modulo_tipos_poster()
 		: array( 'peliculas', 'series', 'prod_originales' );
-	$tipos = in_array( $post->post_type, $tipos_poster, true ) ? $tipos_poster : array( $post->post_type );
+	$es_poster = in_array( $post->post_type, $tipos_poster, true );
+	$tipos     = $es_poster ? $tipos_poster : array( $post->post_type );
 
 	$tax_query = array(
 		// Varios term_id en la misma cláusula = OR entre ellos (matchea
@@ -77,9 +78,12 @@ function jb3_etiquetas_auto( int $post_id ): string {
 		'post__not_in'   => array( $post_id ),
 		'tax_query'      => $tax_query,
 		'post_status'    => 'publish',
-		// 4 (antes 10, pedido 2026-10-01): una sola fila en la grilla de
-		// posters de desktop (4 columnas) y dos filas parejas en mobile (2).
-		'posts_per_page' => 4,
+		// Posters (Películas/Series/Prod. Originales): 8 (pedido 2026-10-01,
+		// antes 4 y antes 10) — una sola fila de 8 en desktop; en tablet y
+		// celular se ven menos (ver .jb3-relacionados--8 en style.css).
+		// Thumbs (Op. Comerciales): 4, como antes — 8 thumbs apaisados en
+		// una fila quedarían diminutos.
+		'posts_per_page' => $es_poster ? 8 : 4,
 		// Al azar (antes 'date' DESC, pedido 2026-10-01): que no salgan
 		// siempre los 4 últimos cargados. ORDER BY RAND() no pesa con el
 		// volumen de contenido de este sitio (cientos de posts, no miles).
@@ -98,5 +102,7 @@ function jb3_etiquetas_auto( int $post_id ): string {
 	// jb3_relacionados_modulo() — todo lo que trae $query->posts es
 	// siempre de la misma familia que $tipos de arriba, da lo mismo cuál
 	// tipo puntual se pase.
-	return jb3_relacionados_modulo( $post->post_type, $query->posts, 'Te puede interesar', 'etiquetas' );
+	return $es_poster
+		? jb3_relacionados_modulo( $post->post_type, $query->posts, 'Te puede interesar', 'etiquetas', 8, 'jb3-relacionados--8' )
+		: jb3_relacionados_modulo( $post->post_type, $query->posts, 'Te puede interesar', 'etiquetas' );
 }

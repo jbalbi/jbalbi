@@ -2797,6 +2797,23 @@ body.error404 .inside-article .search-form {
     .jb3-grid-thumbs  { grid-template-columns: repeat(1, 1fr); }
 }
 
+/* "Te puede interesar" de posters (_init_etiquetas.php, pedido 2026-10-01):
+   trae 8 → una sola fila de 8 en desktop (--jb3-grid-cols:8 inline). En las
+   pantallas con menos columnas se ocultan los que sobran, para que siempre
+   queden filas completas: tablet (3 columnas) muestra 6, celular (2
+   columnas) muestra 4. Los ocultos no se descargan (carga diferida). */
+@media (max-width: 1023px) {
+    .jb3-relacionados--8 .jb3-grid-posters__item:nth-child(n+7) {
+        display: none;
+    }
+}
+
+@media (max-width: 767px) {
+    .jb3-relacionados--8 .jb3-grid-posters__item:nth-child(n+5) {
+        display: none;
+    }
+}
+
 .jb3-grid-posters__item,
 .jb3-grid-thumbs__item {
     display: block;
