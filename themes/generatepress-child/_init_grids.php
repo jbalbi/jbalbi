@@ -69,11 +69,50 @@ function jb3_grid_cintillo_texto( $post ): string {
 // en desktop, para no tener que pensar cascada completa cada vez que un
 // módulo puntual necesita, por ejemplo, 8 posters por fila en vez de 4.
 
+// ─── sizes: ancho REAL al que se ve cada imagen de la grilla (2026-10-01) ────
+// Sin esto WordPress le dice al navegador que la imagen se ve al ancho del
+// archivo (ej. 693px para un poster) y en las primeras filas baja una copia
+// mucho más grande de la necesaria (un poster se ve a ~410px en un monitor
+// de 1920). Con el ancho real, el navegador elige solo la copia justa del
+// srcset según pantalla y densidad (retina pide el doble). Ver la referencia
+// de imágenes en _init_imagenes.php.
+//
+// Cuentas = misma geometría que style.css: ancho de pantalla − margen lateral
+// del sitio (--jb3-modulo-padding-x: 80/40/20 por lado) − gaps entre columnas
+// (40px; 20px en mobile), dividido columnas. Columnas: desktop = $columnas o
+// el default de cada grilla; tablet y mobile, los fijos de style.css. Si una
+// grilla va dentro de algo más angosto, la cuenta queda un poco por arriba:
+// a lo sumo baja una copia de más, nunca una que se vea borrosa.
+// SI CAMBIAN las columnas, gaps o márgenes en style.css, actualizar acá.
+function jb3_grid_sizes( string $grilla, int $columnas = 0 ): string {
+	$cols = array(
+		// grilla    => [ desktop default, tablet, mobile ]
+		'posters' => array( 4, 3, 2 ),
+		'thumbs'  => array( 3, 2, 1 ),
+		'mixto'   => array( 4, 3, 2 ),
+		// .jb3-grilla (bloque Grilla, grids de personas/prensa de Prod.
+		// Originales): --jb3-grilla-cols-desktop/tablet/mobile, 3/2/1 default.
+		'grilla'  => array( 3, 2, 1 ),
+	)[ $grilla ] ?? array( 4, 3, 2 );
+
+	$desktop = $columnas > 0 ? $columnas : $cols[0];
+	$ancho   = function ( int $n, int $margenes, int $gap ) {
+		return 1 === $n
+			? "calc(100vw - {$margenes}px)"
+			: 'calc((100vw - ' . ( $margenes + ( $n - 1 ) * $gap ) . "px) / {$n})";
+	};
+
+	return '(max-width: 767px) ' . $ancho( $cols[2], 40, 20 )
+		. ', (max-width: 1023px) ' . $ancho( $cols[1], 80, 40 )
+		. ', ' . $ancho( $desktop, 160, 40 );
+}
+
 function jb3_grid_posters( array $posts, int $columnas = 0 ): string {
 	if ( empty( $posts ) ) {
 		return '';
 	}
 	$style = $columnas > 0 ? ' style="--jb3-grid-cols:' . (int) $columnas . ';"' : '';
+	$sizes = jb3_grid_sizes( 'posters', $columnas );
 	ob_start();
 	?>
 	<div class="jb3-grid-posters"<?php echo $style; ?>>
@@ -85,7 +124,7 @@ function jb3_grid_posters( array $posts, int $columnas = 0 ): string {
 			<a class="jb3-grid-posters__item" href="<?php echo esc_url( get_permalink( $post ) ); ?>">
 				<span class="jb3-grid-posters__media">
 					<?php if ( has_post_thumbnail( $post ) ) : ?>
-						<?php echo get_the_post_thumbnail( $post, 'large' ); ?>
+						<?php echo get_the_post_thumbnail( $post, 'large', array( 'sizes' => $sizes ) ); ?>
 					<?php endif; ?>
 					<?php if ( $cintillo ) : ?>
 						<span class="jb3-grid-cintillo"><?php echo esc_html( $cintillo ); ?></span>
@@ -122,6 +161,7 @@ function jb3_grid_mixto( array $posts, int $columnas = 0 ): string {
 	}
 	$tipos_poster = jb3_modulo_tipos_poster();
 	$style        = $columnas > 0 ? ' style="--jb3-grid-cols:' . (int) $columnas . ';"' : '';
+	$sizes        = jb3_grid_sizes( 'mixto', $columnas ); // misma columna para afiches y miniaturas.
 	ob_start();
 	?>
 	<div class="jb3-grid-mixto"<?php echo $style; ?>>
@@ -139,7 +179,7 @@ function jb3_grid_mixto( array $posts, int $columnas = 0 ): string {
 			>
 				<span class="jb3-grid-mixto__media">
 					<?php if ( has_post_thumbnail( $post ) ) : ?>
-						<?php echo get_the_post_thumbnail( $post, 'large' ); ?>
+						<?php echo get_the_post_thumbnail( $post, 'large', array( 'sizes' => $sizes ) ); ?>
 					<?php endif; ?>
 					<?php if ( $video_url ) : ?>
 						<span class="jb3-grid-thumbs__play" aria-hidden="true">
@@ -163,6 +203,7 @@ function jb3_grid_thumbs( array $posts, int $columnas = 0 ): string {
 		return '';
 	}
 	$style = $columnas > 0 ? ' style="--jb3-grid-cols:' . (int) $columnas . ';"' : '';
+	$sizes = jb3_grid_sizes( 'thumbs', $columnas );
 	ob_start();
 	?>
 	<div class="jb3-grid-thumbs"<?php echo $style; ?>>
@@ -179,7 +220,7 @@ function jb3_grid_thumbs( array $posts, int $columnas = 0 ): string {
 			>
 				<span class="jb3-grid-thumbs__media">
 					<?php if ( has_post_thumbnail( $post ) ) : ?>
-						<?php echo get_the_post_thumbnail( $post, 'large' ); ?>
+						<?php echo get_the_post_thumbnail( $post, 'large', array( 'sizes' => $sizes ) ); ?>
 					<?php endif; ?>
 					<?php if ( $video_url ) : ?>
 						<span class="jb3-grid-thumbs__play" aria-hidden="true">

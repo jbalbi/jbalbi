@@ -46,6 +46,8 @@ $hoy            = current_time( 'Ymd' );
 
 $imagen_desktop = '';
 $imagen_mobile  = '';
+$id_desktop     = 0;
+$id_mobile      = 0;
 
 foreach ( (array) get_field( 'prog_imagenes', $post_id ) as $fila ) {
 	// A propósito AL REVÉS del criterio que usa el resto del sitio: acá sin
@@ -77,6 +79,9 @@ foreach ( (array) get_field( 'prog_imagenes', $post_id ) as $fila ) {
 	$imagen_desktop = is_array( $desktop_raw ) ? ( $desktop_raw['url'] ?? '' ) : (string) $desktop_raw;
 	$mobile_raw     = $fila['imagen_mobile'] ?? '';
 	$imagen_mobile  = is_array( $mobile_raw ) ? ( $mobile_raw['url'] ?? '' ) : (string) $mobile_raw;
+	// IDs para jb3_picture() (copia justa por pantalla, _init_imagenes.php).
+	$id_desktop = jb3_img_id( $desktop_raw );
+	$id_mobile  = jb3_img_id( $mobile_raw );
 	break;
 }
 
@@ -121,11 +126,20 @@ if ( $resuelto['titulo'] && function_exists( 'jb3_subnav_register' ) ) {
 		<div class="jb3-modulo__bajada"><?php echo wp_kses_post( $resuelto['bajada'] ); ?></div>
 	<?php endif; ?>
 	<div class="jb3-programacion__imagen">
-		<picture>
-			<?php if ( $imagen_mobile ) : ?>
-				<source media="(max-width: 767px)" srcset="<?php echo esc_url( $imagen_mobile ); ?>">
-			<?php endif; ?>
-			<img src="<?php echo esc_url( $imagen_desktop ); ?>" alt="">
-		</picture>
+		<?php
+		// Ancho completo (.jb3-programacion__imagen es full-bleed, 100vw).
+		// Sin adjunto identificable (ej. URL externa), el <picture> de siempre.
+		$picture = jb3_picture( $id_desktop, $id_mobile, array( 'sizes' => jb3_sizes_ancho_completo() ) );
+		if ( $picture ) :
+			echo $picture; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_picture() ya escapa todo.
+		else :
+			?>
+			<picture>
+				<?php if ( $imagen_mobile ) : ?>
+					<source media="(max-width: 767px)" srcset="<?php echo esc_url( $imagen_mobile ); ?>">
+				<?php endif; ?>
+				<img src="<?php echo esc_url( $imagen_desktop ); ?>" alt="" loading="lazy">
+			</picture>
+		<?php endif; ?>
 	</div>
 </section>

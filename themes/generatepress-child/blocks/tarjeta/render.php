@@ -73,4 +73,6 @@ if ( $is_preview ) {
 	return;
 }
 
-jb3_render_tarjeta( $src, $alt, $titulo, $texto, $link, $modal, $video );
+// ID del adjunto → copia justa con sizes="auto" (la tarjeta suelta no sabe
+// a qué ancho va a quedar: ver jb3_sizes_tarjeta_suelta(), _init_imagenes.php).
+jb3_render_tarjeta( $src, $alt, $titulo, $texto, $link, $modal, $video, 0, false, jb3_img_id( $imagen ) );

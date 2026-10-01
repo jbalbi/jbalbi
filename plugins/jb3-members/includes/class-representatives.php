@@ -322,7 +322,7 @@ class JB3_Representatives {
 
             <?php if ( $mapa_url ) : ?>
                 <div class="jb3-representantes__col-der">
-                    <img class="jb3-representantes__mapa" src="<?php echo esc_url( $mapa_url ); ?>" alt="">
+                    <?php echo self::mapa_img( $country_code, $mapa_url ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- mapa_img() ya escapa todo. ?>
                 </div>
             <?php endif; ?>
         </div>
@@ -344,6 +344,40 @@ class JB3_Representatives {
         }
 
         return $upload_dir['baseurl'] . '/paises/' . $filename;
+    }
+
+    /**
+     * <img> del mapa del país (2026-10-01). Los SVG de uploads/paises/ son
+     * los de "país en el globo" de Wikipedia — dibujan los bordes de TODOS
+     * los países (Brasil: 12.786 trazos, 9,6 MB) para un mapa que se ve a
+     * ~430px. Si están las versiones WebP (mapa_XX.webp 1200px y
+     * mapa_XX-600.webp, generadas desde el mismo SVG con Chromium, sin
+     * diferencia visible), se usan esas: de 33 MB en total a 1,5 MB. Si
+     * faltan, queda el SVG como antes.
+     *
+     * loading="lazy" A PROPÓSITO: en mobile la columna del mapa va con
+     * display:none (jb3-forms.css) y una imagen normal se descarga igual
+     * aunque esté oculta — con lazy, el navegador no la pide nunca ahí.
+     *
+     * sizes: el mapa ocupa el 50% de la columna derecha, que es el 50% del
+     * ancho del contenido (márgenes 80/40px por lado, como el resto del sitio).
+     * Medido: 432px en un monitor de 1920, 294px en una notebook de 1366.
+     */
+    private static function mapa_img( string $code, string $svg_url ): string {
+        $upload_dir = wp_get_upload_dir();
+        $base       = 'mapa_' . strtoupper( $code );
+        $dir        = $upload_dir['basedir'] . '/paises/';
+        $url        = $upload_dir['baseurl'] . '/paises/';
+
+        if ( file_exists( $dir . $base . '.webp' ) && file_exists( $dir . $base . '-600.webp' ) ) {
+            return sprintf(
+                '<img class="jb3-representantes__mapa" src="%1$s" srcset="%2$s 600w, %1$s 1200w" sizes="(max-width: 1023px) calc((100vw - 80px) / 4), calc((100vw - 160px) / 4)" width="1200" height="1200" alt="" loading="lazy" decoding="async">',
+                esc_url( $url . $base . '.webp' ),
+                esc_url( $url . $base . '-600.webp' )
+            );
+        }
+
+        return '<img class="jb3-representantes__mapa" src="' . esc_url( $svg_url ) . '" alt="" loading="lazy" decoding="async">';
     }
 
     /** Iconos rellenos e inline (sin librería externa) para WhatsApp/teléfono/email. */

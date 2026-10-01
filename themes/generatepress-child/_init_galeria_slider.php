@@ -358,7 +358,25 @@ function jb3_render_galeria_slider( array $slides, string $titulo = '', string $
 								// "pendientes" más abajo). Son pocas fotos por galería, el
 								// costo de cargarlas todas de una es mínimo.
 								?>
-								<img src="<?php echo esc_url( $s['src'] ); ?>" alt="<?php echo esc_attr( $s['alt'] ); ?>" loading="eager" data-jb3-image="<?php echo esc_url( $s['full'] ); ?>">
+								<?php
+								// Copia justa (2026-10-01, _init_imagenes.php): las fotos
+								// tienen ALTO fijo (.jb3-galeria-slider__slide: 420/320/220px
+								// según pantalla — si cambia en style.css, cambiar acá) y el
+								// ancho sale de su proporción, así que el sizes es exacto en
+								// px por foto. La ampliada (data-jb3-image) sigue siendo el
+								// original. Sin ID (slides armados de otra forma), como antes.
+								$sid      = (int) ( $s['id'] ?? 0 );
+								$img_html = $sid ? jb3_img(
+									$sid,
+									'(max-width: 767px) ' . jb3_ancho_por_alto( $sid, 220 ) . 'px, (max-width: 1023px) ' . jb3_ancho_por_alto( $sid, 320 ) . 'px, ' . jb3_ancho_por_alto( $sid, 420 ) . 'px',
+									array( 'alt' => $s['alt'], 'loading' => 'eager', 'tamano' => 'large', 'data-jb3-image' => $s['full'] )
+								) : '';
+								if ( $img_html ) :
+									echo $img_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_img() ya escapa todo.
+								else :
+									?>
+									<img src="<?php echo esc_url( $s['src'] ); ?>" alt="<?php echo esc_attr( $s['alt'] ); ?>" loading="eager" data-jb3-image="<?php echo esc_url( $s['full'] ); ?>">
+								<?php endif; ?>
 							</div>
 							<?php
 						endforeach;

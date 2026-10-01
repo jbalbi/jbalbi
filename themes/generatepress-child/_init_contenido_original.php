@@ -113,6 +113,7 @@ function jb3_contenido_render_grid_personas( array $fila ) {
 		$link = is_array( $persona['link'] ?? null ) ? $persona['link'] : [];
 		$items[] = [
 			'src'           => $img['sizes']['large'] ?? $img['url'] ?? '',
+			'id'            => jb3_img_id( $img ), // copia justa: jb3_render_tarjeta() + jb3_grid_sizes('grilla').
 			'alt'           => $img['alt'] ?? '',
 			'titulo'        => $persona['titulo'] ?? '',
 			'texto'         => $persona['texto'] ?? '',
@@ -137,7 +138,7 @@ function jb3_contenido_render_grid_personas( array $fila ) {
 		<div class="jb3-grilla"<?php echo $style; ?>>
 			<?php foreach ( $items as $item ) : ?>
 				<div class="jb3-grilla__item">
-					<?php jb3_render_tarjeta( $item['src'], $item['alt'], $item['titulo'], $item['texto'], $item['link'], $item['modal'], '', 0, $item['nueva_pestana'] ); ?>
+					<?php jb3_render_tarjeta( $item['src'], $item['alt'], $item['titulo'], $item['texto'], $item['link'], $item['modal'], '', 0, $item['nueva_pestana'], $item['id'], jb3_grid_sizes( 'grilla', $columnas ) ); ?>
 				</div>
 			<?php endforeach; ?>
 		</div>
@@ -168,6 +169,7 @@ function jb3_contenido_render_prensa( array $fila ) {
 		}
 		$items[] = [
 			'src'      => $img['sizes']['large'] ?? $img['url'] ?? '',
+			'id'       => jb3_img_id( $img ), // copia justa: jb3_render_tarjeta() + jb3_grid_sizes('grilla').
 			'alt'      => $img['alt'] ?? '',
 			'epigrafe' => $nota['epigrafe'] ?? '',
 			'link'     => $link,
@@ -185,7 +187,7 @@ function jb3_contenido_render_prensa( array $fila ) {
 		<div class="jb3-grilla"<?php echo $style; ?>>
 			<?php foreach ( $items as $item ) : ?>
 				<div class="jb3-grilla__item">
-					<?php jb3_render_tarjeta( $item['src'], $item['alt'], '', $item['epigrafe'], $item['link'], false, '' ); ?>
+					<?php jb3_render_tarjeta( $item['src'], $item['alt'], '', $item['epigrafe'], $item['link'], false, '', 0, false, $item['id'], jb3_grid_sizes( 'grilla', $columnas ) ); ?>
 				</div>
 			<?php endforeach; ?>
 		</div>

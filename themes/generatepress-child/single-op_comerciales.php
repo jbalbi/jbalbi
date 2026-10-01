@@ -106,8 +106,20 @@ get_header();
 					<?php else : ?>
 						<div class="jb3-pdf-viewer jb3-pdf-viewer--bloqueado">
 							<?php if ( has_post_thumbnail() ) : ?>
-								<?php /* 'full', no 'large': se muestra a width:100% (ver .jb3-pdf-viewer__preview en style.css), y 'large' tiene un tope de 1024px — en un contenedor más ancho que eso el navegador la estira y se ve borrosa aunque el archivo original sea nítido. */ ?>
-								<img class="jb3-pdf-viewer__preview" src="<?php echo esc_url( get_the_post_thumbnail_url( get_the_ID(), 'full' ) ); ?>" alt="">
+								<?php
+								// Se muestra a width:100% del contenido (.jb3-pdf-viewer__preview
+								// en style.css). Antes iba siempre el original ('full', porque
+								// 'large' tenía tope de 1024 y se veía borroso en contenedores
+								// más anchos). Desde 2026-10-01 va con srcset: cada pantalla
+								// baja la copia justa, sin tope que la deje borrosa (ver
+								// jb3_img(), _init_imagenes.php).
+								$preview = jb3_img( (int) get_post_thumbnail_id(), jb3_sizes_ancho_contenido(), array( 'class' => 'jb3-pdf-viewer__preview' ) );
+								if ( $preview ) :
+									echo $preview; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_img() ya escapa todo.
+								else :
+									?>
+									<img class="jb3-pdf-viewer__preview" src="<?php echo esc_url( get_the_post_thumbnail_url( get_the_ID(), 'full' ) ); ?>" alt="">
+								<?php endif; ?>
 							<?php endif; ?>
 							<?php
 							// redirect_to: vuelve acá mismo después de loguearse/registrarse,

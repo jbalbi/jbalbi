@@ -53,6 +53,9 @@ function jb3_canales_slider_render( string $titulo, string $bajada = '' ): strin
 			'nombre' => $canal->name,
 			'logo'   => $logo_url,
 			'link'   => $link,
+			// IDs: copia justa del logo (jb3_canales_slider_logo_img(), abajo).
+			'logo_id'       => jb3_img_id( $logo_byn_url ? $logo_byn_field : $logo_color_field ),
+			'logo_hover_id' => jb3_img_id( $logo_color_field ),
 			// Hover a color: solo tiene sentido si el canal tiene página a
 			// donde ir (si no, no hay nada que "invite" a pasar el mouse) Y
 			// si el logo mostrado por defecto es el byn (si ya se está
@@ -88,14 +91,14 @@ function jb3_canales_slider_render( string $titulo, string $bajada = '' ): strin
 					<div class="swiper-slide jb3-canales-slider__slide">
 						<?php if ( $slide['link'] ) : ?>
 							<a href="<?php echo esc_url( $slide['link'] ); ?>" class="<?php echo esc_attr( $logo_class ); ?>">
-								<img class="jb3-canales-slider__logo-img jb3-canales-slider__logo-img--default" src="<?php echo esc_url( $slide['logo'] ); ?>" alt="<?php echo esc_attr( $slide['nombre'] ); ?>">
+								<?php echo jb3_canales_slider_logo_img( $slide['logo_id'], $slide['logo'], $slide['nombre'], 'default' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 								<?php if ( $slide['logo_hover'] ) : ?>
-									<img class="jb3-canales-slider__logo-img jb3-canales-slider__logo-img--hover" src="<?php echo esc_url( $slide['logo_hover'] ); ?>" alt="" aria-hidden="true">
+									<?php echo jb3_canales_slider_logo_img( $slide['logo_hover_id'], $slide['logo_hover'], '', 'hover' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 								<?php endif; ?>
 							</a>
 						<?php else : ?>
 							<span class="<?php echo esc_attr( $logo_class ); ?>">
-								<img class="jb3-canales-slider__logo-img jb3-canales-slider__logo-img--default" src="<?php echo esc_url( $slide['logo'] ); ?>" alt="<?php echo esc_attr( $slide['nombre'] ); ?>">
+								<?php echo jb3_canales_slider_logo_img( $slide['logo_id'], $slide['logo'], $slide['nombre'], 'default' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</span>
 						<?php endif; ?>
 					</div>
@@ -184,6 +187,26 @@ function jb3_canales_slider_render( string $titulo, string $bajada = '' ): strin
 // taxonomía solo para el CPT. Cacheado en memoria: se pide una vez por
 // canal por request, no una vez por canal por cada slider que se imprima
 // en la misma página.
+/**
+ * <img> de un logo de "Nuestras marcas" con la copia justa (2026-10-01):
+ * caja de alto fijo .jb3-canales-slider__logo — 105/90/75px desktop/tablet/
+ * mobile en style.css (si cambia allá, cambiar acá). Ver jb3_sizes_logo(),
+ * _init_imagenes.php. eager, como antes: los slides fuera de pantalla del
+ * carrusel no se cargarían a tiempo con carga diferida.
+ * Sin ID (logo cargado de otra forma), el <img> de siempre.
+ *
+ * @param string $variante 'default' | 'hover'.
+ */
+function jb3_canales_slider_logo_img( int $id, string $url, string $alt, string $variante ): string {
+	$clase = 'jb3-canales-slider__logo-img jb3-canales-slider__logo-img--' . $variante;
+	$attrs = array( 'class' => $clase, 'alt' => $alt, 'loading' => 'eager' );
+	if ( 'hover' === $variante ) {
+		$attrs['aria-hidden'] = 'true';
+	}
+	$html = $id ? jb3_img( $id, jb3_sizes_logo( $id, array( 75, 90, 105 ) ), $attrs ) : '';
+	return $html ?: '<img class="' . esc_attr( $clase ) . '" src="' . esc_url( $url ) . '" alt="' . esc_attr( $alt ) . '"' . ( 'hover' === $variante ? ' aria-hidden="true"' : '' ) . '>';
+}
+
 function jb3_canal_pagina_url( int $canal_term_id ): string {
 	static $cache = [];
 	if ( array_key_exists( $canal_term_id, $cache ) ) {

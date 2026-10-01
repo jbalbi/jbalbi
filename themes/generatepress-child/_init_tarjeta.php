@@ -32,7 +32,11 @@ defined( 'ABSPATH' ) || exit;
 //      (independiente de $modal) para poder distinguir este caso de un link
 //      genuinamente externo (que sí necesita target="_blank" automático,
 //      pase lo que pase con los checkboxes — mismo criterio de siempre).
-function jb3_render_tarjeta( string $src, string $alt, string $titulo, string $texto, string $link, bool $modal, string $video, int $page_id_conocido = 0, bool $nueva_pestana = false ): void {
+// $img_id / $sizes (opcionales, 2026-10-01): con el ID del adjunto la
+// imagen sale con srcset + sizes (copia justa, ver _init_imagenes.php) en vez
+// de la copia fija de $src. $sizes = ancho al que se ve (lo sabe quien llama,
+// ej. la grilla con sus columnas); vacío = "auto" con respaldo genérico.
+function jb3_render_tarjeta( string $src, string $alt, string $titulo, string $texto, string $link, bool $modal, string $video, int $page_id_conocido = 0, bool $nueva_pestana = false, int $img_id = 0, string $sizes = '' ): void {
 	if ( ! $src ) {
 		return;
 	}
@@ -47,7 +51,14 @@ function jb3_render_tarjeta( string $src, string $alt, string $titulo, string $t
 	?>
 	<<?php echo $tag; ?> class="jb3-tarjeta"<?php echo $href . $target . $data; ?>>
 		<span class="jb3-tarjeta__media">
-			<img src="<?php echo esc_url( $src ); ?>" alt="<?php echo esc_attr( $alt ); ?>">
+			<?php
+			$img = $img_id ? jb3_img( $img_id, $sizes ?: jb3_sizes_tarjeta_suelta(), array( 'alt' => $alt, 'tamano' => 'large' ) ) : '';
+			if ( $img ) :
+				echo $img; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_img() ya escapa todo.
+			else :
+				?>
+				<img src="<?php echo esc_url( $src ); ?>" alt="<?php echo esc_attr( $alt ); ?>">
+			<?php endif; ?>
 			<?php if ( $video ) : ?>
 				<span class="jb3-grid-thumbs__play" aria-hidden="true">
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>

@@ -110,13 +110,30 @@ add_action( 'wp_head', function () {
 		return;
 	}
 
+	// Copia justa del fondo de desktop (2026-10-01, ver _init_imagenes.php):
+	// CSS no tiene srcset, así que se elige por media query — hasta 1920 de
+	// pantalla y sin retina, la copia de 1920; más grande o retina, el
+	// original (hasta 2560). Mientras los fondos subidos sean de 1920, las
+	// dos URL son la misma y no cambia nada; gana cuando suban de 2560.
+	// El de mobile va siempre completo: cubre todo el ALTO de la pantalla
+	// (background-size:cover) y necesita incluso más píxeles de los que trae.
+	$id_desktop   = $desktop ? jb3_img_id( $desktop ) : 0;
+	$url_desktop  = $id_desktop ? jb3_img_url( $id_desktop ) : (string) $desktop;
+	$url_1920     = $id_desktop ? jb3_img_url( $id_desktop, 'jb3-1920' ) : $url_desktop;
+
 	$css = '';
 	if ( $desktop ) {
-		$css .= '--jb3-bg-desktop:url(' . esc_url( $desktop ) . ');';
+		$css .= '--jb3-bg-desktop:url(' . esc_url( $url_1920 ) . ');';
 	}
 	if ( $mobile ) {
-		$css .= '--jb3-bg-mobile:url(' . esc_url( $mobile ) . ');';
+		$id_mobile = jb3_img_id( $mobile );
+		$css      .= '--jb3-bg-mobile:url(' . esc_url( $id_mobile ? jb3_img_url( $id_mobile ) : (string) $mobile ) . ');';
 	}
 
-	printf( '<style>body{%s}</style>', $css );
+	$css_grande = '';
+	if ( $desktop && $url_1920 !== $url_desktop ) {
+		$css_grande = '@media (min-width:1921px),(min-width:1024px) and (min-resolution:1.5dppx){body{--jb3-bg-desktop:url(' . esc_url( $url_desktop ) . ');}}';
+	}
+
+	printf( '<style>body{%s}%s</style>', $css, $css_grande ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- URLs ya pasadas por esc_url().
 } );

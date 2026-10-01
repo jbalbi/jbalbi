@@ -1478,9 +1478,10 @@ body {
 /* ═══════════════════════════════════════════════════════════════════════════
    SLIDER HOME ([home_slider], _init_home_slider.php)
 
-   Medidas para diseño, comportamiento por pantalla y el porqué de cada
-   decisión: ver la especificación completa al principio de
-   _init_home_slider.php (definida con el usuario el 2026-09-30).
+   Medidas de las imágenes para diseño: _init_imagenes.php (referencia
+   única de imágenes del sitio). Comportamiento por pantalla y el porqué de
+   cada decisión: comentario al principio de _init_home_slider.php
+   (definido con el usuario el 2026-09-30).
 
    Resumen de lo que implementa este bloque:
    ┌────────────────────────┬──────────────────────────┬───────────────────┐
@@ -2860,10 +2861,14 @@ body.error404 .inside-article .search-form {
     object-fit: cover;
 }
 
+/* 16:9 (antes 3:2, cambiado 2026-10-01): es la proporción en la que ya se
+   suben los thumbs de videos, integraciones y Op. Comerciales (1920×1080,
+   2400×1350) — con 3:2 se les recortaban los costados. Medida a pedir al
+   diseñador: ver _init_imagenes.php. */
 .jb3-grid-thumbs__media img {
     display: block;
     width: 100%;
-    aspect-ratio: 3 / 2;
+    aspect-ratio: 16 / 9;
     object-fit: cover;
 }
 
@@ -2957,7 +2962,7 @@ body.error404 .inside-article .search-form {
 }
 
 .jb3-grid-mixto__item--thumb .jb3-grid-mixto__media img {
-    aspect-ratio: 3 / 2;
+    aspect-ratio: 16 / 9; /* mismo criterio que .jb3-grid-thumbs (ver arriba) */
     object-fit: cover;
 }
 
@@ -3589,6 +3594,7 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
 .jb3-contenido-bloque--imagen img {
     display: block;
     width: 100%;
+    height: auto; /* el <img> trae width/height (jb3_img()): sin esto se deformaba. */
     max-width: 720px;
     border-radius: 8px;
 }
@@ -3602,6 +3608,10 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
 .jb3-contenido-bloque--banner img {
     display: block;
     width: 100%;
+    /* height:auto: el <img> ahora trae width/height (jb3_picture(), para
+       reservar el alto antes de que cargue) — sin esto el alto quedaba
+       fijo en el del archivo y la imagen se deformaba al achicarse. */
+    height: auto;
 }
 
 .jb3-contenido-bloque__epigrafe {

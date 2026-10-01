@@ -77,7 +77,16 @@ $style = $columnas > 0 ? ' style="--jb3-grid-cols:' . (int) $columnas . ';"' : '
 			?>
 			<span class="jb3-grid-posters__item">
 				<span class="jb3-grid-posters__media">
-					<img src="<?php echo esc_url( $src ); ?>" alt="<?php echo esc_attr( $alt ); ?>">
+					<?php
+					// Copia justa según columnas (misma grilla que los posters:
+					// jb3_grid_sizes(), _init_grids.php).
+					$img_html = jb3_img( jb3_img_id( $img ), jb3_grid_sizes( 'posters', $columnas ), array( 'alt' => $alt, 'tamano' => 'large' ) );
+					if ( $img_html ) :
+						echo $img_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_img() ya escapa todo.
+					else :
+						?>
+						<img src="<?php echo esc_url( $src ); ?>" alt="<?php echo esc_attr( $alt ); ?>">
+					<?php endif; ?>
 				</span>
 			</span>
 		<?php endforeach; ?>

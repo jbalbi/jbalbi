@@ -71,7 +71,7 @@ foreach ( $imagenes as $img ) {
 	$full = is_array( $img ) ? ( $img['url'] ?? $src ) : '';
 	$alt  = is_array( $img ) ? ( $img['alt'] ?? '' ) : '';
 	if ( $src ) {
-		$slides[] = [ 'src' => $src, 'full' => $full, 'alt' => $alt ];
+		$slides[] = [ 'src' => $src, 'full' => $full, 'alt' => $alt, 'id' => jb3_img_id( $img ) ]; // id: copia justa en jb3_render_galeria_slider().
 	}
 }
 

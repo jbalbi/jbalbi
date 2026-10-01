@@ -25,6 +25,7 @@ get_header();
 
 $canal_term_id = function_exists( 'get_field' ) ? get_field( 'canal' ) : 0;
 $logo_url      = '';
+$logo          = null;
 if ( $canal_term_id ) {
 	$logo     = get_field( 'logo', 'canales_' . $canal_term_id );
 	$logo_url = is_array( $logo ) ? ( $logo['url'] ?? '' ) : (string) $logo;
@@ -37,7 +38,18 @@ if ( $canal_term_id ) {
 		<article <?php post_class(); ?> id="post-<?php the_ID(); ?>">
 			<?php if ( $logo_url ) : ?>
 				<div class="jb3-canal-header jb3-contenedor">
-					<img class="jb3-canal-header__logo" src="<?php echo esc_url( $logo_url ); ?>" alt="">
+					<?php
+					// Copia justa (2026-10-01): caja .jb3-canal-header__logo de
+					// máx. 240×120 en style.css — si cambia allá, cambiar acá. Ver
+					// jb3_sizes_logo(), _init_imagenes.php. Se ve al entrar: eager.
+					$logo_id  = jb3_img_id( $logo );
+					$logo_img = $logo_id ? jb3_img( $logo_id, jb3_sizes_logo( $logo_id, array( 120, 120, 120 ), array( 240, 240, 240 ) ), array( 'class' => 'jb3-canal-header__logo', 'loading' => 'eager' ) ) : '';
+					if ( $logo_img ) :
+						echo $logo_img; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_img() ya escapa todo.
+					else :
+						?>
+						<img class="jb3-canal-header__logo" src="<?php echo esc_url( $logo_url ); ?>" alt="">
+					<?php endif; ?>
 				</div>
 			<?php endif; ?>
 

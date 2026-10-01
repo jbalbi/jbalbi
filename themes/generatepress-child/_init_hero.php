@@ -9,21 +9,24 @@ defined( 'ABSPATH' ) || exit;
 // vez de repetir el mismo markup en cada uno. Mismo patrón <picture>+
 // <source> que ya usa el slider de Home.
 function jb3_hero_image() {
-	$desktop = get_field( 'imagen_hero_desktop' );
-	$mobile  = get_field( 'imagen_hero_mobile' );
-
-	if ( ! $desktop ) {
+	// Valor crudo (ID) en vez del formato de retorno del campo (URL): hace
+	// falta el adjunto para armar el srcset. Copia justa por pantalla y
+	// prioridad de carga (es lo primero que se ve): jb3_picture(),
+	// _init_imagenes.php.
+	$picture = jb3_picture(
+		jb3_img_id( get_field( 'imagen_hero_desktop', false, false ) ),
+		jb3_img_id( get_field( 'imagen_hero_mobile', false, false ) ),
+		array(
+			'sizes'     => jb3_sizes_ancho_completo(),
+			'prioridad' => true,
+			'class'     => 'jb3-hero__picture',
+		)
+	);
+	if ( ! $picture ) {
 		return;
 	}
 	?>
-	<div class="jb3-hero">
-		<picture class="jb3-hero__picture">
-			<?php if ( $mobile ) : ?>
-				<source media="(max-width: 767px)" srcset="<?php echo esc_url( $mobile ); ?>">
-			<?php endif; ?>
-			<img src="<?php echo esc_url( $desktop ); ?>" alt="">
-		</picture>
-	</div>
+	<div class="jb3-hero"><?php echo $picture; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_picture() ya escapa todo. ?></div>
 	<?php
 }
 

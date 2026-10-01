@@ -2,41 +2,18 @@
 defined( 'ABSPATH' ) || exit;
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ROTADOR DE LA HOME — ESPECIFICACIÓN DE IMÁGENES Y COMPORTAMIENTO
+// ROTADOR DE LA HOME — COMPORTAMIENTO
 // (campos "imagen_desktop" / "imagen_mobile" del repeater ACF "HOME HEADER
 // SLIDER"). Definido con el usuario el 2026-09-30; el CSS está en style.css,
 // sección "SLIDER HOME".
+//
+// MEDIDAS DE LAS IMÁGENES A PEDIRLE AL DISEÑADOR: en _init_imagenes.php
+// (referencia única de imágenes de todo el sitio).
 //
 // REGLA DE ORO (pedido explícito): es el elemento más importante del sitio
 // y la imagen NUNCA se recorta de los costados ni de arriba. Va siempre a
 // ancho completo de pantalla, anclada arriba, con el alto que le da su
 // propia proporción. Lo ÚNICO que puede quedar afuera es la franja de abajo.
-//
-// ─── MEDIDAS A PEDIRLE AL DISEÑADOR ────────────────────────────────────────
-//
-// DESKTOP y TABLET (imagen_desktop) — la tablet usa la de desktop:
-//   - 2560 × 1440 px (16:9). Máximo acordado: 2560 de ancho (con 3840 los
-//     archivos pesan 2-3 veces más y la mejora casi no se nota).
-//   - 1920 × 1080 (lo que se venía subiendo) sigue funcionando igual; solo
-//     se ve un poco "blando" en monitores 4K.
-//   - El ~20% INFERIOR es zona de degradé hacia el color de fondo de la
-//     página (negro): nada importante ahí. En ventanas más bajas que 16:9
-//     esa franja queda fuera de pantalla, y encima va el bloque
-//     logo + texto + botón + copyright (alineado a la izquierda).
-//
-// MOBILE (imagen_mobile) — solo celular en vertical:
-//   - 1080 × 1920 px (9:16).
-//   - Lo importante (caras, título del arte) en el ~60% SUPERIOR.
-//   - El ~40% INFERIOR es degradé hacia negro: ahí se monta el bloque
-//     logo + texto + botón + copyright.
-//   - Casi todos los celulares actuales son más alargados que 9:16, así que
-//     la imagen queda ~150px más corta que la pantalla y debajo sigue el
-//     fondo negro — por eso el degradé es obligatorio: es lo que hace que
-//     no se note dónde termina. (Se evaluó pedir 1080 × 2400 para llenar
-//     siempre; se eligió 1080 × 1920 con degradé.)
-//   - Las 1000 × 1333 (3:4) ya subidas siguen funcionando: foto arriba,
-//     más fondo negro debajo.
-//   - Sin imagen mobile cargada, en celular se muestra la de desktop.
 //
 // ─── CÓMO SE COMPORTA EN CADA PANTALLA ─────────────────────────────────────
 //
@@ -90,7 +67,7 @@ defined( 'ABSPATH' ) || exit;
 // logo se carga una vez por canal, no por cada slide/post que lo use.
 function jb3_slide_canal( $canal ) {
 	if ( empty( $canal ) ) {
-		return [ 'name' => '', 'logo' => '', 'logo_w' => 0, 'logo_h' => 0 ];
+		return [ 'name' => '', 'logo' => '', 'logo_id' => 0, 'logo_w' => 0, 'logo_h' => 0 ];
 	}
 	if ( is_array( $canal ) ) {
 		$canal = reset( $canal );
@@ -105,7 +82,7 @@ function jb3_slide_canal( $canal ) {
 	}
 
 	if ( ! $term || is_wp_error( $term ) ) {
-		return [ 'name' => '', 'logo' => '', 'logo_w' => 0, 'logo_h' => 0 ];
+		return [ 'name' => '', 'logo' => '', 'logo_id' => 0, 'logo_w' => 0, 'logo_h' => 0 ];
 	}
 
 	$logo_field = function_exists( 'get_field' ) ? get_field( 'logo', 'canales_' . $term->term_id ) : '';
@@ -138,11 +115,30 @@ function jb3_slide_canal( $canal ) {
 	}
 
 	return [
-		'name'   => $term->name,
-		'logo'   => $logo_url,
+		'name'    => $term->name,
+		'logo'    => $logo_url,
+		'logo_id' => jb3_img_id( $logo_field ), // copia justa del logo: jb3_slide_logo_img().
 		'logo_w' => $logo_w,
 		'logo_h' => $logo_h,
 	];
+}
+
+/**
+ * <img> del logo de canal de un slide con la copia justa (2026-10-01, ver
+ * jb3_sizes_logo() en _init_imagenes.php). Caja del logo: --logo-w/--logo-h
+ * del slide (o 240×87 de --slider-logo-width/height), × --slider-logo-escala
+ * en mobile (.65 en style.css — si cambia allá, cambiar acá). El logo de la
+ * 1ª slide se ve al entrar: eager; el resto lazy (el script del slider los
+ * pasa a eager al terminar de cargar la página, igual que las imágenes).
+ */
+function jb3_slide_logo_img( array $slide, bool $primera ): string {
+	$id    = (int) ( $slide['canal_logo_id'] ?? 0 );
+	$ancho = (float) ( $slide['canal_logo_w'] ?: 240 );
+	$alto  = (float) ( $slide['canal_logo_h'] ?: 87 );
+	$esc   = 0.65;
+	$attrs = array( 'alt' => (string) $slide['canal_name'], 'loading' => $primera ? 'eager' : 'lazy' );
+	$html  = $id ? jb3_img( $id, jb3_sizes_logo( $id, array( $alto * $esc, $alto, $alto ), array( $ancho * $esc, $ancho, $ancho ) ), $attrs ) : '';
+	return $html ?: '<img src="' . esc_url( $slide['canal_logo'] ) . '" alt="' . esc_attr( $slide['canal_name'] ) . '">';
 }
 
 /** @return float Alto/ancho del adjunto (ej. 0.5625 para 1920×1080), o 0 si no se conoce. */
@@ -152,6 +148,19 @@ function jb3_slide_imagen_ratio( $attachment_id ): float {
 		return 0;
 	}
 	return $meta['height'] / $meta['width'];
+}
+
+/**
+ * Lista srcset del adjunto (todas las copias que generó WordPress con su
+ * ancho real, ver _init_imagenes.php) para que cada pantalla baje solo la
+ * que necesita, en vez del original completo. '' si no hay copias (imagen
+ * más chica que el menor tamaño): ahí queda el src solo, como antes.
+ */
+function jb3_slide_srcset( int $attachment_id ): string {
+	if ( ! $attachment_id ) {
+		return '';
+	}
+	return (string) wp_get_attachment_image_srcset( $attachment_id, 'full' );
 }
 
 add_shortcode( 'home_slider', 'jb3_home_slider_shortcode' );
@@ -223,18 +232,23 @@ function jb3_home_slider_shortcode() {
 		// get_sub_field( ..., false ) = valor crudo (ID del adjunto), sin
 		// importar el "formato de retorno" del campo (hoy URL). Sin imagen
 		// mobile, en mobile se muestra la de desktop (ver <picture> abajo).
-		$r_desktop     = jb3_slide_imagen_ratio( get_sub_field( 'imagen_desktop', false ) );
-		$r_mobile      = jb3_slide_imagen_ratio( get_sub_field( 'imagen_mobile', false ) ) ?: $r_desktop;
+		$id_desktop    = (int) get_sub_field( 'imagen_desktop', false );
+		$id_mobile     = (int) get_sub_field( 'imagen_mobile', false );
+		$r_desktop     = jb3_slide_imagen_ratio( $id_desktop );
+		$r_mobile      = jb3_slide_imagen_ratio( $id_mobile ) ?: $r_desktop;
 		$ratio_desktop = max( $ratio_desktop, $r_desktop );
 		$ratio_mobile  = max( $ratio_mobile, $r_mobile );
 
 		$slides[] = [
 			'imagen_desktop'    => $imagen_desktop,
 			'imagen_mobile'     => get_sub_field( 'imagen_mobile' ),
+			'srcset_desktop'    => jb3_slide_srcset( $id_desktop ),
+			'srcset_mobile'     => jb3_slide_srcset( $id_mobile ),
 			'canal_name'        => $canal['name'],
 			'canal_logo'        => $canal['logo'],
 			'canal_logo_w'      => $canal['logo_w'],
 			'canal_logo_h'      => $canal['logo_h'],
+			'canal_logo_id'     => $canal['logo_id'],
 			'titulo_del_slider' => get_sub_field( 'titulo_del_slider' ),
 			'texto'             => get_sub_field( 'texto' ),
 			'texto_boton'       => get_sub_field( 'texto_boton' ),
@@ -259,12 +273,22 @@ function jb3_home_slider_shortcode() {
 	// Swiper explota a un ancho de slide absurdo (ancho/alto gigantes,
 	// doble scroll). Con "load" esperamos a que la página esté 100%
 	// pintada (imágenes incluidas) antes de medir — sin ambigüedad.
+	//
+	// Imágenes de los slides 2 en adelante: llegan con loading="lazy" (ver el
+	// <img> más abajo) para que no compitan con la primera, que es la que se
+	// ve al entrar. Recién acá, con la página ya cargada, se les pasa a
+	// "eager" para que se bajen en segundo plano ANTES de que el autoplay
+	// las muestre — si se las dejara lazy, el navegador las pediría recién
+	// al entrar en pantalla y podían aparecer un instante en negro.
 	wp_add_inline_script( 'swiper', "
 		window.addEventListener( 'load', function () {
 			var el = document.querySelector( '.jb3-home-slider' );
 			if ( ! el ) {
 				return;
 			}
+			el.querySelectorAll( 'img[loading=\"lazy\"]' ).forEach( function ( img ) {
+				img.loading = 'eager';
+			} );
 			new Swiper( el, {
 				slidesPerView: 1,
 				loop: true,
@@ -292,19 +316,38 @@ function jb3_home_slider_shortcode() {
 		$wrap_style .= '--jb3-slider-ratio-mobile:' . round( $ratio_mobile, 5 ) . ';';
 	}
 
+	// La 1ª slide ya lleva fetchpriority="high" (ver el <img> más abajo).
+	// WordPress no lo sabe — este <img> no pasa por sus funciones — y le
+	// ponía la misma prioridad al primer poster de la página, que le
+	// competía a la imagen que se ve al entrar. Con esto le avisamos que el
+	// elemento prioritario de la página ya está tomado.
+	if ( function_exists( 'wp_high_priority_element_flag' ) ) {
+		wp_high_priority_element_flag( false );
+	}
+
 	ob_start();
 	?>
 	<div class="jb3-home-slider-wrap"<?php echo $wrap_style ? ' style="' . esc_attr( $wrap_style ) . '"' : ''; ?>>
 		<div class="jb3-home-slider swiper">
 			<div class="swiper-wrapper">
-				<?php foreach ( $slides as $slide ) : ?>
+				<?php foreach ( $slides as $i => $slide ) : ?>
 					<div class="swiper-slide">
+						<?php
+						// srcset + sizes="100vw" (el rotador va siempre a ancho
+						// completo): el navegador elige la copia según el ancho de
+						// pantalla Y la densidad (un iPhone de 390px @3x pide ~1170),
+						// en vez de bajar siempre el original. Sin copias (srcset
+						// vacío) queda solo el src, como antes.
+						// Primera slide: fetchpriority="high" — es lo primero que se
+						// ve, que se pida antes que cualquier otra imagen de la página.
+						// El resto: lazy (ver el script de arriba).
+						?>
 						<picture class="jb3-home-slider__picture">
 							<?php if ( $slide['imagen_mobile'] ) : ?>
 								<?php // Mismo media query que --jb3-slider-ratio-mobile en style.css — tienen que coincidir. ?>
-								<source media="(max-width: 767px) and (orientation: portrait)" srcset="<?php echo esc_url( $slide['imagen_mobile'] ); ?>">
+								<source media="(max-width: 767px) and (orientation: portrait)" srcset="<?php echo esc_attr( $slide['srcset_mobile'] ?: $slide['imagen_mobile'] ); ?>" sizes="100vw">
 							<?php endif; ?>
-							<img src="<?php echo esc_url( $slide['imagen_desktop'] ); ?>" alt="">
+							<img src="<?php echo esc_url( $slide['imagen_desktop'] ); ?>"<?php if ( $slide['srcset_desktop'] ) : ?> srcset="<?php echo esc_attr( $slide['srcset_desktop'] ); ?>" sizes="100vw"<?php endif; ?> alt="" decoding="async" <?php echo 0 === $i ? 'fetchpriority="high"' : 'loading="lazy"'; ?>>
 						</picture>
 
 						<?php if ( $slide['titulo_del_slider'] ) : ?>
@@ -314,7 +357,7 @@ function jb3_home_slider_shortcode() {
 						<div class="jb3-home-slider__overlay">
 							<?php if ( $slide['canal_logo'] ) : ?>
 								<span class="jb3-home-slider__canal-logo"<?php if ( $slide['canal_logo_w'] && $slide['canal_logo_h'] ) : ?> style="--logo-w:<?php echo (int) $slide['canal_logo_w']; ?>px;--logo-h:<?php echo (int) $slide['canal_logo_h']; ?>px;"<?php endif; ?>>
-									<img src="<?php echo esc_url( $slide['canal_logo'] ); ?>" alt="<?php echo esc_attr( $slide['canal_name'] ); ?>">
+									<?php echo jb3_slide_logo_img( $slide, 0 === $i ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_img() ya escapa todo. ?>
 								</span>
 							<?php endif; ?>
 

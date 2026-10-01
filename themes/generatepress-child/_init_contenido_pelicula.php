@@ -343,7 +343,7 @@ function jb3_contenido_render_galeria( array $fila ) {
 		$full = is_array( $img ) ? ( $img['url'] ?? $src ) : '';
 		$alt  = is_array( $img ) ? ( $img['alt'] ?? '' ) : '';
 		if ( $src ) {
-			$slides[] = [ 'src' => $src, 'full' => $full, 'alt' => $alt ];
+			$slides[] = [ 'src' => $src, 'full' => $full, 'alt' => $alt, 'id' => jb3_img_id( $img ) ]; // id: copia justa en jb3_render_galeria_slider().
 		}
 	}
 	if ( ! $slides ) {
@@ -366,11 +366,11 @@ function jb3_contenido_render_imagen( array $fila ) {
 	$epigrafe = $fila['data']['epigrafe'] ?? '';
 	?>
 	<figure class="jb3-contenido-bloque jb3-contenido-bloque--imagen">
-		<img
-			src="<?php echo esc_url( $img['sizes']['large'] ?? $img['url'] ); ?>"
-			alt="<?php echo esc_attr( $img['alt'] ?? '' ); ?>"
-			loading="lazy"
-		>
+		<?php
+		// Copia justa (tope de 720px en CSS) — jb3_img(), _init_imagenes.php.
+		echo jb3_img( jb3_img_id( $img ), jb3_sizes_imagen_suelta(), array( 'alt' => (string) ( $img['alt'] ?? '' ), 'tamano' => 'large' ) ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_img() ya escapa todo.
+			?: '<img src="' . esc_url( $img['sizes']['large'] ?? $img['url'] ) . '" alt="' . esc_attr( $img['alt'] ?? '' ) . '" loading="lazy">';
+		?>
 		<?php if ( $epigrafe ) : ?>
 			<figcaption class="jb3-contenido-bloque__epigrafe"><?php echo esc_html( $epigrafe ); ?></figcaption>
 		<?php endif; ?>
@@ -414,11 +414,11 @@ function jb3_contenido_render_imagen_texto( array $fila ) {
 			<h2 class="jb3-contenido-bloque__titulo"><?php echo esc_html( $titulo ); ?></h2>
 		<?php endif; ?>
 		<div class="jb3-contenido-fila--dos-columnas">
-			<img
-				src="<?php echo esc_url( $img['sizes']['large'] ?? $img['url'] ); ?>"
-				alt="<?php echo esc_attr( $img['alt'] ?? '' ); ?>"
-				loading="lazy"
-			>
+			<?php
+			// Copia justa (media columna; una sola en mobile) — jb3_img(), _init_imagenes.php.
+			echo jb3_img( jb3_img_id( $img ), jb3_sizes_media_columna(), array( 'alt' => (string) ( $img['alt'] ?? '' ), 'tamano' => 'large' ) ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_img() ya escapa todo.
+				?: '<img src="' . esc_url( $img['sizes']['large'] ?? $img['url'] ) . '" alt="' . esc_attr( $img['alt'] ?? '' ) . '" loading="lazy">';
+			?>
 			<div class="jb3-contenido-bloque__texto"><?php echo wp_kses_post( $texto ); ?></div>
 		</div>
 	</section>
@@ -451,19 +451,23 @@ function jb3_contenido_render_banner( array $fila ) {
 		return; // Layout agregado pero sin imagen de desktop o sin link — no imprime un banner roto.
 	}
 
-	$mobile_url = is_array( $mobile ) ? ( $mobile['url'] ?? '' ) : '';
+	// Copia justa por pantalla, al ancho del contenido (no full-bleed):
+	// jb3_picture(), _init_imagenes.php. Mismo render para el layout del
+	// módulo de Contenido y para el bloque Banner de páginas.
+	$picture = jb3_picture(
+		jb3_img_id( $desktop ),
+		jb3_img_id( $mobile ),
+		array(
+			'sizes' => jb3_sizes_ancho_contenido(),
+			'alt'   => (string) ( $desktop['alt'] ?? '' ),
+		)
+	);
+	if ( ! $picture ) {
+		return;
+	}
 	?>
 	<a class="jb3-contenido-bloque jb3-contenido-bloque--banner" href="<?php echo esc_url( $link ); ?>">
-		<picture>
-			<?php if ( $mobile_url ) : ?>
-				<source media="(max-width: 767px)" srcset="<?php echo esc_url( $mobile_url ); ?>">
-			<?php endif; ?>
-			<img
-				src="<?php echo esc_url( $desktop['url'] ); ?>"
-				alt="<?php echo esc_attr( $desktop['alt'] ?? '' ); ?>"
-				loading="lazy"
-			>
-		</picture>
+		<?php echo $picture; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_picture() ya escapa todo. ?>
 	</a>
 	<?php
 }
@@ -560,6 +564,7 @@ function jb3_contenido_plataformas_streaming_filas(): array {
 			$cache[ $slug ] = [
 				'nombre' => (string) get_sub_field( 'nombre' ),
 				'logo'   => ( is_array( $logo ) && ! empty( $logo['url'] ) ) ? $logo['url'] : '',
+				'logo_id' => jb3_img_id( $logo ), // copia justa en el módulo Renta (jb3_img()).
 			];
 		}
 	}
@@ -688,6 +693,7 @@ function jb3_contenido_render_renta( array $fila ) {
 			'slug'  => $slug,
 			'link'  => $link,
 			'logo'  => $logo,
+			'logo_id' => (int) ( jb3_contenido_plataformas_streaming_filas()[ $slug ]['logo_id'] ?? 0 ),
 			'label' => jb3_contenido_plataformas_renta()[ $slug ] ?? '',
 		];
 	}
@@ -702,7 +708,18 @@ function jb3_contenido_render_renta( array $fila ) {
 		<div class="jb3-contenido-renta__plataformas">
 			<?php foreach ( $items as $item ) : ?>
 				<a class="jb3-contenido-renta__plataforma" href="<?php echo esc_url( $item['link'] ); ?>">
-					<img src="<?php echo esc_url( $item['logo'] ); ?>" alt="<?php echo esc_attr( $item['label'] ); ?>" loading="lazy">
+					<?php
+					// Copia justa (2026-10-01): desktop/tablet = alto fijo de 80px
+					// (ancho por proporción); mobile = media fila (2 por fila,
+					// calc(50% - 8px) del contenido), ver
+					// .jb3-contenido-renta__plataforma en style.css.
+					$logo_html = $item['logo_id'] ? jb3_img( $item['logo_id'], '(max-width: 767px) calc(50vw - 28px), ' . jb3_ancho_por_alto( $item['logo_id'], 80 ) . 'px', array( 'alt' => $item['label'] ) ) : '';
+					if ( $logo_html ) :
+						echo $logo_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_img() ya escapa todo.
+					else :
+						?>
+						<img src="<?php echo esc_url( $item['logo'] ); ?>" alt="<?php echo esc_attr( $item['label'] ); ?>" loading="lazy">
+					<?php endif; ?>
 				</a>
 			<?php endforeach; ?>
 		</div>
