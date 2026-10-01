@@ -290,9 +290,9 @@
     "location": [
         [
             {
-                "param": "page_template",
+                "param": "post_type",
                 "operator": "==",
-                "value": "page-canal.php"
+                "value": "pagina_canal"
             }
         ]
     ],
@@ -308,5 +308,5 @@
     "display_title": "",
     "allow_ai_access": false,
     "ai_description": "",
-    "modified": 1786715241
+    "modified": 1790882415
 }
