@@ -348,6 +348,30 @@ add_action( 'acf/init', function () {
 		),
 	) );
 
+	// Banner (pedido 2026-10-01): el mismo layout "Banner" del módulo de
+	// Contenido de Películas/Series/Prod. Originales, arrastrable a cualquier
+	// página. Comparte el render con ese layout (jb3_contenido_render_banner(),
+	// _init_contenido_pelicula.php) — ver blocks/banner/render.php para la
+	// guía de campos (grupo ACF "Banner", prefijo bn_). Trae su propio gate
+	// de país y fechas, igual que el layout, así que no hace falta meterlo
+	// adentro de "Contenido por País".
+	acf_register_block_type( array(
+		'name'            => 'banner',
+		'title'           => 'Banner',
+		'description'     => 'Imagen clickeable a ancho completo, con versión mobile opcional, link, países y fechas de vigencia — el mismo banner de Películas/Series.',
+		'render_template' => __DIR__ . '/blocks/banner/render.php',
+		'category'        => 'jb3',
+		'icon'            => 'format-image',
+		'keywords'        => array( 'banner', 'imagen', 'publicidad', 'promo', 'link' ),
+		'mode'            => 'preview',
+		'api_version'     => 3, // ver comentario largo en "modulo-contenido" más arriba.
+		'supports'        => array(
+			'align'           => false,
+			'customClassName' => false,
+			'anchor'          => false,
+		),
+	) );
+
 	// Envoltorio genérico para restringir CUALQUIER contenido por país — en
 	// vez de agregarle un campo "países" a cada bloque nuevo (Banner,
 	// Galería, etc.) uno por uno, este bloque contiene otros adentro

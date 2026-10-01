@@ -1,0 +1,157 @@
+{
+    "key": "group_jb3_banner",
+    "title": "Banner",
+    "fields": [
+        {
+            "key": "field_jb3_bn_imagen_desktop",
+            "label": "Imagen (desktop)",
+            "name": "bn_imagen_desktop",
+            "aria-label": "",
+            "type": "image",
+            "instructions": "",
+            "required": false,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "array",
+            "preview_size": "medium",
+            "library": "all",
+            "min_width": 0,
+            "min_height": 0,
+            "min_size": 0,
+            "max_width": 0,
+            "max_height": 0,
+            "max_size": 0,
+            "mime_types": ""
+        },
+        {
+            "key": "field_jb3_bn_imagen_mobile",
+            "label": "Imagen (mobile)",
+            "name": "bn_imagen_mobile",
+            "aria-label": "",
+            "type": "image",
+            "instructions": "Opcional — si no se carga, usa la imagen de desktop también en mobile.",
+            "required": false,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "array",
+            "preview_size": "medium",
+            "library": "all",
+            "min_width": 0,
+            "min_height": 0,
+            "min_size": 0,
+            "max_width": 0,
+            "max_height": 0,
+            "max_size": 0,
+            "mime_types": ""
+        },
+        {
+            "key": "field_jb3_bn_link",
+            "label": "Link",
+            "name": "bn_link",
+            "aria-label": "",
+            "type": "url",
+            "instructions": "",
+            "required": false,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": ""
+        },
+        {
+            "key": "field_jb3_bn_paises",
+            "label": "Países donde se muestra",
+            "name": "bn_paises",
+            "aria-label": "",
+            "type": "taxonomy",
+            "instructions": "Sin ningún país tildado, el banner NO se muestra en ningún lado (mismo criterio fail-closed que el resto del geo-targeting del sitio).",
+            "required": false,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "taxonomy": "pais",
+            "field_type": "checkbox",
+            "return_format": "id",
+            "multiple": 0,
+            "allow_null": 0,
+            "add_term": 1,
+            "load_terms": 0,
+            "save_terms": 0,
+            "bidirectional_target": []
+        },
+        {
+            "key": "field_jb3_bn_fecha_in",
+            "label": "Fecha de inicio",
+            "name": "bn_fecha_in",
+            "aria-label": "",
+            "type": "date_picker",
+            "instructions": "Vacío = ya está disponible (sin fecha de inicio).",
+            "required": false,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "display_format": "d\/m\/Y",
+            "return_format": "Ymd",
+            "first_day": 1,
+            "default_to_current_date": 0
+        },
+        {
+            "key": "field_jb3_bn_fecha_out",
+            "label": "Fecha de fin",
+            "name": "bn_fecha_out",
+            "aria-label": "",
+            "type": "date_picker",
+            "instructions": "Vacío = no vence nunca.",
+            "required": false,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "display_format": "d\/m\/Y",
+            "return_format": "Ymd",
+            "first_day": 1,
+            "default_to_current_date": 0
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "block",
+                "operator": "==",
+                "value": "acf\/banner"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": [],
+    "active": true,
+    "description": "Campos del bloque Banner para páginas (mismo banner que el layout del módulo de Contenido de Películas\/Series).",
+    "show_in_rest": false,
+    "display_title": "",
+    "allow_ai_access": false,
+    "ai_description": "",
+    "modified": 1790860858
+}
