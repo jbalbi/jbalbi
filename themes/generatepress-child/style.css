@@ -3625,3 +3625,28 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
     height: 80px; /* 40px + 100% (el doble del original) */
     width: auto;
 }
+
+/* Mobile: 2 logos por fila (pedido 2026-10-01 — con el alto fijo de 80px
+   no entraban dos y quedaba uno por renglón). Cada link ocupa la mitad del
+   ancho menos medio gap, y el logo se ajusta a ese ancho manteniendo su
+   proporción (con el mismo techo de 80px de alto). flex (no grid) para que,
+   con una cantidad impar, el último quede centrado y no pegado a la
+   izquierda. */
+@media (max-width: 767px) {
+    .jb3-contenido-renta__plataformas {
+        gap: 16px;
+    }
+
+    .jb3-contenido-renta__plataforma {
+        flex: 0 0 calc(50% - 8px);
+        display: flex;
+        justify-content: center;
+    }
+
+    .jb3-contenido-renta__plataforma img {
+        width: 100%;
+        height: auto;
+        max-height: 80px;
+        object-fit: contain;
+    }
+}
