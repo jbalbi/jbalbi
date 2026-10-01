@@ -78,12 +78,14 @@ function jb3_etiquetas_auto( int $post_id ): string {
 		'post__not_in'   => array( $post_id ),
 		'tax_query'      => $tax_query,
 		'post_status'    => 'publish',
-		// Posters (Películas/Series/Prod. Originales): 8 (pedido 2026-10-01,
-		// antes 4 y antes 10) — una sola fila de 8 en desktop; en tablet y
-		// celular se ven menos (ver .jb3-relacionados--8 en style.css).
-		// Thumbs (Op. Comerciales): 4, como antes — 8 thumbs apaisados en
-		// una fila quedarían diminutos.
-		'posts_per_page' => $es_poster ? 8 : 4,
+		// Posters (Películas/Series/Prod. Originales): 6 (2026-10-01; antes 4,
+		// y antes 10) — regla del usuario: SIEMPRE filas completas, nunca un
+		// poster suelto en la última fila. 6 en una fila en desktop, 4 en
+		// notebooks chicas, 6 en tablet (2×3), 4 en celular (2×2) — ver
+		// .jb3-relacionados--6 en style.css. Se probó con 8 en una fila: en
+		// notebooks los posters quedaban de 116-145px, demasiado chicos.
+		// Thumbs (Op. Comerciales): 4, como antes.
+		'posts_per_page' => $es_poster ? 6 : 4,
 		// Al azar (antes 'date' DESC, pedido 2026-10-01): que no salgan
 		// siempre los 4 últimos cargados. ORDER BY RAND() no pesa con el
 		// volumen de contenido de este sitio (cientos de posts, no miles).
@@ -103,6 +105,6 @@ function jb3_etiquetas_auto( int $post_id ): string {
 	// siempre de la misma familia que $tipos de arriba, da lo mismo cuál
 	// tipo puntual se pase.
 	return $es_poster
-		? jb3_relacionados_modulo( $post->post_type, $query->posts, 'Te puede interesar', 'etiquetas', 8, 'jb3-relacionados--8' )
+		? jb3_relacionados_modulo( $post->post_type, $query->posts, 'Te puede interesar', 'etiquetas', 6, 'jb3-relacionados--6' )
 		: jb3_relacionados_modulo( $post->post_type, $query->posts, 'Te puede interesar', 'etiquetas' );
 }

@@ -2797,19 +2797,29 @@ body.error404 .inside-article .search-form {
     .jb3-grid-thumbs  { grid-template-columns: repeat(1, 1fr); }
 }
 
-/* "Te puede interesar" de posters (_init_etiquetas.php, pedido 2026-10-01):
-   trae 8 → una sola fila de 8 en desktop (--jb3-grid-cols:8 inline). En las
-   pantallas con menos columnas se ocultan los que sobran, para que siempre
-   queden filas completas: tablet (3 columnas) muestra 6, celular (2
-   columnas) muestra 4. Los ocultos no se descargan (carga diferida). */
-@media (max-width: 1023px) {
-    .jb3-relacionados--8 .jb3-grid-posters__item:nth-child(n+7) {
+/* "Te puede interesar" de posters (_init_etiquetas.php, 2026-10-01).
+   REGLA DEL USUARIO: siempre filas completas, nunca un poster suelto en la
+   última fila. Trae 6 y se ven según la pantalla:
+     ≥ 1280px                         6 en una fila (--jb3-grid-cols:6 inline)
+     1024–1279px                      4 en una fila (1024 → ~186px)
+     tablet (768–1023px, 3 columnas)  6, en 2 filas de 3
+     celular (≤ 767px, 2 columnas)    4, en 2 filas de 2
+   Se probó antes con 8 en una fila en desktop: en notebooks (1280-1600px)
+   los posters quedaban de 116-153px, demasiado chicos. Los ocultos no se
+   descargan (carga diferida). El sizes de las imágenes cuenta 6 columnas
+   en todo desktop: entre 1024 y 1279 (4 columnas) pide de menos, pero la
+   copia de 400 que elige igual alcanza (~186px; ~370 reales en retina). */
+@media (min-width: 1024px) and (max-width: 1279px) {
+    .jb3-relacionados--6 .jb3-grid-posters {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    .jb3-relacionados--6 .jb3-grid-posters__item:nth-child(n+5) {
         display: none;
     }
 }
 
 @media (max-width: 767px) {
-    .jb3-relacionados--8 .jb3-grid-posters__item:nth-child(n+5) {
+    .jb3-relacionados--6 .jb3-grid-posters__item:nth-child(n+5) {
         display: none;
     }
 }
