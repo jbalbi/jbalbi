@@ -77,9 +77,16 @@ function jb3_etiquetas_auto( int $post_id ): string {
 		'post__not_in'   => array( $post_id ),
 		'tax_query'      => $tax_query,
 		'post_status'    => 'publish',
-		'posts_per_page' => 10,
-		'orderby'        => 'date',
-		'order'          => 'DESC',
+		// 4 (antes 10, pedido 2026-10-01): una sola fila en la grilla de
+		// posters de desktop (4 columnas) y dos filas parejas en mobile (2).
+		'posts_per_page' => 4,
+		// Al azar (antes 'date' DESC, pedido 2026-10-01): que no salgan
+		// siempre los 4 últimos cargados. ORDER BY RAND() no pesa con el
+		// volumen de contenido de este sitio (cientos de posts, no miles).
+		// OJO: con la caché de página de LiteSpeed en producción, el HTML
+		// queda guardado — la selección cambia cada vez que se regenera la
+		// caché de esa página, no en cada visita.
+		'orderby'        => 'rand',
 		'no_found_rows'  => true,
 	) );
 
