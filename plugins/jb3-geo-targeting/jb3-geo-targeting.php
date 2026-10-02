@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: JB3 Geo Targeting
- * Description: Restringe la visibilidad del contenido según el país del visitante (taxonomía "pais"), usando Geolocation IP Detection. Sin país asignado el contenido NO es visible en ningún país — hay que asignar explícitamente dónde se ve.
+ * Description: Restringe la visibilidad del contenido según el país del visitante (taxonomía "pais"), detectado por el GeoIP del servidor (LiteSpeed) o, si no hay, por Geolocation IP Detection. Sin país asignado el contenido NO es visible en ningún país — hay que asignar explícitamente dónde se ve. Incluye la caché de página por país (ver "CACHÉ DE PÁGINA POR PAÍS").
  * Version:     1.0
  */
 defined( 'ABSPATH' ) || exit;
@@ -9,7 +9,7 @@ defined( 'ABSPATH' ) || exit;
 const JB3_GEO_TAXONOMY       = 'pais';
 const JB3_GEO_CANAL_TAXONOMY = 'canales';
 const JB3_GEO_CANAL_FIELD    = 'paises'; // Campo ACF (Taxonomy → pais) del término de "canales".
-const JB3_GEO_PAGE_CANAL_FIELD = 'canal'; // Campo ACF (Taxonomy → canales) de la Página con plantilla "Canal".
+const JB3_GEO_PAGE_CANAL_FIELD = 'canal'; // Campo ACF (Taxonomy → canales) de la página de canal (CPT "pagina_canal").
 const JB3_GEO_COOKIE         = 'jb3_country_override';
 const JB3_GEO_CACHE_PREFIX   = 'jb3_geo_';
 const JB3_GEO_CACHE_TTL      = DAY_IN_SECONDS;
@@ -28,8 +28,10 @@ function jb3_geo_post_types(): array {
 // ─── PAÍS DEL VISITANTE ──────────────────────────────────────────────────────
 // Prioridad: 1) cookie de override, solo válida para quien puede administrar
 // (previsualizar el sitio como si fuera de otro país, sin depender de una
-// VPN) 2) caché por IP (evita pegarle a la base de GeoIP en cada request)
-// 3) detección real con el plugin Geolocation IP Detection.
+// VPN) 2) país que detecta el SERVIDOR (GeoIP de LiteSpeed — ver "CACHÉ DE
+// PÁGINA POR PAÍS" más abajo) 3) caché por IP (evita pegarle a la base de
+// GeoIP en cada request) 4) detección con el plugin Geolocation IP Detection
+// (local, o un servidor sin GeoIP).
 // Devuelve el código ISO en minúscula (coincide con los slugs de la
 // taxonomía "pais": ar, bo, cl...) o '' si no se pudo determinar — ese caso
 // se trata como fail-closed (NO se muestra contenido restringido) en
@@ -37,6 +39,18 @@ function jb3_geo_post_types(): array {
 function jb3_geo_visitor_country(): string {
 	if ( current_user_can( 'manage_options' ) && ! empty( $_COOKIE[ JB3_GEO_COOKIE ] ) ) {
 		return sanitize_key( $_COOKIE[ JB3_GEO_COOKIE ] );
+	}
+
+	// Modo 1 (regla de caché por país activa): SOLO el país del servidor, el
+	// mismo dato con que LiteSpeed eligió la copia. Si llega vacío (IP que el
+	// servidor no reconoce), '' = fail-closed — NO caer a la otra base de
+	// GeoIP: LiteSpeed guarda UNA copia compartida para todos los "sin país",
+	// y si esa base sí encontrara un país, esa copia se armaría con el
+	// contenido de ese país y se le serviría a todos los no reconocidos
+	// (detectado en la revisión 2026-10-02, antes del commit).
+	$servidor = jb3_geo_pais_servidor();
+	if ( '' !== $servidor || jb3_geo_modo_servidor() ) {
+		return $servidor;
 	}
 
 	if ( ! function_exists( 'geoip_detect2_get_info_from_current_ip' ) ) {
@@ -59,23 +73,58 @@ function jb3_geo_visitor_country(): string {
 	return $codigo;
 }
 
-// ─── COOKIE DE VARY PARA EL CACHÉ DE PÁGINA (LiteSpeed) ─────────────────────
-// El caché de página completa sirve la MISMA respuesta HTML a todos los
-// visitantes de una URL — sin esto, un visitante de un país vería el HTML
-// (hasta un 404) que le tocó a otro país, porque nada de este archivo vuelve
-// a correr en un cache hit. Esta cookie hace que LiteSpeed guarde una copia
-// de caché separada por país en vez de una sola compartida — hacen falta LAS
-// DOS registraciones de abajo (litespeed_vary_cookies Y
-// litespeed_vary_curr_cookies); con una sola, LiteSpeed sigue marcando la
-// página entera como no cacheable por el simple hecho de hacer setcookie().
+// ─── CACHÉ DE PÁGINA POR PAÍS (LiteSpeed) ───────────────────────────────────
+// La caché de página guarda una copia por país. El problema de fondo: en un
+// cache hit PHP no corre, así que la copia se elige ANTES de que nada de este
+// plugin pueda opinar. Alguien que pasaba de Argentina a una VPN de Honduras
+// seguía viendo la copia de Argentina (probado en producción 2026-10-02).
+// Dos modos, elegidos solos en cada pedido (jb3_geo_modo_servidor()):
+//
+// MODO 1 — país del SERVIDOR (el bueno): la caché elige la copia con el país
+// que detecta LiteSpeed (GeoIP), sin cookies ni JavaScript. Necesita este
+// bloque en el .htaccess de la RAÍZ (public_html, fuera de este repo):
+//
+//   # BEGIN JB3 GeoIP
+//   <IfModule LiteSpeed>
+//   GeoIPEnable On
+//   RewriteEngine On
+//   RewriteRule .* - [E=Cache-Control:vary=pais_%{ENV:GEOIP_COUNTRY_CODE},E=JB3_GEO_VARY:1]
+//   </IfModule>
+//   # END JB3 GeoIP
+//
+// GeoIPEnable lo indicó el soporte de Hostinger (plan Premium Web Hosting,
+// 2026-10-02; probado en producción con VPN: un solo F5, sin parpadeo).
+// JB3_GEO_VARY es la marca que deja la regla para que PHP sepa que está
+// activa: con solo GeoIP encendido y sin la regla, la caché NO separaría por
+// país y hay que seguir en el modo 2. Las dos variables las pone el servidor
+// — un visitante no puede inventarlas (lo que manda llega como HTTP_*).
+// Si la regla quedara sin "GeoIPEnable On", ningún visitante tendría país y
+// no se vería contenido restringido en ningún lado: falla visible y segura.
+//
+// MODO 2 — respaldo (servidor sin GeoIP, o sin la regla de arriba, ej. si el
+// sitio se muda): la copia se elige por la cookie "jb3_pais", y como en un
+// cache hit nadie la verifica, cada página trae un script que le pregunta el
+// país real a pais.php (este plugin) y recarga si no coincide. Límites: un
+// parpadeo en ese caso, y no corrige a quien tenga JavaScript desactivado.
+
 const JB3_GEO_VARY_COOKIE = 'jb3_pais';
 
+/** true = modo 1 (la regla de caché por país del .htaccess de la raíz está activa); false = modo 2. */
+function jb3_geo_modo_servidor(): bool {
+	$marca = $_SERVER['JB3_GEO_VARY'] ?? $_SERVER['REDIRECT_JB3_GEO_VARY'] ?? getenv( 'JB3_GEO_VARY' );
+	return '1' === (string) $marca;
+}
+
+/** País que detecta el servidor (GeoIP de LiteSpeed), en minúscula como los slugs de "pais"; '' si no llega. */
+function jb3_geo_pais_servidor(): string {
+	$valor = $_SERVER['GEOIP_COUNTRY_CODE'] ?? getenv( 'GEOIP_COUNTRY_CODE' );
+	return is_string( $valor ) ? strtolower( preg_replace( '/[^A-Za-z]/', '', $valor ) ) : '';
+}
+
 /**
- * setcookie() con los flags de hardening que le faltaban (auditoría de
- * seguridad 2026-08-27) — ninguna de las cookies de este plugin la lee JS
- * (confirmado, ver el resto del código), así que HttpOnly no rompe nada.
- * Secure sale de is_ssl() en vez de hardcodeado: local corre por HTTP
- * plano, forzar Secure=true ahí haría que el navegador ignore la cookie.
+ * setcookie() con flags de hardening (auditoría de seguridad 2026-08-27) —
+ * ninguna cookie de este plugin la lee JS, así que HttpOnly no rompe nada.
+ * Secure sale de is_ssl(): local corre por HTTP plano.
  */
 function jb3_geo_setcookie( string $name, string $value, int $expire ): void {
 	setcookie( $name, $value, [
@@ -88,23 +137,62 @@ function jb3_geo_setcookie( string $name, string $value, int $expire ): void {
 	] );
 }
 
+// Modo 2: cookie con el país, para que LiteSpeed guarde una copia por país.
 add_action( 'init', function () {
-	if ( is_admin() ) {
+	if ( is_admin() || jb3_geo_modo_servidor() ) {
 		return;
 	}
-
 	$pais = jb3_geo_visitor_country();
 	if ( ( $_COOKIE[ JB3_GEO_VARY_COOKIE ] ?? '' ) !== $pais ) {
 		jb3_geo_setcookie( JB3_GEO_VARY_COOKIE, $pais, time() + DAY_IN_SECONDS );
 	}
 } );
 
+// Modo 2: hacen falta LAS DOS registraciones — con una sola, LiteSpeed marca
+// la página como no cacheable por el simple hecho de hacer setcookie(). En
+// modo 1 sobra pero no molesta (sin la cookie, no separa nada de más).
 function jb3_geo_vary_cookies( array $cookies ): array {
 	$cookies[] = JB3_GEO_VARY_COOKIE;
 	return $cookies;
 }
 add_filter( 'litespeed_vary_cookies', 'jb3_geo_vary_cookies' );
 add_filter( 'litespeed_vary_curr_cookies', 'jb3_geo_vary_cookies' );
+
+// Modo 2: la página lleva anotado el país con que se armó (queda adentro de
+// la copia cacheada) y un script que pide el país real a pais.php (nunca
+// cacheado; reescribe la cookie). Si no coincide, recarga una vez y LiteSpeed
+// sirve la copia correcta. Solo sin sesión: con sesión LiteSpeed no cachea, y
+// un admin con "Ver como país…" no tiene que ser "corregido".
+add_action( 'wp_head', function () {
+	if ( is_user_logged_in() || jb3_geo_modo_servidor() ) {
+		return;
+	}
+	$pais = jb3_geo_visitor_country();
+	$url  = plugins_url( 'pais.php', __FILE__ );
+	?>
+	<script>
+	( function () {
+		var paginaPais = <?php echo wp_json_encode( $pais ); ?>;
+		var clave      = 'jb3_geo_recarga';
+		fetch( <?php echo wp_json_encode( $url ); ?>, { credentials: 'same-origin', cache: 'no-store' } )
+			.then( function ( r ) { return r.json(); } )
+			.then( function ( d ) {
+				if ( ! d || 'string' !== typeof d.pais || d.pais === paginaPais ) {
+					try { sessionStorage.removeItem( clave ); } catch ( e ) {}
+					return;
+				}
+				// Freno anti-bucle: una sola recarga por país y por pestaña.
+				try {
+					if ( sessionStorage.getItem( clave ) === d.pais ) { return; }
+					sessionStorage.setItem( clave, d.pais );
+				} catch ( e ) {}
+				location.reload();
+			} )
+			.catch( function () {} );
+	} )();
+	</script>
+	<?php
+}, 1 );
 
 // ─── PAÍSES PERMITIDOS DE UN CANAL ──────────────────────────────────────────
 // Lee el campo ACF "paises" (Taxonomy → pais, checkbox, return
@@ -163,8 +251,8 @@ function jb3_geo_canales_visibles( string $pais ): array {
 // Cláusulas de tax_query para "país + canales visibles en ese país" — mismo
 // criterio en los 3 lugares que restringen listados de contenido por país:
 // los listados nativos (pre_get_posts acá abajo), [jb3_modulo]
-// (jb3_modulo_query() en _init_modulo.php) y "Contenido Relacionado"
-// automático (jb3_etiquetas_auto() en _init_etiquetas.php). Antes estaba
+// (jb3_modulo_query() en _init_modulo.php) y "Te puede interesar"
+// (jb3_etiquetas_auto() en _init_etiquetas.php). Antes estaba
 // copiada a mano en los 3 — eso ya generó un bug real (AXN mostrando Op.
 // Comerciales sin canal asignado en un módulo que se suponía exclusivo,
 // 2026-08-13) porque una de las copias no incluía la vuelta "OR: sin canal
@@ -282,7 +370,7 @@ function jb3_geo_page_canal_visible( int $post_id ): bool {
 }
 
 function jb3_geo_post_visible( int $post_id ): bool {
-	// Las Páginas de Canal (plantilla "Canal") delegan el país ENTERO al
+	// Las páginas de canal (CPT "pagina_canal") delegan el país ENTERO al
 	// canal vinculado (campo ACF "canal" → jb3_geo_page_canal_visible(),
 	// que ya chequea los países permitidos de ESE canal) — nunca tuvieron
 	// ni necesitan su propia taxonomía "pais" cargada directamente. Bug
@@ -300,9 +388,9 @@ function jb3_geo_post_visible( int $post_id ): bool {
 }
 
 // ─── CONTENIDO INDIVIDUAL: 404 si no corresponde a tu país ──────────────────
-// Cubre posts (película, serie...) Y las Páginas de canal (plantilla
-// "Canal") — jb3_geo_post_visible() ya combina el chequeo de "pais" propio,
-// el de "canales" directo, y el del vínculo Página→canal.
+// Cubre posts (película, serie...) Y las páginas de canal (CPT
+// "pagina_canal") — jb3_geo_post_visible() ya combina el chequeo de "pais"
+// propio, el de "canales" directo, y el del vínculo página→canal.
 add_action( 'template_redirect', function () {
 	if ( ! is_singular( jb3_geo_post_types() ) ) {
 		return;
@@ -482,7 +570,7 @@ add_action( 'init', function () {
 	if ( ! isset( $_GET['jb3_geo_pais'] ) || ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
-	if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( $_GET['_wpnonce'], 'jb3_geo_preview' ) ) {
+	if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'jb3_geo_preview' ) ) {
 		return;
 	}
 
