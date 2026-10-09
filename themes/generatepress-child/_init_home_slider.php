@@ -280,16 +280,46 @@ function jb3_home_slider_shortcode() {
 	// "eager" para que se bajen en segundo plano ANTES de que el autoplay
 	// las muestre — si se las dejara lazy, el navegador las pediría recién
 	// al entrar en pantalla y podían aparecer un instante en negro.
+	//
+	// ajustarAlto(): el título del slide es el techo del bloque logo/texto/
+	// botón/copyright (ver .jb3-home-slider__overlay en style.css). En
+	// pantallas bajas (ej. 1024x600, 1280x600) un slide con mucho contenido
+	// no entraba entre el título y el pie, y quedaba cortado abajo —
+	// decisión del usuario 2026-10-08: que el rotador se ALARGUE lo justo
+	// (la imagen sigue completa arriba; debajo, fondo de página fundido) y se
+	// llegue al final scrolleando. Se mide el bloque más alto de TODOS los
+	// slides, así todos tienen el mismo alto y nada salta al pasar de uno a
+	// otro. Se vuelve a medir al cambiar el tamaño de la ventana.
 	wp_add_inline_script( 'swiper', "
 		window.addEventListener( 'load', function () {
 			var el = document.querySelector( '.jb3-home-slider' );
 			if ( ! el ) {
 				return;
 			}
+			var wrap = el.closest( '.jb3-home-slider-wrap' );
+
+			function ajustarAlto() {
+				wrap.style.minHeight = '';
+				wrap.classList.remove( 'jb3-home-slider-wrap--alargado' );
+				var necesario = 0;
+				el.querySelectorAll( '.swiper-slide' ).forEach( function ( slide ) {
+					var overlay   = slide.querySelector( '.jb3-home-slider__overlay' );
+					var contenido = slide.querySelector( '.jb3-home-slider__contenido' );
+					if ( overlay && contenido ) {
+						necesario = Math.max( necesario, overlay.offsetTop + contenido.offsetHeight );
+					}
+				} );
+				if ( necesario > wrap.clientHeight ) {
+					wrap.style.minHeight = Math.ceil( necesario ) + 'px';
+					wrap.classList.add( 'jb3-home-slider-wrap--alargado' );
+				}
+			}
+
 			el.querySelectorAll( 'img[loading=\"lazy\"]' ).forEach( function ( img ) {
 				img.loading = 'eager';
 			} );
-			new Swiper( el, {
+			ajustarAlto();
+			var swiper = new Swiper( el, {
 				slidesPerView: 1,
 				loop: true,
 				autoplay: {
@@ -301,6 +331,19 @@ function jb3_home_slider_shortcode() {
 					nextEl: '.jb3-home-slider .swiper-button-next',
 					prevEl: '.jb3-home-slider .swiper-button-prev'
 				}
+			} );
+
+			var pendiente = false;
+			window.addEventListener( 'resize', function () {
+				if ( pendiente ) {
+					return;
+				}
+				pendiente = true;
+				requestAnimationFrame( function () {
+					pendiente = false;
+					ajustarAlto();
+					swiper.update();
+				} );
 			} );
 		} );
 	", 'after' );
@@ -354,7 +397,13 @@ function jb3_home_slider_shortcode() {
 							<span class="jb3-home-slider__titulo"><?php echo esc_html( $slide['titulo_del_slider'] ); ?></span>
 						<?php endif; ?>
 
+						<?php
+						// Overlay = el espacio disponible (del título para abajo); el
+						// contenido va en una caja propia que se apoya abajo y lleva el
+						// degradé — ver .jb3-home-slider__overlay en style.css.
+						?>
 						<div class="jb3-home-slider__overlay">
+							<div class="jb3-home-slider__contenido">
 							<?php if ( $slide['canal_logo'] ) : ?>
 								<span class="jb3-home-slider__canal-logo"<?php if ( $slide['canal_logo_w'] && $slide['canal_logo_h'] ) : ?> style="--logo-w:<?php echo (int) $slide['canal_logo_w']; ?>px;--logo-h:<?php echo (int) $slide['canal_logo_h']; ?>px;"<?php endif; ?>>
 									<?php echo jb3_slide_logo_img( $slide, 0 === $i ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_img() ya escapa todo. ?>
@@ -388,6 +437,7 @@ function jb3_home_slider_shortcode() {
 							<?php if ( $slide['copyright'] ) : ?>
 								<span class="jb3-home-slider__copyright"><?php echo esc_html( $slide['copyright'] ); ?></span>
 							<?php endif; ?>
+							</div>
 						</div>
 					</div>
 				<?php endforeach; ?>

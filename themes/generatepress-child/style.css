@@ -408,6 +408,30 @@ input[type="submit"]:focus {
     z-index: 200;
 }
 
+/* Fondo del header al scrollear (pedido 2026-10-08): el header es
+   transparente para que el rotador/hero se vean completos detrás del menú,
+   pero al scrollear el contenido de la página pasaba POR DEBAJO del menú y
+   se mezclaban los textos. A medida que la página se scrollea aparece de a
+   poco (--jb3-header-fondo, de 0 a 1 en los primeros 200px — la calcula
+   header-height.js) detrás del menú un degradé oscuro que se
+   desvanece de a poco hasta 120px por debajo del header — sin tramo parejo,
+   para que no se vea como una banda (mismo criterio que el degradé de
+   arriba del rotador de la Home).
+   z-index:-1 dentro del header (que ya arma su propio contexto con
+   z-index:200): queda detrás del menú, pero delante del contenido. */
+.site-header::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: -120px;
+    z-index: -1;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, .8) 0%, rgba(0, 0, 0, .6) 40%, rgba(0, 0, 0, .22) 72%, rgba(0, 0, 0, 0) 100%);
+    opacity: var(--jb3-header-fondo, 0);
+    pointer-events: none;
+}
+
 body.admin-bar .site-header {
     top: 32px;
 }
@@ -1587,8 +1611,8 @@ body {
 
 /* Con la barra de admin de WordPress arriba (32px; 46px en su propio
    breakpoint ≤782px) la página queda corrida hacia abajo esos px — el
-   overlay lo descuenta al calcular qué parte del slide se ve (ver
-   .jb3-home-slider__overlay). Sin efecto para un visitante real. */
+   bloque de texto lo descuenta al calcular qué parte del slide se ve (ver
+   .jb3-home-slider__contenido). Sin efecto para un visitante real. */
 body.admin-bar .jb3-home-slider-wrap {
     --jb3-adminbar-h: 32px;
 }
@@ -1637,26 +1661,32 @@ body.admin-bar .jb3-home-slider-wrap {
 }
 
 /* Fundido del borde inferior de la imagen hacia el fondo de la página, solo
-   donde puede quedar fondo a la vista debajo de la imagen (celular con
-   imagen más corta que la pantalla, tablet con franja extra): ahí el
-   degradé del overlay no cae sobre el final de la imagen sino más abajo, y
-   si el arte no termina exactamente en el color de fondo (el de desktop
-   termina en azul oscuro, el fondo es negro) quedaba una línea de corte
-   visible. En desktop no hace falta: el overlay tapa esa unión. */
-@media (max-width: 1023px) {
-    .jb3-home-slider__picture {
-        position: relative;
-    }
+   donde puede quedar fondo a la vista debajo de la imagen: celular con
+   imagen más corta que la pantalla, tablet con franja extra, y desktop
+   cuando el rotador se alargó para que el bloque de texto entre debajo del
+   título (clase --alargado, la pone ajustarAlto() en _init_home_slider.php).
+   Ahí el degradé del bloque no cae sobre el final de la imagen sino más
+   abajo, y si el arte no termina exactamente en el color de fondo (el de
+   desktop termina en azul oscuro, el fondo es negro) quedaba una línea de
+   corte visible. En desktop normal no hace falta: el bloque tapa esa unión. */
+.jb3-home-slider__picture {
+    position: relative;
+}
 
-    .jb3-home-slider__picture::after {
-        content: "";
-        position: absolute;
-        left: 0;
-        right: 0;
-        top: calc(var(--jb3-slider-ratio-actual) * 100vw * .7);
-        height: calc(var(--jb3-slider-ratio-actual) * 100vw * .3 + 1px);
-        background: linear-gradient(to bottom, transparent, var(--body-bg));
-        pointer-events: none;
+.jb3-home-slider__picture::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(var(--jb3-slider-ratio-actual) * 100vw * .7);
+    height: calc(var(--jb3-slider-ratio-actual) * 100vw * .3 + 1px);
+    background: linear-gradient(to bottom, transparent, var(--body-bg));
+    pointer-events: none;
+}
+
+@media (min-width: 1024px) {
+    .jb3-home-slider-wrap:not(.jb3-home-slider-wrap--alargado) .jb3-home-slider__picture::after {
+        display: none;
     }
 }
 
@@ -1713,39 +1743,93 @@ body.admin-bar .jb3-home-slider-wrap {
 /* ─── Texto, botón y copyright sobre la imagen ──────────────────────────── */
 .jb3-home-slider .swiper-slide {
     position: relative;
+    /* Posición y alto del título — de acá sale el techo del bloque de
+       logo/texto/botón (ver .jb3-home-slider__overlay). */
+    --jb3-slider-titulo-top: calc(var(--header-height) + 20px);
+    --jb3-slider-titulo-alto: calc(13px * 1.4);
+}
+
+/* Degradé ARRIBA de cada slide, detrás del header (que es transparente) y
+   del título: que el menú y el título blancos se lean aunque la imagen sea
+   clara arriba (pedido 2026-10-08). Mismo criterio que el degradé del
+   bloque de texto de abajo, invertido. Va dentro del slide (no fijo en el
+   rotador) para que pase junto con cada imagen. z-index: por encima de la
+   imagen, por debajo del título y del bloque de texto (los dos con
+   z-index:1). */
+.jb3-home-slider .swiper-slide::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: calc(var(--jb3-slider-titulo-top) + var(--jb3-slider-titulo-alto) + 140px);
+    background: linear-gradient(to bottom, rgba(0, 0, 0, .45) 0%, rgba(0, 0, 0, .3) 40%, rgba(0, 0, 0, .12) 70%, rgba(0, 0, 0, 0) 100%);
+    pointer-events: none;
 }
 
 /* Título del slider (ej. "SUPER LUNES"): va apenas debajo del header, no
-   dentro de .jb3-home-slider__overlay (que está anclado abajo) — por eso es
+   dentro de .jb3-home-slider__overlay (el bloque anclado abajo) — por eso es
    un elemento aparte, posicionado con su propio top. --header-height ya la
    mantiene sincronizada al alto real del header (ver header-height.js), así
    que el título queda pegado debajo del nav y a la misma altura en
    cualquier slide, sin importar cuánto texto/logo traiga cada uno. */
 .jb3-home-slider__titulo {
     position: absolute;
-    top: calc(var(--header-height) + 20px);
+    top: var(--jb3-slider-titulo-top);
     left: var(--slider-text-padding-x);
     right: var(--slider-text-padding-x);
     z-index: 1;
     color: #ffffff;
     font-size: 13px;
+    line-height: 1.4;
     font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
 }
 
-/* Degradé para que el texto sea legible arriba de cualquier imagen.
-   max-height + overflow:hidden: como ahora el alto de la imagen ya no es
-   una caja fija, si el texto de un slide es más largo de lo que entra,
-   se corta en vez de desbordar por afuera de la imagen. box-sizing:border-box
-   para que el padding cuente adentro de ese max-height, no se sume aparte. */
+/* Bloque de logo/texto/botón/copyright. Dos cajas:
+   - .jb3-home-slider__overlay es el ESPACIO DISPONIBLE: del título para
+     abajo (o del header para abajo, si el slide no tiene título). Ese es el
+     techo — el bloque nunca se mete por debajo del título (pedido
+     2026-10-08: en pantallas bajas, ej. 1024x600 o 1280x600, subía hasta
+     taparlo).
+   - .jb3-home-slider__contenido es el bloque en sí, apoyado abajo, con el
+     degradé para que el texto se lea sobre cualquier imagen.
+   "safe flex-end": si el bloque no entra entre el título y el pie, arranca
+   justo debajo del título y lo que sobra queda MÁS ABAJO (se llega
+   scrolleando) — con flex-end a secas sobresaldría hacia arriba, por
+   encima del título. El flex-end de la línea anterior es para navegadores
+   viejos que no entienden "safe". */
 .jb3-home-slider__overlay {
     position: absolute;
+    top: var(--jb3-slider-titulo-top);
     left: 0;
     right: 0;
     bottom: 0;
-    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    justify-content: safe flex-end;
     overflow: hidden;
+    pointer-events: none; /* El espacio vacío no tapa la imagen ni las flechas. */
+    z-index: 1; /* Por encima del degradé de arriba del slide. */
+    /* Anula lo que esta misma caja tenía antes de 2026-10-08 (padding,
+       degradé y max-height pasaron a .jb3-home-slider__contenido): si queda
+       una copia vieja del CSS dando vueltas (caché del navegador, o el CSS
+       crítico/único que arma LiteSpeed), no se suma a lo nuevo — pasó en
+       producción: margen doble a los costados y degradé en caja. */
+    max-height: none;
+    padding: 0;
+    background: none;
+}
+
+.jb3-home-slider__titulo + .jb3-home-slider__overlay {
+    top: calc(var(--jb3-slider-titulo-top) + var(--jb3-slider-titulo-alto) + 20px);
+}
+
+.jb3-home-slider__contenido {
+    flex-shrink: 0;
+    pointer-events: auto;
     box-sizing: border-box;
     padding: 24px var(--slider-text-padding-x);
     /* El texto/botón/copyright tienen que verse SIN scrollear aunque la
@@ -1756,7 +1840,9 @@ body.admin-bar .jb3-home-slider-wrap {
        proporción (100vw, el rotador es de ancho completo y arranca en el
        tope de la página, detrás del header). Si el slide entra entero en
        pantalla (mobile, tablet, monitores altos), max() da 0 y quedan los
-       24px de siempre. dvh (no vh): alto real visible en mobile. */
+       24px de siempre. dvh (no vh): alto real visible en mobile. Si con ese
+       padding el bloque no entra debajo del título, gana el título (ver
+       arriba): el pie del bloque queda bajo el pliegue. */
     padding-bottom: calc(24px + max(0px, var(--jb3-slider-ratio-actual) * 100vw + var(--jb3-slider-extra) + var(--jb3-adminbar-h, 0px) - 100dvh + var(--footer-bar-height)));
     background: linear-gradient(to top, rgba(0, 0, 0, .85) 0%, rgba(0, 0, 0, 0) 60%);
     color: #ffffff;
@@ -1766,7 +1852,7 @@ body.admin-bar .jb3-home-slider-wrap {
    ventana, ver .jb3-home-slider-wrap en min-width:1024px) — su borde
    inferior es el menor entre "alto natural de la imagen" y "alto visible". */
 @media (min-width: 1024px) {
-    .jb3-home-slider__overlay {
+    .jb3-home-slider__contenido {
         padding-bottom: calc(24px + max(0px, min(var(--jb3-slider-ratio-actual) * 100vw + var(--jb3-adminbar-h, 0px), 100dvh) - 100dvh + var(--footer-bar-height)));
     }
 }
@@ -1774,7 +1860,7 @@ body.admin-bar .jb3-home-slider-wrap {
 /* Celular vertical: el slide mide justo el alto de la pantalla, así que su
    pie coincide siempre con la barra fija — se reserva su alto y listo. */
 @media (max-width: 767px) and (orientation: portrait) {
-    .jb3-home-slider__overlay {
+    .jb3-home-slider__contenido {
         padding-bottom: calc(24px + var(--footer-bar-height));
     }
 }
@@ -1783,7 +1869,7 @@ body.admin-bar .jb3-home-slider-wrap {
    mismo que toda la ventana — forzarlo a "entrar sin scrollear" lo hacía
    chocar con el header. Ahí se deja al pie del slide y se llega scrolleando. */
 @media (max-height: 500px) and (max-width: 1023px) {
-    .jb3-home-slider__overlay {
+    .jb3-home-slider__contenido {
         padding-bottom: 24px;
     }
 }
