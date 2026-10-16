@@ -101,6 +101,11 @@ Text Domain: generatepress-child
     --footer-link-color:    #cccccc;
     --footer-link-hover:    var(--color-secondary);
     --footer-gap:           40px;
+
+    /* Efecto de agrandar al pasar el mouse (pósters, miniaturas, tarjetas,
+       galería): una sola duración para todo el sitio. Era .3s; desde
+       2026-10-16 más rápido, sin dejar de ser progresivo (pedido). */
+    --jb3-zoom-duracion:    .1s;
     --footer-padding-y:     20px;
     --footer-padding-x:     80px;
     --footer-bar-bg:        var(--color-primary);
@@ -1186,9 +1191,10 @@ html.mobile-menu-open .mobile-menu-control-wrapper {
     color: var(--footer-text);
 }
 
-/* Grid 8/2/2 en desktop; en mobile las 3 columnas se apilan (mismo orden
-   que el HTML, sin necesidad de "order"). El breakpoint es propio de esta
-   sección, no el del hamburguesa (1279px) — acá no depende del nav. */
+/* Grid de 2 columnas en desktop (texto institucional + menú); en mobile se
+   apilan (mismo orden que el HTML, sin necesidad de "order"). El breakpoint
+   es propio de esta sección, no el del hamburguesa (1279px) — acá no
+   depende del nav. */
 .jb3-footer-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -1203,14 +1209,26 @@ html.mobile-menu-open .mobile-menu-control-wrapper {
     }
 }
 
-.jb3-footer-title {
-    color: var(--footer-text);
-    margin-top: 0;
+.jb3-footer-logo {
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+.jb3-footer-logo img {
+    display: block;
+    width: 250px;
+    max-width: 100%;
+    height: auto;
+}
+
+.jb3-footer-col--main p {
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0 0 1.2em;
 }
 
 .jb3-footer-legal {
     font-size: 13px;
-    opacity: .7;
 }
 
 /* Menú del footer (jb3_footer_menu(), _init_footer_menu.php): el menú
@@ -1258,6 +1276,12 @@ html.mobile-menu-open .mobile-menu-control-wrapper {
 a.jb3-footer-menu__titulo:hover,
 .jb3-footer-menu__link:hover {
     color: var(--footer-link-hover) !important;
+}
+
+/* LinkedIn (jb3_footer_linkedin_script()): con consentimiento, el botón
+   "Seguir" reemplaza al link común. */
+.jb3-footer-linkedin--widget .jb3-footer-linkedin__link {
+    display: none;
 }
 
 /* ─── Barra inferior (CTA + volver arriba) ──────────────────────────────── */
@@ -2338,8 +2362,11 @@ body {
     margin: 0;
 }
 
+/* Más aire alrededor del botón (pedido 2026-10-16): separado del PDF de
+   arriba y del módulo "Más oportunidades comerciales" de abajo (que ya trae
+   su propio espacio arriba; estos 48px se suman). */
 .jb3-op-comercial__pdf-descarga {
-    margin: 16px 0 0;
+    margin: 32px 0 48px;
     text-align: center;
 }
 
@@ -3007,7 +3034,7 @@ body.error404 .inside-article .search-form {
 
 .jb3-grid-posters__media img,
 .jb3-grid-thumbs__media img {
-    transition: transform .3s ease;
+    transition: transform var(--jb3-zoom-duracion) ease;
 }
 
 .jb3-grid-posters__item:hover img,
@@ -3110,7 +3137,7 @@ body.error404 .inside-article .search-form {
 .jb3-grid-mixto__media img {
     display: block;
     width: 100%;
-    transition: transform .3s ease;
+    transition: transform var(--jb3-zoom-duracion) ease;
 }
 
 .jb3-grid-mixto__item:hover .jb3-grid-mixto__media img {
@@ -3178,7 +3205,7 @@ body.error404 .inside-article .search-form {
     justify-content: center;
     background: rgba(0, 0, 0, .25);
     pointer-events: none;
-    transition: transform .3s ease;
+    transition: transform var(--jb3-zoom-duracion) ease;
 }
 
 /* Sin esto, al crecer la imagen (scale) este overlay se queda en el
@@ -3200,7 +3227,7 @@ body.error404 .inside-article .search-form {
     border-radius: 50%;
     color: #ffffff;
     background: rgba(0, 0, 0, .5);
-    transition: transform .3s ease;
+    transition: transform var(--jb3-zoom-duracion) ease;
 }
 
 .jb3-grid-thumbs__item:hover .jb3-grid-thumbs__play svg,
@@ -3261,7 +3288,7 @@ a.jb3-tarjeta:hover .jb3-grid-thumbs__play svg {
     display: block;
     width: 100%;
     height: auto;
-    transition: transform .3s ease;
+    transition: transform var(--jb3-zoom-duracion) ease;
 }
 
 a.jb3-tarjeta:hover .jb3-tarjeta__media img {
@@ -3518,7 +3545,7 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
     cursor: pointer;
     /* Mismo efecto de zoom en hover que posters/thumbs (ver
        .jb3-grid-posters__item:hover img más arriba en este archivo). */
-    transition: transform .3s ease;
+    transition: transform var(--jb3-zoom-duracion) ease;
 }
 
 .jb3-galeria-slider__slide:hover img {

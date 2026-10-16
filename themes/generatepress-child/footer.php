@@ -3,8 +3,7 @@
  * Footer propio del sitio (reemplaza al de GeneratePress).
  *
  * Grid de 2 columnas (apiladas en mobile) + barra de CTA abajo:
- *   - texto institucional (placeholder — reemplazar por la copy real de JB3
- *     antes de publicar);
+ *   - logo del sitio (el mismo del header) + texto institucional y legal;
  *   - el menú principal desplegado, filtrado por país (jb3_footer_menu(),
  *     _init_footer_menu.php).
  *
@@ -25,12 +24,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<div class="jb3-footer-grid">
 
 		<div class="jb3-footer-col jb3-footer-col--main">
-			<h2 class="jb3-footer-title">Título institucional</h2>
-			<p>Texto institucional de introducción — reemplazar por la copy real de JB3.</p>
-			<p>Segundo párrafo institucional con más detalle sobre la propuesta del sitio.</p>
-			<p><strong>Frase de cierre institucional.</strong></p>
+			<?php
+			// Mismo logo que el header (Apariencia > Personalizar > Identidad del
+			// sitio > Logo): si se cambia ahí, cambia también acá.
+			$logo_id = (int) get_theme_mod( 'custom_logo' );
+			if ( $logo_id ) :
+				?>
+				<a class="jb3-footer-logo" href="<?php echo esc_url( home_url( '/' ) ); ?>">
+					<?php echo jb3_img( $logo_id, '250px', array( 'alt' => get_bloginfo( 'name' ), 'loading' => 'lazy' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_img() ya escapa todo. ?>
+				</a>
+			<?php endif; ?>
+
+			<p><strong>Conectados es tu acceso directo al universo de oportunidades que ofrece Sony Pictures Television en América Latina.</strong></p>
+			<p>
+				Aquí puedes descubrir alianzas estratégicas, explorar nuestros contenidos originales y encontrar soluciones creativas que conecten a tu marca con millones de personas.<br>
+				Nuestro ecosistema incluye televisión paga, producciones premium, artistas de Sony Music, campañas de content marketing y franquicias.
+			</p>
+			<p><strong>Conéctate con el poder del entretenimiento.</strong></p>
 			<p class="jb3-footer-legal">
-				© <?php echo esc_html( gmdate( 'Y' ) ); ?> JB3. Todos los derechos reservados.
+				<?php // Año automático, con la zona horaria del sitio (Ajustes > Generales). ?>
+				© <?php echo esc_html( wp_date( 'Y' ) ); ?> SET Distribution, LLC. Todos los derechos reservados.<br>
+				El logo Sony Channel es una marca de SET Distribution, LLC.
 			</p>
 		</div>
 

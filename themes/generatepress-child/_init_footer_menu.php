@@ -98,5 +98,60 @@ function jb3_footer_menu(): string {
 	$html .= '<li class="jb3-footer-menu__grupo"><a class="jb3-footer-menu__titulo" href="#" onclick="if (window.revisitCkyConsent) { revisitCkyConsent(); } return false;">'
 		. esc_html__( 'Configuración de cookies', 'generatepress-child' ) . '</a></li>';
 
+	// Botón "Seguir" de LinkedIn (ver jb3_footer_linkedin_script() abajo):
+	// el <script type="IN/FollowCompany"> es solo un marcador que el script
+	// de LinkedIn reemplaza por el botón. Hasta que se cargue (o si no hay
+	// consentimiento), se ve el link común a la página de la empresa.
+	$html .= '<li class="jb3-footer-menu__grupo jb3-footer-linkedin">'
+		. '<a class="jb3-footer-menu__titulo jb3-footer-linkedin__link" href="' . esc_url( 'https://www.linkedin.com/company/' . JB3_LINKEDIN_EMPRESA_ID . '/' ) . '" target="_blank" rel="noopener">LinkedIn</a>'
+		. '<script type="IN/FollowCompany" data-id="' . (int) JB3_LINKEDIN_EMPRESA_ID . '" data-counter="right"></script>'
+		. '</li>';
+
 	return '<ul class="jb3-footer-menu">' . $html . '</ul>';
+}
+
+// ─── BOTÓN "SEGUIR" DE LINKEDIN, CON CONSENTIMIENTO ─────────────────────────
+// Pedido 2026-10-16. El script de LinkedIn (platform.linkedin.com/in.js)
+// deja cookies de seguimiento en el navegador del visitante (bcookie, lidc,
+// etc.), así que se carga SOLO si aceptó la categoría "functional" en el
+// aviso de CookieYes — mismo criterio que Google Analytics
+// (_init_analytics.php): se lee la cookie "cookieyes-consent" y se escucha
+// el evento "cookieyes_consent_update" (si acepta en ese momento, el botón
+// aparece sin recargar). Sin consentimiento queda el link común a LinkedIn.
+// No se usa el bloqueo de scripts de CookieYes (type="text/plain"): este
+// script lleva su configuración ("lang: es_ES") como texto adentro, y el
+// desbloqueo de CookieYes no la conserva.
+const JB3_LINKEDIN_EMPRESA_ID = 10616796;
+
+add_action( 'wp_footer', 'jb3_footer_linkedin_script' );
+function jb3_footer_linkedin_script(): void {
+	?>
+	<script>
+	( function () {
+		var CATEGORIA = 'functional';
+		var cargado   = false;
+
+		function aceptada() {
+			var match = document.cookie.match( /(?:^|; )cookieyes-consent=([^;]*)/ );
+			return !! match && decodeURIComponent( match[ 1 ] ).indexOf( CATEGORIA + ':yes' ) !== -1;
+		}
+
+		function cargar() {
+			var li = document.querySelector( '.jb3-footer-linkedin' );
+			if ( cargado || ! li || ! aceptada() ) {
+				return;
+			}
+			cargado = true;
+			li.classList.add( 'jb3-footer-linkedin--widget' );
+			var s  = document.createElement( 'script' );
+			s.src  = 'https://platform.linkedin.com/in.js';
+			s.text = 'lang: es_ES';
+			document.body.appendChild( s );
+		}
+
+		cargar();
+		document.addEventListener( 'cookieyes_consent_update', cargar );
+	} )();
+	</script>
+	<?php
 }
