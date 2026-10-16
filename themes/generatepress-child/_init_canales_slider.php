@@ -104,8 +104,6 @@ function jb3_canales_slider_render( string $titulo, string $bajada = '' ): strin
 					</div>
 				<?php endforeach; ?>
 			</div>
-			<div class="swiper-button-prev"></div>
-			<div class="swiper-button-next"></div>
 		</div>
 	</section>
 	<?php
@@ -127,6 +125,10 @@ function jb3_canales_slider_render( string $titulo, string $bajada = '' ): strin
 	// activo y muy pocos slides de sobra para duplicar, Swiper daba un
 	// cálculo inestable (ver commit anterior) — acá directamente no hace
 	// falta loop si ya entran todos.
+	//
+	// Sin flechas (pedido 2026-10-16): avanza solo (autoplay) y se puede
+	// arrastrar con el mouse o el dedo — grabCursor muestra la "manito" en
+	// desktop para que se note que se puede arrastrar.
 	wp_add_inline_script( 'swiper', "
 		window.addEventListener( 'load', function () {
 			var el = document.querySelector( '.jb3-canales-slider .swiper' );
@@ -146,10 +148,7 @@ function jb3_canales_slider_render( string $titulo, string $bajada = '' ): strin
 					disableOnInteraction: false,
 					pauseOnMouseEnter: true
 				},
-				navigation: {
-					nextEl: '.jb3-canales-slider .swiper-button-next',
-					prevEl: '.jb3-canales-slider .swiper-button-prev'
-				},
+				grabCursor: true,
 				breakpoints: {
 					768: {
 						slidesPerView: cap( 4 ),

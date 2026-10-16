@@ -98,7 +98,6 @@ Text Domain: generatepress-child
     /* Footer */
     --footer-bg:            #17002d;
     --footer-text:          #f6f6f6;
-    --footer-heading-color: var(--color-secondary);
     --footer-link-color:    #cccccc;
     --footer-link-hover:    var(--color-secondary);
     --footer-gap:           40px;
@@ -1200,7 +1199,7 @@ html.mobile-menu-open .mobile-menu-control-wrapper {
 
 @media (min-width: 768px) {
     .jb3-footer-grid {
-        grid-template-columns: 8fr 2fr 2fr;
+        grid-template-columns: 1fr 1fr;
     }
 }
 
@@ -1209,47 +1208,56 @@ html.mobile-menu-open .mobile-menu-control-wrapper {
     margin-top: 0;
 }
 
-.jb3-footer-heading {
-    color: var(--footer-heading-color);
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: .05em;
-    text-transform: uppercase;
-    margin: 0 0 12px;
-}
-
-.jb3-footer-col--secondary .jb3-footer-heading:not(:first-child) {
-    margin-top: 24px;
-}
-
 .jb3-footer-legal {
     font-size: 13px;
     opacity: .7;
 }
 
-/* !important: mismo motivo que .jb3-footer-bar__cta más abajo — la regla
-   global "a { color: var(--link-color) !important }" (COLORES GLOBALES)
-   le gana a cualquier color sin !important, y acá interesa que el link
-   se vea igual de apagado que el resto del texto legal, no destacado. */
-.jb3-footer-legal__cookies {
-    color: inherit !important;
-}
-
-.jb3-footer-list {
+/* Menú del footer (jb3_footer_menu(), _init_footer_menu.php): el menú
+   principal desplegado en 2 columnas. Cada grupo (título + sus ítems) no se
+   corta entre columnas (break-inside), y el navegador reparte los grupos
+   para que las dos columnas queden parejas — como el menú cambia según el
+   país, no se fija a mano qué va en cada una. */
+.jb3-footer-menu {
     list-style: none;
     margin: 0;
     padding: 0;
+    columns: 2;
+    column-gap: var(--footer-gap);
 }
 
-.jb3-footer-list a {
+.jb3-footer-menu__grupo {
+    break-inside: avoid;
+    margin-bottom: 12px;
+}
+
+.jb3-footer-menu__titulo {
     display: block;
-    padding: 4px 0;
-    color: var(--footer-link-color);
+    color: var(--color-primary) !important; /* !important: la regla global "a { color: var(--link-color) !important }" (COLORES GLOBALES) le gana a cualquier color sin !important. */
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
     text-decoration: none;
 }
 
-.jb3-footer-list a:hover {
-    color: var(--footer-link-hover);
+.jb3-footer-menu__sub {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+}
+
+.jb3-footer-menu__link {
+    display: block;
+    padding: 2px 0;
+    color: var(--footer-link-color) !important;
+    font-size: 12px;
+    text-transform: uppercase;
+    text-decoration: none;
+}
+
+a.jb3-footer-menu__titulo:hover,
+.jb3-footer-menu__link:hover {
+    color: var(--footer-link-hover) !important;
 }
 
 /* ─── Barra inferior (CTA + volver arriba) ──────────────────────────────── */
@@ -1445,7 +1453,7 @@ body {
    para no duplicar. Mismo criterio 2026-08-28: se ocultó en mobile igual
    que totop (ver más abajo) porque el texto del CTA ya ocupa todo el
    ancho ahí — si hace falta acceso a esto en mobile también, sumar el
-   link a alguna columna del footer de arriba (jb3-footer-col--links). */
+   link al final del menú del footer (jb3_footer_menu()). */
 .jb3-footer-bar__cookies {
     position: absolute;
     z-index: 1;
@@ -1696,21 +1704,18 @@ body.admin-bar .jb3-home-slider-wrap {
    esto (controla el tamaño del ícono ::after Y el cálculo de centrado
    vertical del botón, que Swiper arma solo a partir de esta variable — por
    eso alcanza con tocar esto para achicar la flecha, sin pisar width/
-   height/margin-top a mano). */
+   height/margin-top a mano). En el rotador de la Home el botón es un
+   círculo de 32px (ver más abajo). */
 .jb3-home-slider {
-    --swiper-navigation-size: 16px;
+    --swiper-navigation-size: 32px;
 }
 
-/* Mismo estilo de flechas para los tres sliders del sitio (Home, Canales,
-   Galería) — antes repetido idéntico en cada uno, consolidado acá cuando
-   apareció el tercero (2026-08-17). Probamos un círculo de fondo atrás de
-   la flecha, pero el glifo de Swiper no queda centrado adentro (problema
-   del ícono en sí, no del CSS) — vuelto a la flecha sola, sin fondo
-   (2026-08-20). */
+/* Mismo estilo de flechas para los sliders que las tienen (Home y Galería;
+   el de Canales no lleva flechas desde 2026-10-16, ver
+   _init_canales_slider.php). El rotador de la Home lleva además un círculo
+   de fondo (ver más abajo); la Galería, la flecha sola. */
 .jb3-home-slider .swiper-button-prev,
 .jb3-home-slider .swiper-button-next,
-.jb3-canales-slider .swiper-button-prev,
-.jb3-canales-slider .swiper-button-next,
 .jb3-galeria-slider .swiper-button-prev,
 .jb3-galeria-slider .swiper-button-next {
     color: #ffffff;
@@ -1718,24 +1723,62 @@ body.admin-bar .jb3-home-slider-wrap {
 
 .jb3-home-slider .swiper-button-prev:hover,
 .jb3-home-slider .swiper-button-next:hover,
-.jb3-canales-slider .swiper-button-prev:hover,
-.jb3-canales-slider .swiper-button-next:hover,
 .jb3-galeria-slider .swiper-button-prev:hover,
 .jb3-galeria-slider .swiper-button-next:hover {
     color: var(--color-secondary);
 }
 
+/* Rotador de la Home: flecha oscura dentro de un círculo blanco bien
+   transparente (35%; 75% al pasar el mouse) — discreto a propósito, que no
+   compita con la imagen — con una sombra suave para
+   que se separe también sobre imágenes claras (pedido 2026-10-16). La flecha
+   la dibujamos con CSS (dos bordes en ángulo) en vez del ícono de Swiper:
+   ese ícono es una tipografía y su carácter no queda centrado dentro de un
+   círculo (por eso se había descartado el círculo el 2026-08-20). El
+   translate de cada lado compensa que el vértice de la flecha no está en
+   el centro de su caja, para que se vea ópticamente centrada. */
+.jb3-home-slider .swiper-button-prev,
+.jb3-home-slider .swiper-button-next {
+    width: var(--swiper-navigation-size);
+    border-radius: 50%;
+    color: #1a1a1a;
+    background: rgba(255, 255, 255, .35);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .15);
+    transition: background-color .2s ease;
+}
+
+.jb3-home-slider .swiper-button-prev:hover,
+.jb3-home-slider .swiper-button-next:hover {
+    color: #1a1a1a;
+    background: rgba(255, 255, 255, .75);
+}
+
+.jb3-home-slider .swiper-button-prev::after,
+.jb3-home-slider .swiper-button-next::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+}
+
+.jb3-home-slider .swiper-button-next::after {
+    transform: translateX(-1.5px) rotate(45deg);
+}
+
+.jb3-home-slider .swiper-button-prev::after {
+    transform: translateX(1.5px) rotate(-135deg);
+}
+
 /* En mobile/tablet se navega deslizando con el dedo — las flechas no hacen
    falta. Mismo breakpoint que ya usa el nav para pasar a modo hamburguesa
    (touch), para no sumar un tercer punto de corte distinto en el sitio.
-   Home y Canales usan Swiper de verdad (soporta swipe); la Galería usa un
+   La Home usa Swiper de verdad (soporta swipe); la Galería usa un
    carrusel propio sin gestos táctiles todavía, así que ahí las flechas se
    dejan visibles siempre — es la única forma de navegar en mobile. */
 @media (max-width: 1279px) {
     .jb3-home-slider .swiper-button-prev,
-    .jb3-home-slider .swiper-button-next,
-    .jb3-canales-slider .swiper-button-prev,
-    .jb3-canales-slider .swiper-button-next {
+    .jb3-home-slider .swiper-button-next {
         display: none;
     }
 }
@@ -2210,11 +2253,10 @@ body {
        tamaño de los slides; volverlo flex crea una dependencia circular y
        el cálculo puede explotar a un tamaño absurdo. */
     overflow: hidden;
-    --swiper-navigation-size: 16px;
 }
 
-/* Estilo de flechas: ver la regla consolidada de los 3 sliders del sitio
-   (Home/Canales/Galería) más arriba, junto a ".jb3-home-slider". */
+/* Sin flechas (pedido 2026-10-16): avanza solo y se arrastra — ver
+   _init_canales_slider.php. */
 
 /* Ancho del slide: ya NO se fija acá — slidesPerView es numérico (ver
    _init_canales_slider.php), Swiper reparte el ancho del contenedor exacto

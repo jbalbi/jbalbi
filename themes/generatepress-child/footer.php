@@ -2,9 +2,11 @@
 /**
  * Footer propio del sitio (reemplaza al de GeneratePress).
  *
- * Grid de 3 columnas (8/2/2 en desktop, apiladas en mobile) + barra de CTA
- * abajo. El contenido de las columnas es placeholder — reemplazar los
- * textos, links y nombres de marca por los reales de JB3 antes de publicar.
+ * Grid de 2 columnas (apiladas en mobile) + barra de CTA abajo:
+ *   - texto institucional (placeholder — reemplazar por la copy real de JB3
+ *     antes de publicar);
+ *   - el menú principal desplegado, filtrado por país (jb3_footer_menu(),
+ *     _init_footer_menu.php).
  *
  * Los dos </div> de acá abajo cierran '.page' y '.site-content', abiertos
  * sin cerrar en header.php (líneas 58 y 67) — hacen falta para no dejar
@@ -32,35 +34,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</p>
 		</div>
 
-		<div class="jb3-footer-col jb3-footer-col--links">
-			<h3 class="jb3-footer-heading">Columna 2</h3>
-			<ul class="jb3-footer-list">
-				<li><a href="#">Enlace 1</a></li>
-				<li><a href="#">Enlace 2</a></li>
-				<li><a href="#">Enlace 3</a></li>
-				<li><a href="#">Enlace 4</a></li>
-			</ul>
-		</div>
-
-		<div class="jb3-footer-col jb3-footer-col--secondary">
-			<h3 class="jb3-footer-heading">Columna 3a</h3>
-			<ul class="jb3-footer-list">
-				<li><a href="#">Enlace 1</a></li>
-				<li><a href="#">Enlace 2</a></li>
-			</ul>
-			<h3 class="jb3-footer-heading">Columna 3b</h3>
-			<ul class="jb3-footer-list">
-				<?php
-				// Mismo criterio que el link "Cookies" de .jb3-footer-bar
-				// (ver más abajo) — este vive en la columna del footer,
-				// SIEMPRE visible (a diferencia del de la barra fija, que
-				// se oculta en mobile porque el CTA ya ocupa todo el
-				// ancho ahí). revisitCkyConsent() la expone CookieYes
-				// (cookie-law-info) como función global de JS.
-				?>
-				<li><a href="#" class="jb3-footer-legal__cookies" onclick="if (window.revisitCkyConsent) { revisitCkyConsent(); } return false;">Configurar cookies</a></li>
-			</ul>
-		</div>
+		<nav class="jb3-footer-col jb3-footer-col--menu" aria-label="<?php esc_attr_e( 'Menú del pie de página', 'generatepress-child' ); ?>">
+			<?php echo jb3_footer_menu(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_footer_menu() ya escapa todo. ?>
+		</nav>
 
 	</div>
 

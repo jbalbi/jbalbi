@@ -201,6 +201,7 @@ require_once __DIR__ . '/_init_taxonomias.php';         // Taxonomías personali
 require_once __DIR__ . '/_init_custom_post_types.php';  // Custom Post Types
 require_once __DIR__ . '/_init_menu.php';               // Breakpoint del menú hamburguesa
 require_once __DIR__ . '/_init_navigation.php';         // jb3_navigation(): <nav> + hamburguesa propios (reemplaza generate_navigation_position())
+require_once __DIR__ . '/_init_footer_menu.php';        // jb3_footer_menu(): menú principal desplegado en el footer, filtrado por país
 require_once __DIR__ . '/_init_header.php';             // Header custom: preheader, logo+nav, buscador/cuenta/LinkedIn
 require_once __DIR__ . '/_init_layout.php';             // Layout forzado: sin sidebar, sin footer widgets, full-width
 require_once __DIR__ . '/_init_imagenes.php';           // Tamaños de imagen propios (400/800/1200/1920/2560) + copias en WebP
