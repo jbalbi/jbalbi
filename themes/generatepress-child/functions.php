@@ -223,6 +223,7 @@ require_once __DIR__ . '/_init_relacionados.php';       // jb3_relacionados_auto
 require_once __DIR__ . '/_init_etiquetas.php';          // jb3_etiquetas_auto(): "Te puede interesar" automático — mismo canal + taxonomía "etiquetas", al azar
 require_once __DIR__ . '/_init_pdf_viewer.php';          // jb3_pdf_viewer(): visor de PDF propio (PDF.js autohospedado), sin controles nativos ni de extensiones
 require_once __DIR__ . '/_init_pdf_preview_admin.php';   // Genera la imagen destacada sola desde la página 1 del PDF (PDF.js en el navegador del editor)
+require_once __DIR__ . '/_init_youtube_playlist.php';   // jb3_youtube_playlist_videos(): videos de una playlist (bloque "Playlist de YouTube")
 require_once __DIR__ . '/_init_video_modal.php';        // Modal de video (YouTube/Vimeo/archivo propio) para [data-jb3-video]
 require_once __DIR__ . '/_init_image_modal.php';        // Modal de imagen (mismo patrón que el de video) para [data-jb3-image]
 require_once __DIR__ . '/_init_page_modal.php';          // Modal de página: trae el contenido de una Página real por AJAX, sin header/footer, para [data-jb3-page-modal]

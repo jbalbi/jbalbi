@@ -377,6 +377,28 @@ add_action( 'acf/init', function () {
 		),
 	) );
 
+	// Playlist de YouTube (pedido 2026-10-19): todos los videos de una
+	// playlist en la grilla de miniaturas del sitio, cada uno abriéndose en
+	// el reproductor a pantalla completa. De dónde salen los videos y sus
+	// límites: _init_youtube_playlist.php. Campos: grupo ACF "Playlist de
+	// YouTube" (prefijo yt_), ver blocks/playlist-youtube/render.php.
+	acf_register_block_type( array(
+		'name'            => 'playlist-youtube',
+		'title'           => 'Playlist de YouTube',
+		'description'     => 'Todos los videos de una playlist de YouTube en una grilla de miniaturas; cada uno se abre en el reproductor a pantalla completa. Se actualiza sola cuando cambia la playlist (muestra los primeros 15).',
+		'render_template' => __DIR__ . '/blocks/playlist-youtube/render.php',
+		'category'        => 'jb3',
+		'icon'            => 'playlist-video',
+		'keywords'        => array( 'youtube', 'playlist', 'video', 'videos', 'lista' ),
+		'mode'            => 'preview',
+		'api_version'     => 3,
+		'supports'        => array(
+			'align'           => false,
+			'customClassName' => false,
+			'anchor'          => false,
+		),
+	) );
+
 	// Envoltorio genérico para restringir CUALQUIER contenido por país — en
 	// vez de agregarle un campo "países" a cada bloque nuevo (Banner,
 	// Galería, etc.) uno por uno, este bloque contiene otros adentro

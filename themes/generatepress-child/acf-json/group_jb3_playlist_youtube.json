@@ -1,0 +1,87 @@
+{
+    "key": "group_jb3_playlist_youtube",
+    "title": "Playlist de YouTube",
+    "fields": [
+        {
+            "key": "field_jb3_yt_titulo",
+            "label": "Título",
+            "name": "yt_titulo",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "Opcional. Se ve con la rayita de color, como el resto de los títulos de módulo.",
+            "required": 0,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_jb3_yt_link",
+            "label": "Link de la playlist",
+            "name": "yt_link",
+            "aria-label": "",
+            "type": "url",
+            "instructions": "Abrí la playlist en YouTube y copiá el link: tiene que tener \"list=\" (ej. https:\/\/www.youtube.com\/playlist?list=PL…). La playlist tiene que ser pública o \"no listada\". Los videos se muestran en el mismo orden que la playlist: para cambiarlo, reordená la playlist en YouTube. Si tiene más de 15 videos, se muestran los primeros 15.",
+            "required": 1,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": ""
+        },
+        {
+            "key": "field_jb3_yt_cantidad",
+            "label": "Cantidad de videos",
+            "name": "yt_cantidad",
+            "aria-label": "",
+            "type": "number",
+            "instructions": "Opcional. Vacío = todos los que entrega YouTube: los primeros 15 de la playlist, en su orden. Para cambiar cuáles se ven, reordená la playlist en YouTube.",
+            "required": 0,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "min": 1,
+            "max": 15,
+            "step": 1,
+            "default_value": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "block",
+                "operator": "==",
+                "value": "acf\/playlist-youtube"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "Campos del bloque \"Playlist de YouTube\" (blocks\/playlist-youtube\/render.php).",
+    "show_in_rest": 0,
+    "display_title": "",
+    "allow_ai_access": false,
+    "ai_description": "",
+    "modified": 1792501792
+}
