@@ -29,6 +29,7 @@ Plugin WordPress para registro, aprobación y acceso de miembros con magic link,
 21. [Contenido privado](#21-contenido-privado)
 22. [Tracking de Op. Comerciales y Google Sheets](#22-tracking-de-op-comerciales-y-google-sheets)
 23. [Entrada automática por link de Mailchimp (?e=)](#23-entrada-automática-por-link-de-mailchimp-e)
+24. [Verificación en dos pasos (administradores)](#24-verificación-en-dos-pasos-administradores)
 
 ---
 
@@ -40,7 +41,8 @@ JB3 Members implementa un sistema completo de membresías para WordPress:
 - **Login por magic link (sin contraseñas)**: el usuario ingresa su email, recibe un enlace de un solo uso (clickeable hasta 120 días) y al usarlo queda logueado con una sesión deslizante: se renueva sola mientras entre al menos cada 180 días, con un techo absoluto de 365 días desde el login.
 - **Representantes por país**: cada país tiene uno o más representantes que reciben el email de aprobación. Si no hay representante asignado para un país, recibe el default.
 - **Sincronización bidireccional con Mailchimp**: datos del perfil, preferencias de newsletter, intereses y newsletters por país se sincronizan automáticamente.
-- **Administradores incluidos**: los usuarios administradores de WordPress pueden loguearse por magic link, tener sus datos en Mailchimp y gestionar todo el sistema.
+- **Administradores incluidos**: los usuarios administradores de WordPress pueden loguearse por magic link, tener sus datos en Mailchimp y gestionar todo el sistema. Para ellos el magic link vence en 1 hora y, además, piden un **código de Google Authenticator** (verificación en dos pasos, sección 24).
+- **Sin login con contraseña**: `wp-login.php` no acepta contraseñas para nadie (ni admins) — solo magic link (sección 10, `JB3_Login`).
 - **Exportación e importación por CSV**: gestión masiva con lógica inteligente de actualización.
 - **Borrado masivo en chunks**: página dedicada para eliminar miles de miembros sin timeouts del servidor.
 - **Limpieza automática**: usuarios pendientes de más de 30 días se eliminan por cron diario.
@@ -73,6 +75,7 @@ jb3-members/
 │   ├── class-representatives.php     # CRUD de representantes por país
 │   ├── class-email.php               # Envío de emails transaccionales (3 tipos)
 │   ├── class-magic-link.php          # Generación, validación y ciclo de vida del magic link
+│   ├── class-two-factor.php          # Verificación en dos pasos de administradores (ver sección 24)
 │   ├── class-registration.php        # Shortcode [jb3_register], aprobación por token
 │   ├── class-profile-update.php      # Shortcode [jb3_profile], eliminación de cuenta
 │   ├── class-login.php               # Shortcode [jb3_login], logout, rate limiting
@@ -93,7 +96,9 @@ jb3-members/
 │   │   ├── update-form.php           # Template HTML del formulario de perfil
 │   │   └── login-form.php            # Template HTML del formulario de login
 │   ├── css/jb3-forms.css             # Estilos de formularios (frontend y admin)
-│   └── js/jb3-forms.js               # UX: validación inline, anti-doble-submit
+│   └── js/
+│       ├── jb3-forms.js              # UX: validación inline, anti-doble-submit
+│       └── qrcode.min.js             # Librería del QR de la verificación en dos pasos (copia local, MIT)
 └── templates/
     ├── email-approval-request.php    # Email a representantes: nuevo registro pendiente
     ├── email-user-approved.php       # Email al usuario: aprobado + magic link inicial
@@ -385,6 +390,7 @@ Al guardar el perfil admin: sincroniza automáticamente con Mailchimp (o archiva
 
 **Constantes:**
 - `TOKEN_VALID_DAYS = 120` — ventana para hacer clic en el magic link emailado (no es la duración de la sesión)
+- `ADMIN_TOKEN_VALID_HOURS = 1` — la misma ventana para administradores (un mail viejo olvidado no da acceso de admin por meses)
 - `INACTIVITY_DAYS = 180` — la sesión se renueva sola mientras el usuario entre al menos con esta frecuencia
 - `MAX_SESSION_DAYS = 365` — techo absoluto desde el login real, sin importar cuánta actividad haya
 - `REFRESH_THRESHOLD = DAY_IN_SECONDS` — margen mínimo de vencimiento restante antes de disparar una renovación (throttle, evita reescribir en cada request)
@@ -397,7 +403,9 @@ Al guardar el perfil admin: sincroniza automáticamente con Mailchimp (o archiva
 
 **`generate_url($user_id)`**: llama a `generate_token()` y construye la URL completa: `{URL_pagina_login}?jb3_magic={TOKEN}`.
 
-**`handle_magic_link()`**: se ejecuta en el hook `init` con priority 5 (antes del template). Si detecta `?jb3_magic=TOKEN` en la URL, llama a `validate_token()`. Si el token es válido, hace login, setea `SESSION_META` (+`INACTIVITY_DAYS`) y `SESSION_STARTED_META` (ahora) y redirige; si no, redirige al login con `?jb3_error=invalid_link`.
+**`handle_magic_link()`**: se ejecuta en el hook `init` con priority 5 (antes del template). Si detecta `?jb3_magic=TOKEN` en la URL, llama a `validate_token()`. Si el token es válido, lo borra (un solo uso) y: si es **administrador**, en vez de iniciar sesión pasa al paso del código (`JB3_Two_Factor::iniciar()`, sección 24); si es miembro, llama a `completar_login()`. Si el token no es válido, redirige al login con `?jb3_error=invalid_link`. User-Agents de escáneres de correo conocidos se ignoran (no gastan el token).
+
+**`completar_login($user, $redirect)`**: inicia la sesión (`wp_set_auth_cookie`, `wp_login`), setea `SESSION_META` (+`INACTIVITY_DAYS`) y `SESSION_STARTED_META` (ahora) y redirige. Último paso común del magic link (miembros) y de la verificación en dos pasos (admins).
 
 **`validate_token($token)`**: busca el token por SQL directo en `wp_usermeta` (más eficiente que iterar usuarios). Verifica: token existe → no expirado → usuario aprobado (o admin). Retorna el objeto `WP_User` o `false`.
 
@@ -418,6 +426,10 @@ Maneja el shortcode `[jb3_login]` y el rate limiting. El método `process()` imp
 5. Determina `$is_admin = user_can(...)` para decidir si aplican los checks de rol/estado
 6. Si pasa todos los checks: llama a `JB3_Email::send_magic_link()`
 7. Retorna `[[], true]` (éxito sin errores) — incluso para emails no registrados, para prevenir enumeración
+
+**Login con contraseña apagado** (`block_password_login()` + `redirect_wp_login()`): `wp-login.php` redirige a `/login/` y rechaza usuario+contraseña para TODOS (admins incluidos), con el mismo mensaje sea la contraseña correcta o no. También se apagan "¿Olvidaste tu contraseña?" y las contraseñas de aplicación. Siguen andando cerrar sesión y las páginas protegidas con contraseña de WordPress. **Llave de emergencia** (mails caídos): `define( 'JB3_PERMITIR_LOGIN_CONTRASENA', true );` en `wp-config.php` — y sacarla apenas se resuelva. Con la llave puesta, los admins igual tienen que pasar la verificación en dos pasos.
+
+**Pasos especiales del shortcode**: con `?jb3_2fa=1` muestra la pantalla de la verificación en dos pasos (`JB3_Two_Factor::render_paso()`, sección 24) en vez del formulario. Mensajes de `?jb3_error=`: `invalid_link`, `2fa_bloqueado` (demasiados códigos incorrectos), `2fa_requerido` (se cerró una sesión de admin sin verificar).
 
 ---
 
@@ -658,8 +670,11 @@ Los filtros por rol/estado (Todos/Pendientes/Aprobados) no sincronizan con Mailc
 ### Token de aprobación
 - 48 caracteres aleatorios
 - Comparado con `hash_equals()` — previene timing attacks
-- Se elimina del user_meta tras ser usado
-- Intentos de doble aprobación (varios representantes reciben el mismo email) son detectados y manejados con mensaje informativo en lugar de error
+- **Dos pasos**: abrir el link (GET) solo muestra los datos y un botón "Aprobar"; recién el POST del botón aprueba — los escáneres de seguridad de correo corporativo abren los links solos y aprobaban usuarios sin que nadie hiciera clic (revisión 2026-10-01)
+- **No se borra al aprobar**: el segundo representante que abre el mismo email tiene que pasar el chequeo del token para ver "Usuario ya aprobado" (antes se borraba y veía "token inválido")
+
+### Administradores: verificación en dos pasos
+- Además del magic link, un código de app de autenticación (TOTP). Detalle completo, recuperación y qué tocar para cambiarlo: **sección 24**
 
 ### Rate limiting en login
 - Máximo **3 solicitudes por email cada 10 minutos** (transient `jb3_rl_{md5(email)}`)
@@ -706,11 +721,14 @@ El hook `set_user_role` detecta si se intenta quitar el rol `administrator` a un
 | `jb3_interests` | array de strings | IDs de intereses Mailchimp (temas generales) |
 | `jb3_registered_at` | datetime `Y-m-d H:i:s` | Fecha de registro en JB3 |
 | `jb3_approved_at` | datetime `Y-m-d H:i:s` | Fecha de aprobación |
-| `jb3_approval_token` | string 48 chars | Token one-time para aprobación (se elimina tras su uso) |
+| `jb3_approval_token` | string 48 chars | Token de aprobación (se conserva después de aprobar: ver sección 15) |
 | `jb3_magic_token` | string 64 chars | Token one-time del magic link activo |
 | `jb3_magic_token_expiry` | int (Unix timestamp) | Expiración del magic link |
 | `jb3_session_expiry` | int (Unix timestamp) | Vencimiento deslizante de la sesión (se renueva sola con actividad, cada 180 días) |
 | `jb3_session_started` | int (Unix timestamp) | Ancla del login real — techo absoluto de la sesión a los 365 días desde este valor |
+| `jb3_2fa_secreto` | string (base64) | Solo admins: clave de la app de autenticación, **cifrada** (sección 24). Borrarla = reiniciar la verificación |
+| `jb3_2fa_ultimo` | int | Solo admins: último paso de tiempo de código aceptado (impide reusar un código) |
+| `jb3_2fa_reinicio` | string (hash) | Solo admins: último valor de `JB3_REINICIAR_2FA` ya aplicado (para no reiniciar en cada ingreso si la línea queda olvidada) |
 
 **Nota sobre intereses**: el array `jb3_interests` almacena IDs de Mailchimp (ej: `abc123`), no nombres. Esto es correcto y es lo que se envía a Mailchimp en el sync. Los nombres de los intereses se resuelven en runtime via el caché.
 
@@ -953,3 +971,70 @@ Los links de campaña de Mailchimp pueden llevar el `unique_email_id` del contac
 Alcance a propósito acotado: si ya hay sesión (sea cual sea, venga o no de un link reenviado de otra persona), `e` se ignora por completo — el acceso lo deciden solo los permisos normales de la página (contenido privado, geo-targeting, etc.), nunca la identidad de quién generó el link.
 
 Hoy el único consumidor es el guard de **contenido privado** (sección 21): un visitante sin sesión que llega con `?e=` válido a una página privada recibe el magic link directo, en vez del formulario genérico de Ingresar/Registrarte. Cachea resultados (`CACHE_TTL_HIT` = 1 día, `CACHE_TTL_MISS` = 1 hora) para no pegarle a la API de Mailchimp en cada request.
+
+---
+
+## 24. Verificación en dos pasos (administradores)
+
+**Archivo**: `includes/class-two-factor.php` (clase `JB3_Two_Factor`). Agregado el 2026-10-20.
+
+Los **administradores** (`manage_options`), y solo ellos, además del magic link tienen que ingresar el código de 6 dígitos de una app de autenticación: Google Authenticator, Microsoft Authenticator, Authy, 1Password… (estándar **TOTP**, RFC 6238: HMAC-SHA1, 30 segundos, 6 dígitos). Los miembros no ven ningún cambio.
+
+**Por qué propio y no un plugin** (tipo "WP 2FA" o "Two Factor"): esos plugins se enganchan al login con contraseña de `wp-login.php`, y acá los admins entran por magic link (`JB3_Magic_Link`), que esos plugins nunca ven. El TOTP está implementado sin dependencias y validado con los 6 vectores de prueba del RFC 6238.
+
+### Flujo
+
+1. El admin pide su magic link en `/login/` y lo abre (o, con la llave `JB3_PERMITIR_LOGIN_CONTRASENA`, ingresa con contraseña — también pasa por acá, `interceptar_login_contrasena()`).
+2. `JB3_Two_Factor::iniciar()` **no inicia la sesión**: guarda un *login pendiente* (transient `jb3_2fa_p_{hash}`, 10 minutos, con usuario, destino e intentos), referenciado por la cookie HttpOnly `jb3_2fa_pendiente` (no viaja en la URL), y redirige a `/login/?jb3_2fa=1`.
+3. El shortcode `[jb3_login]` muestra `render_paso()`:
+   - **sin app configurada** (primera vez, o después de un reinicio): QR para escanear + la clave para cargar a mano + campo del código. El QR se arma **en el navegador** con `public/js/qrcode.min.js` (copia local): la clave nunca pasa por un servicio externo. La clave nueva vive en el login pendiente y se guarda en el usuario recién cuando confirma un código válido;
+   - **con app configurada**: solo el campo del código, y una línea de ayuda para quien cambió de celular.
+4. `procesar()` (hook `init` prioridad 6, antes de cualquier salida) valida el código y, si es correcto, llama a `JB3_Magic_Link::completar_login()` con `$GLOBALS['jb3_2fa_verificado'] = true`.
+5. `marcar_sesion()` (filtro `attach_session_information`) guarda `'jb3_2fa' => true` en la sesión que se crea. `exigir_en_sesiones()` (`init` prioridad 1) revisa en **cada pedido** que la sesión de un admin tenga esa marca; si no la tiene, la cierra (página → `/login/?jb3_error=2fa_requerido`; AJAX/API → 401). Cubre las sesiones abiertas antes de activar esto y cualquier otro camino de login.
+6. La renovación de la sesión deslizante (`JB3_Magic_Link::maybe_refresh_session()`) crea una sesión nueva: si la actual estaba verificada, la nueva hereda la marca (si no, el admin quedaría afuera en el pedido siguiente).
+
+### Protecciones
+
+| Qué | Cómo |
+|---|---|
+| Adivinar el código | 5 intentos por login pendiente (`MAX_INTENTOS`); después hay que pedir un magic link nuevo (`?jb3_error=2fa_bloqueado`) |
+| Reusar un código ya usado | Se guarda el último paso de tiempo aceptado (`jb3_2fa_ultimo`); solo valen pasos posteriores. Ventana: ±30 segundos |
+| Robo de la base de datos | La clave se guarda cifrada (AES-256-GCM) con una llave derivada de `wp_salt('auth')` (las SALT de `wp-config.php`) |
+| Caché de página | La pantalla `?jb3_2fa=1` se marca `no-cache` (LiteSpeed y navegador): depende de una cookie propia |
+| Sesión vieja de admin | Se cierra sola si no está verificada (paso 5) |
+
+**OJO — SALT de `wp-config.php`**: si alguna vez se cambian (`AUTH_KEY`, `AUTH_SALT`…), las claves guardadas dejan de poder descifrarse y **todos los admins tienen que volver a configurar la app** (reinicio, abajo).
+
+### Recuperación (celular robado/perdido, o código borrado de la app)
+
+**No hay códigos de respaldo**, a propósito (decisión 2026-10-20: "nadie los guarda y los pierden"). **Tampoco hay recuperación por email**: el primer factor ya ES el email (magic link), así que "perdí el celular, mandame un link" dejaría a quien robe el email entrar con un solo factor.
+
+Siempre se **reinicia** la verificación de ese admin (`reiniciar()`: borra `jb3_2fa_secreto` y `jb3_2fa_ultimo`) y en su próximo ingreso configura la app de cero con un QR nuevo. Tres formas, todas cierran las sesiones abiertas de ese admin (ej. la del celular robado):
+
+| Situación | Cómo | Dónde en el código |
+|---|---|---|
+| Hay otro administrador | **Usuarios → (el admin) → "Reiniciar verificación en dos pasos"** | `render_perfil()` + `procesar_reinicio()` |
+| Un solo admin, sin acceso a la app | En `wp-config.php`: `define( 'JB3_REINICIAR_2FA', 'su@email.com' );` — se aplica al ingresar ese admin, **una vez por cada valor** (queda anotado en `jb3_2fa_reinicio`, así que si la línea queda olvidada no reinicia en cada ingreso). Después, sacar la línea. Requiere acceso al hosting: es un factor distinto del email | `aplicar_reinicio_wpconfig()` |
+| Cambio de celular con el viejo a mano | El propio admin, logueado: **Perfil → "Volver a configurar (celular nuevo)"** (cierra sus otras sesiones, la actual sigue) | `render_perfil()` + `procesar_reinicio()` |
+
+Alternativa sin tocar `wp-config.php` (también desde el hosting, phpMyAdmin): `DELETE FROM wp_usermeta WHERE meta_key IN ('jb3_2fa_secreto','jb3_2fa_ultimo') AND user_id = <ID>;`
+
+**Prevención recomendada**: en Google Authenticator, iniciar sesión con la cuenta de Google (ícono de la nube) — los códigos quedan respaldados y un celular nuevo los recupera solo (no sirve si el código se borró a mano: la nube también lo borra). La pantalla de configuración lo recomienda.
+
+**Apagado total** (solo si esta función misma fallara — apaga la verificación para TODOS los admins): `define( 'JB3_DESACTIVAR_2FA', true );` en `wp-config.php`, y sacarlo apenas se resuelva.
+
+### Qué tocar para cambiar algo
+
+| Cambio | Dónde |
+|---|---|
+| Quiénes la necesitan (hoy: `manage_options`) | `JB3_Two_Factor::requerido()` |
+| Intentos permitidos / vida del login pendiente | constantes `MAX_INTENTOS` / `PENDING_TTL` |
+| Nombre que muestra la app ("Conectados") | `uri_otpauth()`, variable `$emisor` |
+| Textos de la pantalla del código | `render_paso()` |
+| Mensajes de error en `/login/` | `JB3_Login::shortcode()` (`2fa_bloqueado`, `2fa_requerido`) |
+| Estilos (tamaño del QR, etc.) | `public/css/jb3-forms.css`, sección "Verificación en dos pasos" |
+| Cómo se reconoce una sesión verificada | `marcar_sesion()` / `sesion_actual_verificada()` (clave `'jb3_2fa'` en la sesión de WordPress) |
+
+### Cómo se probó (2026-10-20, local)
+
+Código contra los 6 vectores del RFC 6238; cifrado ida y vuelta y rechazo de datos alterados; de punta a punta con Playwright: primer ingreso con QR, código incorrecto/correcto, reuso rechazado, bloqueo a los 5 intentos, sesión vieja de admin cerrada (página y AJAX → 401), "Volver a configurar" propio (cierra las otras sesiones), reinicio hecho por otro admin (cierra las sesiones del reiniciado y pide QR nuevo), reinicio por `JB3_REINICIAR_2FA` (una sola vez por valor, no toca a otros usuarios) y miembro que entra sin código.

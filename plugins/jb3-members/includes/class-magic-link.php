@@ -145,6 +145,31 @@ class JB3_Magic_Link {
         delete_user_meta( $user->ID, self::TOKEN_META );
         delete_user_meta( $user->ID, self::EXPIRY_META );
 
+        $dashboard_id = (int) get_option( 'jb3_dashboard_page_id' );
+        $redirect     = $dashboard_id ? get_permalink( $dashboard_id ) : home_url( '/' );
+
+        // redirect_to survived inside the emailed link (attacker-influenced
+        // input) — validate again here, not just when the link was built.
+        if ( ! empty( $_GET['redirect_to'] ) ) {
+            $requested = wp_unslash( $_GET['redirect_to'] );
+            $redirect  = wp_validate_redirect( $requested, $redirect );
+        }
+
+        // Administradores: antes de iniciar la sesión, el código de la app
+        // de autenticación (JB3_Two_Factor — redirige al paso del código y
+        // termina acá). Miembros: entran directo, como siempre.
+        if ( JB3_Two_Factor::requerido( $user->ID ) ) {
+            JB3_Two_Factor::iniciar( $user->ID, $redirect );
+        }
+
+        self::completar_login( $user, $redirect );
+    }
+
+    /**
+     * Inicia la sesión y redirige. Último paso del magic link (miembros) y de
+     * la verificación en dos pasos (admins, JB3_Two_Factor::finalizar()).
+     */
+    public static function completar_login( WP_User $user, string $redirect ): void {
         // Log the user in (remember=true → uses our extended expiration via filter).
         wp_set_current_user( $user->ID );
         wp_set_auth_cookie( $user->ID, true );
@@ -156,16 +181,6 @@ class JB3_Magic_Link {
         $now = time();
         update_user_meta( $user->ID, self::SESSION_META, $now + ( self::INACTIVITY_DAYS * DAY_IN_SECONDS ) );
         update_user_meta( $user->ID, self::SESSION_STARTED_META, $now );
-
-        $dashboard_id = (int) get_option( 'jb3_dashboard_page_id' );
-        $redirect     = $dashboard_id ? get_permalink( $dashboard_id ) : home_url( '/' );
-
-        // redirect_to survived inside the emailed link (attacker-influenced
-        // input) — validate again here, not just when the link was built.
-        if ( ! empty( $_GET['redirect_to'] ) ) {
-            $requested = wp_unslash( $_GET['redirect_to'] );
-            $redirect  = wp_validate_redirect( $requested, $redirect );
-        }
 
         wp_redirect( esc_url_raw( $redirect ) );
         exit;
@@ -253,6 +268,13 @@ class JB3_Magic_Link {
         }
 
         update_user_meta( $user_id, self::SESSION_META, $new_expiry );
+
+        // La sesión renovada es nueva: si la actual pasó la verificación en
+        // dos pasos, la nueva también queda marcada (si no, el admin quedaría
+        // afuera en el pedido siguiente — ver JB3_Two_Factor).
+        if ( class_exists( 'JB3_Two_Factor' ) && JB3_Two_Factor::sesion_actual_verificada() ) {
+            $GLOBALS['jb3_2fa_verificado'] = true;
+        }
         wp_set_auth_cookie( $user_id, true );
     }
 

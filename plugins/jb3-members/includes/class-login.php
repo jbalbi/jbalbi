@@ -86,6 +86,12 @@ class JB3_Login {
             return '';
         }
 
+        // Paso de la verificación en dos pasos de un admin (JB3_Two_Factor):
+        // su propia pantalla, antes de cualquier otra cosa del login.
+        if ( ! empty( $_GET['jb3_2fa'] ) ) {
+            return JB3_Two_Factor::render_paso();
+        }
+
         // Carries the page the user was trying to reach (set by the private-content
         // gate, or resubmitted via the form's hidden field) through the whole
         // request-magic-link round trip. Re-validated on every read since it's
@@ -116,6 +122,10 @@ class JB3_Login {
             $code = sanitize_text_field( wp_unslash( $_GET['jb3_error'] ) );
             if ( 'invalid_link' === $code ) {
                 $errors[] = __( 'El enlace de acceso no es válido o ha expirado. Por favor solicitá uno nuevo.', 'jb3-members' );
+            } elseif ( '2fa_bloqueado' === $code ) {
+                $errors[] = __( 'Demasiados códigos incorrectos. Por seguridad, pedí un enlace de acceso nuevo.', 'jb3-members' );
+            } elseif ( '2fa_requerido' === $code ) {
+                $errors[] = __( 'Por seguridad, tu sesión se cerró: las cuentas de administrador necesitan la verificación en dos pasos. Pedí un enlace de acceso nuevo.', 'jb3-members' );
             }
         }
 

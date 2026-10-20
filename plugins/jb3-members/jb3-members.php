@@ -25,6 +25,7 @@ $jb3_includes = [
     'includes/class-representatives.php',
     'includes/class-email.php',
     'includes/class-magic-link.php',
+    'includes/class-two-factor.php',
     'includes/class-registration.php',
     'includes/class-profile-update.php',
     'includes/class-login.php',
@@ -58,6 +59,7 @@ function jb3_members_boot() {
     JB3_Profile_Update::init();
     JB3_Login::init();
     JB3_Magic_Link::init();
+    JB3_Two_Factor::init();
     JB3_Auth_Guard::init();
     JB3_Cleanup::init();
     JB3_Mailchimp::init();

@@ -404,3 +404,29 @@
 .jb3-admin .jb3-admin-form table.form-table th {
     width: 180px;
 }
+
+/* ─── Verificación en dos pasos de admins (class-two-factor.php) ─────────── */
+/* El QR se dibuja como SVG escalable: sin tope ocupaba todo el ancho y el
+   campo del código quedaba fuera de la pantalla. 220px se escanea cómodo. */
+.jb3-2fa__qr {
+    width: 220px;
+    max-width: 100%;
+    margin: 0 0 16px;
+}
+
+.jb3-2fa__qr svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.jb3-2fa__manual code {
+    font-size: 15px;
+    letter-spacing: .05em;
+}
+
+.jb3-2fa__ayuda {
+    margin-top: 24px;
+    font-size: 13px;
+    opacity: .75;
+}
