@@ -8,7 +8,10 @@ defined( 'ABSPATH' ) || exit;
  * que ya usa el tema con PDF.js/Swiper. Solo lo que hace falta acá: pedir
  * un access token por JWT (flujo de cuenta de servicio) y agregar filas.
  *
- * Credenciales: D:\_DEV\WORDPRESS\jbalbi\jb3-sc-stats.php — a propósito
+ * MUDANZA DE SERVIDOR: copiar el archivo de credenciales a mano (ver
+ * wp-content/MUDANZA-SERVIDOR.md).
+ *
+ * Credenciales: ABSPATH . 'jb3-sc-stats.php' (raíz de WordPress) — a propósito
  * FUERA de wp-content (el repo git es wp-content para adentro), mismo nivel
  * que wp-config.php. Nunca se commitea. Nombre a propósito genérico (no
  * "sheets-credentials" ni nada que mencione al cliente) para no ser un

@@ -43,6 +43,9 @@ defined( 'ABSPATH' ) || exit;
 // Google Analytics no permite mover una propiedad entre cuentas, así que
 // se recreó de cero en la cuenta correcta ("jbalbi.com.ar") y se da de
 // baja la cuenta vieja completa.
+// MUDANZA DE SERVIDOR: el ID sigue sirviendo en otro servidor/dominio;
+// cambiarlo solo si se pasa a otra propiedad de GA (ver
+// wp-content/MUDANZA-SERVIDOR.md).
 const JB3_GA_MEASUREMENT_ID = 'G-EJZW4LPX6Y';
 
 add_action( 'wp_head', 'jb3_ga_output' );

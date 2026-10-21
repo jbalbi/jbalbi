@@ -125,7 +125,8 @@ function jb3_aisearch_throttle_global_ok(): bool {
  * jb3-sc-stats.php (JB3_Google_Sheets en jb3-members): ABSPATH . 'jb3-search-cfg.php',
  * al lado de wp-config.php, nunca se commitea. Un solo archivo con las
  * claves de los DOS proveedores adentro (así cambiar JB3_AISEARCH_PROVIDER
- * más adelante no exige tocar nada más), formato:
+ * más adelante no exige tocar nada más). MUDANZA DE SERVIDOR: copiarlo a
+ * mano (ver wp-content/MUDANZA-SERVIDOR.md). Formato:
  *
  *   <?php
  *   return [

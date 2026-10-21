@@ -7,7 +7,11 @@ defined( 'ABSPATH' ) || exit;
  * bucle; login/magic-link ya tiene su propio rate-limit por email+IP,
  * decisión explícita del cliente 2026-08-28 de no sumarlo ahí también).
  *
- * Credenciales: D:\_DEV\WORDPRESS\jbalbi\jb3-recaptcha-cfg.php — fuera de
+ * MUDANZA DE SERVIDOR: copiar el archivo de credenciales y agregar el
+ * dominio nuevo a la clave en google.com/recaptcha/admin (ver
+ * wp-content/MUDANZA-SERVIDOR.md).
+ *
+ * Credenciales: ABSPATH . 'jb3-recaptcha-cfg.php' (raíz de WordPress) — fuera de
  * wp-content (el repo git es wp-content para adentro), mismo criterio que
  * jb3-search-cfg.php (jb3-ai-search) y jb3-sc-stats.php
  * (JB3_Google_Sheets). Nunca se commitea.
