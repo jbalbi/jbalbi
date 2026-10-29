@@ -21,3 +21,6 @@ Thumbs.db
 # Environment / secrets
 .env
 wp-config.php
+
+# CSS minificado: lo genera themes/jb3-child/tools/minificar-css.php (en el deploy)
+themes/jb3-child/assets/css/main.min.css

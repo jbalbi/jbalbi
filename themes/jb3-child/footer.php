@@ -81,7 +81,7 @@ defined( 'ABSPATH' ) || exit;
 	</div>
 </footer>
 
-<?php // Buscador: lo abren los botones [data-jb3-buscador] del header (assets/js/buscador.js). ?>
+<?php // Buscador: lo abren los botones [data-jb3-buscador] del header (assets/js/header.js). ?>
 <dialog id="jb3-buscador" class="jb3-buscador" aria-label="<?php esc_attr_e( 'Buscar', 'jb3' ); ?>">
 	<form role="search" method="get" class="jb3-buscador__form" action="<?php echo esc_url( home_url( '/' ) ); ?>">
 		<label for="jb3-buscador-campo" class="screen-reader-text"><?php esc_html_e( 'Buscar:', 'jb3' ); ?></label>

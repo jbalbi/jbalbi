@@ -10,6 +10,7 @@ defined( 'ABSPATH' ) || exit;
 // rotos), pide el contenido de esa Página por AJAX y lo inyecta en el
 // modal — SIN header/footer/menú, solo lo que el editor armó con Gutenberg
 // adentro de esa Página (título, bio, imagen, lo que sea).
+// El JS de este modal está en assets/js/modales.js (encolado en functions.php).
 add_action( 'wp_footer', function () {
 	?>
 	<div id="jb3-page-modal" class="jb3-page-modal" hidden>
@@ -21,65 +22,6 @@ add_action( 'wp_footer', function () {
 			<div class="jb3-page-modal__contenido"></div>
 		</div>
 	</div>
-	<script>
-	( function () {
-		var ajaxUrl = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
-
-		function abrir( pageId, fallbackUrl ) {
-			var modal     = document.getElementById( 'jb3-page-modal' );
-			var contenido = modal.querySelector( '.jb3-page-modal__contenido' );
-
-			contenido.innerHTML = '<p class="jb3-page-modal__cargando">Cargando…</p>';
-			modal.hidden = false;
-			document.body.style.overflow = 'hidden';
-
-			fetch( ajaxUrl + '?action=jb3_page_modal&page_id=' + encodeURIComponent( pageId ) )
-				.then( function ( r ) { return r.json(); } )
-				.then( function ( data ) {
-					if ( modal.hidden ) {
-						return; // el usuario cerró el modal mientras la respuesta viajaba.
-					}
-					if ( data && data.success ) {
-						contenido.innerHTML = data.data.html;
-					} else if ( fallbackUrl ) {
-						window.location.href = fallbackUrl;
-					} else {
-						contenido.innerHTML = '<p class="jb3-page-modal__cargando">No se pudo cargar el contenido.</p>';
-					}
-				} )
-				.catch( function () {
-					if ( fallbackUrl ) {
-						window.location.href = fallbackUrl;
-					}
-				} );
-		}
-
-		function cerrar() {
-			var modal = document.getElementById( 'jb3-page-modal' );
-			modal.hidden = true;
-			modal.querySelector( '.jb3-page-modal__contenido' ).innerHTML = '';
-			document.body.style.overflow = '';
-		}
-
-		document.addEventListener( 'click', function ( e ) {
-			var trigger = e.target.closest( '[data-jb3-page-modal]' );
-			if ( trigger ) {
-				e.preventDefault();
-				abrir( trigger.getAttribute( 'data-jb3-page-modal' ), trigger.getAttribute( 'href' ) );
-				return;
-			}
-			if ( e.target.closest( '[data-jb3-page-modal-close]' ) ) {
-				cerrar();
-			}
-		} );
-
-		document.addEventListener( 'keydown', function ( e ) {
-			if ( 'Escape' === e.key ) {
-				cerrar();
-			}
-		} );
-	} )();
-	</script>
 	<?php
 } );
 

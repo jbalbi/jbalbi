@@ -35,13 +35,17 @@ $jb3_logo_id = (int) get_theme_mod( 'custom_logo' );
 	// el cliente) — conviene subirlas a la Biblioteca de medios propia más
 	// adelante y reemplazar acá los src, para no depender de un dominio de
 	// terceros.
+	// width/height = tamaño real de cada PNG (auditoría 2026-10-29): el CSS
+	// los muestra a 10px de alto, y con la proporción ya conocida el navegador
+	// reserva el ancho justo antes de bajarlos — sin esto el header "saltaba"
+	// al terminar de cargar. Si se reemplazan los archivos, actualizar acá.
 	?>
 	<div class="jb3-preheader">
 		<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="jb3-preheader__logo jb3-preheader__logo--left">
-			<img src="https://conectados.sonypictures.com/wp-content/uploads/2024/02/preheader_logo-sonypictures.png" alt="Sony Pictures">
+			<img src="https://conectados.sonypictures.com/wp-content/uploads/2024/02/preheader_logo-sonypictures.png" width="700" height="54" alt="Sony Pictures">
 		</a>
 		<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="jb3-preheader__logo jb3-preheader__logo--right">
-			<img src="https://conectados.sonypictures.com/wp-content/uploads/2024/02/preheader_logo-sony.png" alt="Sony">
+			<img src="https://conectados.sonypictures.com/wp-content/uploads/2024/02/preheader_logo-sony.png" width="303" height="53" alt="Sony">
 		</a>
 	</div>
 

@@ -83,20 +83,24 @@ function jb3_child_enqueue_assets() {
 	wp_dequeue_script( 'jb3-main' );
 
 	wp_enqueue_style( 'jb3-child-tipografia', 'https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap', array(), null );
-	wp_enqueue_style( 'jb3-child-main', get_stylesheet_directory_uri() . '/assets/css/main.css', array( 'jb3-child-tipografia' ), jb3_child_asset_version( 'assets/css/main.css' ) );
-
-	// Header: menú (hamburguesa + submenús), buscador, cuenta y alto real del
-	// header (para el hero que pasa por detrás).
-	$scripts = array(
-		'jb3-nav'                     => 'assets/js/nav.js',
-		'jb3-mobile-menu-scroll-lock' => 'assets/js/mobile-menu-scroll-lock.js',
-		'jb3-buscador'                => 'assets/js/buscador.js',
-		'jb3-header-account'          => 'assets/js/header-account.js',
-		'jb3-header-height'           => 'assets/js/header-height.js',
-	);
-	foreach ( $scripts as $handle => $archivo ) {
-		wp_enqueue_script( $handle, get_stylesheet_directory_uri() . '/' . $archivo, array(), jb3_child_asset_version( $archivo ), true );
+	// main.min.css (sin comentarios ni espacios, ~1/3 del peso) la genera
+	// tools/minificar-css.php — en el deploy, o a mano en local. Se usa solo
+	// si es MÁS NUEVA que main.css: si se editó main.css y no se volvió a
+	// minificar, se carga main.css directo, nunca estilos viejos.
+	$css = 'assets/css/main.css';
+	$min = 'assets/css/main.min.css';
+	if ( jb3_child_asset_version( $min ) >= jb3_child_asset_version( $css ) ) {
+		$css = $min;
 	}
+	wp_enqueue_style( 'jb3-child-main', get_stylesheet_directory_uri() . '/' . $css, array( 'jb3-child-tipografia' ), jb3_child_asset_version( $css ) );
+
+	// header.js: menú (hamburguesa + submenús), buscador, cuenta y alto real
+	// del header (para el hero que pasa por detrás) — un solo archivo.
+	// modales.js: modales de video, imagen y página (su HTML sale de
+	// inc/video-modal.php, inc/image-modal.php e inc/page-modal.php).
+	wp_enqueue_script( 'jb3-header', get_stylesheet_directory_uri() . '/assets/js/header.js', array(), jb3_child_asset_version( 'assets/js/header.js' ), true );
+	wp_enqueue_script( 'jb3-modales', get_stylesheet_directory_uri() . '/assets/js/modales.js', array(), jb3_child_asset_version( 'assets/js/modales.js' ), true );
+	wp_localize_script( 'jb3-modales', 'jb3Modales', array( 'ajaxUrl' => admin_url( 'admin-ajax.php' ) ) );
 }
 add_action( 'wp_enqueue_scripts', 'jb3_child_enqueue_assets', 20 );
 

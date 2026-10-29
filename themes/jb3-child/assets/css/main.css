@@ -46,7 +46,7 @@
     --header-bg:          #00000000; /* si le pones aa al final, queda semitransparente */
     --site-title-color:   #ffffff;
     --site-tagline-color: #ffffff;
-    /* Fallback mientras carga header-height.js, que la corrige al alto real
+    /* Fallback mientras carga header.js (alto del header), que la corrige al alto real
        (ver sección HERO más abajo). */
     --header-height:      140px;
 
@@ -579,7 +579,7 @@ textarea {
    contenido de la página pasaba POR DEBAJO del menú y se mezclaban los
    textos. A medida que la página se scrollea aparece de a poco
    (--jb3-header-fondo, de 0 a 1 en los primeros 200px — la calcula
-   header-height.js) detrás del menú un degradé oscuro que se desvanece
+   header.js (alto del header)) detrás del menú un degradé oscuro que se desvanece
    hasta 120px por debajo del header — sin tramo parejo, para que no se vea
    como una banda (mismo criterio que el degradé de arriba del rotador).
    z-index:-1 dentro del header (que ya arma su propio contexto con
@@ -653,7 +653,7 @@ body.admin-bar .site-header {
    HERO — Home, Series, Películas, Prod. Originales
    El contenido de estas páginas arranca en el tope real del navegador y pasa
    por DETRÁS del header (sticky, transparente) antes de seguir con el resto
-   normal. --header-height la corrige header-height.js (mide el alto real de
+   normal. --header-height la corrige header.js (alto del header) (mide el alto real de
    .site-header) — el valor en :root es solo el fallback mientras carga.
    ═══════════════════════════════════════════════════════════════════════════ */
 .jb3-hero {
@@ -697,7 +697,7 @@ body.admin-bar .site-header {
    1279px, panel a pantalla completa que abre el botón hamburguesa (ver
    NAVEGACIÓN MOBILE). Se probó pasar a hamburguesa recién en 1023px, pero
    entre 1024 y 1279px el menú completo no entra en una línea y el CTA
-   "Conéctate con nosotros" salta de renglón. Los toggles los maneja nav.js.
+   "Conéctate con nosotros" salta de renglón. Los toggles los maneja header.js (menú).
    ═══════════════════════════════════════════════════════════════════════════ */
 .main-navigation ul {
     list-style: none;
@@ -871,7 +871,7 @@ body.admin-bar .site-header {
     color: var(--nav-hover);
 }
 
-/* ─── Dropdown de cuenta (usuario logueado, header-account.js) ──────────── */
+/* ─── Dropdown de cuenta (usuario logueado, header.js (menú de cuenta)) ──────────── */
 /* Colores, tipografía y hover: sección "Submenú (dropdown)" de arriba. */
 .site-header-account {
     position: relative;
@@ -1030,12 +1030,12 @@ body.admin-bar .site-header {
 }
 
 /* ─── Overlay del menú mobile ──────────────────────────────────────────── */
-/* nav.js agrega "mobile-menu-open" al <html> con el menú abierto.
+/* header.js (menú) agrega "mobile-menu-open" al <html> con el menú abierto.
    Bloquear el scroll de fondo con overflow:hidden rompe el position:sticky
    del header (si abrís el menú habiendo scrolleado, el header saltaba
    arriba de todo, fuera de la pantalla). En su lugar, la página se
    "congela" con position:fixed + un offset negativo igual al scroll actual
-   (mobile-menu-scroll-lock.js lo calcula y lo restaura al cerrar). El
+   (header.js (bloqueo de scroll) lo calcula y lo restaura al cerrar). El
    header (z-index:200) queda por encima del overlay (99). */
 html.mobile-menu-open {
     position: fixed;
@@ -1053,7 +1053,7 @@ html.mobile-menu-open body::after {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   BUSCADOR (<dialog id="jb3-buscador">, footer.php + buscador.js)
+   BUSCADOR (<dialog id="jb3-buscador">, footer.php + header.js (buscador))
    El <dialog> ocupa toda la pantalla y es transparente: el fondo oscuro es
    su ::backdrop, y el formulario queda a un cuarto de la altura.
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -1774,7 +1774,7 @@ body.admin-bar .jb3-home-slider-wrap {
 /* Título del slider (ej. "SUPER LUNES"): va apenas debajo del header, no
    dentro de .jb3-home-slider__overlay (el bloque anclado abajo) — por eso es
    un elemento aparte, posicionado con su propio top. --header-height ya la
-   mantiene sincronizada al alto real del header (ver header-height.js), así
+   mantiene sincronizada al alto real del header (ver header.js (alto del header)), así
    que el título queda pegado debajo del nav y a la misma altura en
    cualquier slide, sin importar cuánto texto/logo traiga cada uno. */
 .jb3-home-slider__titulo {

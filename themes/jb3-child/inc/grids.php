@@ -5,8 +5,8 @@ defined( 'ABSPATH' ) || exit;
 // El alto real de cada item (afiche vertical vs miniatura horizontal) solo
 // se sabe en el navegador (depende del ancho de columna resuelto), así que
 // hace falta JS para posicionar cada item — ver el archivo para el
-// detalle. Encolado siempre (mismo criterio que header-account.js/
-// mobile-menu-scroll-lock.js): es liviano y no hace nada si la página no
+// detalle. Encolado siempre (mismo criterio que header.js (menú de cuenta)/
+// header.js (bloqueo de scroll)): es liviano y no hace nada si la página no
 // tiene ninguna .jb3-grid-mixto.
 add_action( 'wp_enqueue_scripts', 'jb3_enqueue_grid_mixto_masonry_script' );
 function jb3_enqueue_grid_mixto_masonry_script() {

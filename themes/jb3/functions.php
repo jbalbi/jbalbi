@@ -21,6 +21,7 @@
  *     contraseña servido por password.php (el hijo puede tener el suyo con
  *     su diseño; si el hijo arma páginas con datos fuera de the_content(),
  *     así no se filtran).
+ *   - Emojis de WordPress apagados (script + estilos menos en cada página).
  *   - Para el servidor: el .htaccess de wp-content del sitio Conectados
  *     bloquea logs, .git, listados de carpetas y PHP dentro de uploads/ —
  *     copiar esas reglas a cada sitio nuevo (no viajan con el tema).
@@ -93,6 +94,22 @@ if ( apply_filters( 'jb3_desactivar_comentarios', true ) ) {
 // Seguridad básica para cualquier sitio: XML-RPC apagado, usuarios ocultos,
 // cabeceras de seguridad.
 require get_template_directory() . '/inc/seguridad.php';
+
+// Emojis de WordPress apagados (auditoría de rendimiento 2026-10-29): en cada
+// página cargaba un script + estilos para dibujar emojis con imágenes en
+// navegadores que no los tenían — hoy todos los navegadores los muestran
+// solos. Los emojis escritos en el contenido se siguen viendo igual (los
+// dibuja el sistema). También en los correos y feeds, que los cambiaban por
+// imágenes de s.w.org.
+remove_action( 'wp_head', 'print_emoji_detection_script', 7 );
+remove_action( 'wp_enqueue_scripts', 'wp_enqueue_emoji_styles' );
+remove_action( 'wp_print_styles', 'print_emoji_styles' );
+remove_action( 'embed_head', 'print_emoji_detection_script' );
+remove_action( 'enqueue_embed_scripts', 'wp_enqueue_emoji_styles' );
+remove_filter( 'the_content_feed', 'wp_staticize_emoji' );
+remove_filter( 'comment_text_rss', 'wp_staticize_emoji' );
+remove_filter( 'wp_mail', 'wp_staticize_emoji_for_email' );
+add_filter( 'emoji_svg_url', '__return_false' ); // Sin el dns-prefetch a s.w.org.
 
 /**
  * Soportes del tema.

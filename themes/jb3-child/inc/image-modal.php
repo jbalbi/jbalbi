@@ -5,6 +5,7 @@ defined( 'ABSPATH' ) || exit;
 // Mismo patrón que el modal de video (inc/video-modal.php): un solo modal
 // reusado por toda la página. Cualquier elemento con data-jb3-image="URL"
 // lo abre a pantalla completa en vez de navegar.
+// El JS de este modal está en assets/js/modales.js (encolado en functions.php).
 add_action( 'wp_footer', function () {
 	?>
 	<div id="jb3-image-modal" class="jb3-image-modal" hidden>
@@ -16,48 +17,5 @@ add_action( 'wp_footer', function () {
 			<img class="jb3-image-modal__img" src="" alt="">
 		</div>
 	</div>
-	<script>
-	( function () {
-		function abrir( url ) {
-			var modal = document.getElementById( 'jb3-image-modal' );
-			modal.querySelector( '.jb3-image-modal__img' ).src = url;
-			modal.hidden = false;
-			document.body.style.overflow = 'hidden';
-		}
-
-		function cerrar() {
-			var modal = document.getElementById( 'jb3-image-modal' );
-			modal.hidden = true;
-			modal.querySelector( '.jb3-image-modal__img' ).src = '';
-			document.body.style.overflow = '';
-		}
-
-		// Expuesta globalmente: la Galería con Slider (carrusel con swipe vía
-		// Pointer Events + setPointerCapture) la llama directo en vez de
-		// depender del [data-jb3-image] delegado más abajo — con
-		// setPointerCapture activo, el navegador reasigna el target del click
-		// al elemento que capturó el puntero, no a la foto tocada, así que la
-		// delegación por closest() no la encuentra ahí.
-		window.jb3AbrirImagenModal = abrir;
-
-		document.addEventListener( 'click', function ( e ) {
-			var trigger = e.target.closest( '[data-jb3-image]' );
-			if ( trigger ) {
-				e.preventDefault();
-				abrir( trigger.getAttribute( 'data-jb3-image' ) );
-				return;
-			}
-			if ( e.target.closest( '[data-jb3-image-close]' ) ) {
-				cerrar();
-			}
-		} );
-
-		document.addEventListener( 'keydown', function ( e ) {
-			if ( 'Escape' === e.key ) {
-				cerrar();
-			}
-		} );
-	} )();
-	</script>
 	<?php
 } );
