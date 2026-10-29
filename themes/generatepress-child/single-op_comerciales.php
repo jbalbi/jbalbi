@@ -55,11 +55,13 @@ get_header();
 		$pdf = get_field( 'pdf' );
 		$pdf_url = is_array( $pdf ) ? ( $pdf['url'] ?? '' ) : (string) $pdf;
 
-		// URL actual sin "e" — redirect_to tanto del login genérico como del
-		// magic link automático de Mailchimp más abajo.
-		$current_url = remove_query_arg( 'e', esc_url_raw(
-			( is_ssl() ? 'https' : 'http' ) . '://' . wp_unslash( $_SERVER['HTTP_HOST'] ) . wp_unslash( $_SERVER['REQUEST_URI'] )
-		) );
+		// URL de esta Op. Comercial — redirect_to tanto del login genérico
+		// como del magic link automático de Mailchimp más abajo. Sale de
+		// get_permalink() y no de $_SERVER['HTTP_HOST'] (auditoría
+		// 2026-10-29): esa cabecera la escribe el navegador, y esta URL
+		// termina dentro de un correo. (El plugin igual valida el destino con
+		// wp_validate_redirect(); esto lo hace correcto desde el origen.)
+		$current_url = get_permalink();
 
 		// Entrada validada por Mailchimp (?e=*|UNIQID|*): "e" SOLO importa
 		// cuando no hay sesión — sirve para saber a quién mandarle el magic

@@ -97,6 +97,15 @@ function jb3_page_modal_ajax() {
 		wp_send_json_error( 'not_found' );
 	}
 
+	// Página protegida con contraseña (Visibilidad > Protegida con
+	// contraseña): sin esto el modal devolvía el contenido completo sin
+	// pedirla (auditoría 2026-10-29). Con el error, el JS manda a la Página
+	// real, que muestra el formulario (ver functions.php). Si el
+	// visitante ya la ingresó, la cookie viaja en este pedido y pasa.
+	if ( post_password_required( $post ) ) {
+		wp_send_json_error( 'password' );
+	}
+
 	// Mismo criterio que el gate de "Contenido privado" (jb3-members,
 	// class-content-privacy.php, meta "_jb3_privado") — si la Página está
 	// marcada privada, el modal no puede ser una puerta de atrás para
