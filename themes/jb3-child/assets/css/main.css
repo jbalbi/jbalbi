@@ -2798,24 +2798,30 @@ body {
    ahí, si no el Grupo tiene un solo hijo (el inner-container) y las
    columnas nunca se ven. Confirmado armando el bloque a mano con
    do_blocks() y mirando el HTML real, 2026-08-16. */
+/* minmax(0, 1fr) y no 1fr a secas (2026-10-29): una columna "1fr" nunca se
+   achica por debajo de su contenido más largo — una palabra o un link largo
+   sin espacios en una tarjeta ensanchaba su columna y, con 6-8 columnas, la
+   grilla se salía de la pantalla (pasaba en el editor, con la vista previa
+   de las tarjetas que muestra el link completo). Así las columnas son
+   siempre iguales. Mismo criterio en el bloque Grilla (.jb3-grilla). */
 [class*="jb3-cols-"] > .wp-block-group__inner-container {
     display: grid;
     gap: 40px;
 }
 
-.jb3-cols-2 > .wp-block-group__inner-container { grid-template-columns: repeat(2, 1fr); }
-.jb3-cols-3 > .wp-block-group__inner-container { grid-template-columns: repeat(3, 1fr); }
-.jb3-cols-4 > .wp-block-group__inner-container { grid-template-columns: repeat(4, 1fr); }
-.jb3-cols-5 > .wp-block-group__inner-container { grid-template-columns: repeat(5, 1fr); }
-.jb3-cols-6 > .wp-block-group__inner-container { grid-template-columns: repeat(6, 1fr); }
-.jb3-cols-8 > .wp-block-group__inner-container { grid-template-columns: repeat(8, 1fr); }
+.jb3-cols-2 > .wp-block-group__inner-container { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.jb3-cols-3 > .wp-block-group__inner-container { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.jb3-cols-4 > .wp-block-group__inner-container { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.jb3-cols-5 > .wp-block-group__inner-container { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.jb3-cols-6 > .wp-block-group__inner-container { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.jb3-cols-8 > .wp-block-group__inner-container { grid-template-columns: repeat(8, minmax(0, 1fr)); }
 
 @media (max-width: 1023px) {
-    .jb3-cols-3 > .wp-block-group__inner-container { grid-template-columns: repeat(2, 1fr); }
-    .jb3-cols-4 > .wp-block-group__inner-container { grid-template-columns: repeat(2, 1fr); }
-    .jb3-cols-5 > .wp-block-group__inner-container { grid-template-columns: repeat(3, 1fr); }
-    .jb3-cols-6 > .wp-block-group__inner-container { grid-template-columns: repeat(3, 1fr); }
-    .jb3-cols-8 > .wp-block-group__inner-container { grid-template-columns: repeat(4, 1fr); }
+    .jb3-cols-3 > .wp-block-group__inner-container { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .jb3-cols-4 > .wp-block-group__inner-container { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .jb3-cols-5 > .wp-block-group__inner-container { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .jb3-cols-6 > .wp-block-group__inner-container { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .jb3-cols-8 > .wp-block-group__inner-container { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 /* gap:20px acá (en vez de los 40px de desktop/tablet): en mobile hay menos
@@ -2824,7 +2830,7 @@ body {
    los contenidos. Pedido explícito 2026-08-17. */
 @media (max-width: 767px) {
     [class*="jb3-cols-"] > .wp-block-group__inner-container {
-        grid-template-columns: repeat(1, 1fr);
+        grid-template-columns: repeat(1, minmax(0, 1fr));
         gap: 20px;
     }
 }
@@ -2840,19 +2846,19 @@ body {
    ═══════════════════════════════════════════════════════════════════════════ */
 .jb3-grilla {
     display: grid;
-    grid-template-columns: repeat(var(--jb3-grilla-cols-desktop, 3), 1fr);
+    grid-template-columns: repeat(var(--jb3-grilla-cols-desktop, 3), minmax(0, 1fr));
     gap: 40px;
 }
 
 @media (max-width: 1023px) {
     .jb3-grilla {
-        grid-template-columns: repeat(var(--jb3-grilla-cols-tablet, 2), 1fr);
+        grid-template-columns: repeat(var(--jb3-grilla-cols-tablet, 2), minmax(0, 1fr));
     }
 }
 
 @media (max-width: 767px) {
     .jb3-grilla {
-        grid-template-columns: repeat(var(--jb3-grilla-cols-mobile, 1), 1fr);
+        grid-template-columns: repeat(var(--jb3-grilla-cols-mobile, 1), minmax(0, 1fr));
         gap: 20px;
     }
 }
