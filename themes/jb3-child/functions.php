@@ -29,6 +29,9 @@ function jb3_child_setup() {
 	// ahí como HTML crudo sin estilo.
 	remove_editor_styles();
 	add_editor_style( 'assets/css/main.css' );
+	// Ajustes solo del editor: ancho del sitio (no la columna de 840px) y
+	// columnas reales en los Grupos jb3-cols-N — ver ese archivo.
+	add_editor_style( 'assets/css/editor.css' );
 
 	register_nav_menus( array(
 		'primary' => __( 'Menú principal', 'jb3' ),

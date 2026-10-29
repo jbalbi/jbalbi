@@ -1,0 +1,40 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   EDITOR DE BLOQUES — solo para el editor (add_editor_style en functions.php,
+   después de main.css). Que lo que se arma en el editor se parezca más a lo
+   que ve el visitante (pedido 2026-10-29). WordPress le agrega el prefijo
+   .editor-styles-wrapper a todo lo de acá; no afecta al sitio.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Ancho: el del sitio, no la columna central de 840px ─────────────────
+   En el sitio cada bloque de primer nivel va a todo el ancho de la
+   pantalla con los márgenes laterales de --jb3-modulo-padding-x (80/40/20,
+   ver ".entry-content > *:not(...)" en main.css). El editor, para un tema
+   clásico, encierra todo en una columna de 840px: con un Grupo de 4
+   columnas las tarjetas quedaban angostas y la última se salía del Grupo.
+   Mismas excepciones que en el sitio: lo que ya maneja su propio ancho
+   (jb3-contenedor, hero, subnav, ancho completo/amplio, flotados). */
+.is-root-container > .wp-block:not(.jb3-contenedor):not(.jb3-hero):not(.jb3-subnav):not(.alignfull):not(.alignwide):not(.alignleft):not(.alignright) {
+    box-sizing: border-box;
+    max-width: none;
+    padding-left: var(--jb3-modulo-padding-x);
+    padding-right: var(--jb3-modulo-padding-x);
+}
+
+/* Cualquier bloque anidado tampoco queda topeado en 840px (ej. una tarjeta
+   dentro de un Grupo ancho). */
+.is-root-container .wp-block {
+    max-width: none;
+}
+
+/* ─── Grupos con columnas (jb3-cols-N) ─────────────────────────────────────
+   La grilla en sí ya la arma main.css ("COLUMNAS RESPONSIVE GENÉRICAS"): con
+   el tema en modo clásico (ver theme_file_path en functions.php) el editor
+   también genera la capa .wp-block-group__inner-container. Lo único que
+   hay que corregir es que el editor le pone margin:auto a cada bloque para
+   centrarlo — dentro de una celda de grilla eso hace que la tarjeta se
+   achique a su contenido y quede flotando en el medio, en vez de llenar la
+   celda como en el sitio. Tampoco va el margen vertical entre bloques: las
+   celdas se separan con "gap" (mismo criterio que main.css). */
+[class*="jb3-cols-"] > .wp-block-group__inner-container > .wp-block {
+    margin: 0;
+}
