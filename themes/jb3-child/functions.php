@@ -58,6 +58,28 @@ add_filter( 'wp_theme_json_data_theme', function ( $theme_json ) {
 } );
 
 /**
+ * Y además, para WordPress este tema NO tiene theme.json (2026-10-29) — igual
+ * que GeneratePress. Vaciar los datos (arriba) no alcanzaba: con solo que el
+ * archivo exista en el padre, WordPress arma distinto el HTML y el CSS de
+ * los bloques, y todo main.css se escribió con GeneratePress contando con el
+ * comportamiento "clásico":
+ *   - Grupo: sin la capa <div class="wp-block-group__inner-container">, los
+ *     jb3-cols-N quedaban en una sola columna (ej. los Episodios de Aventura
+ *     Gastronómica) y los bloques dentro de un Grupo perdían sus 40px.
+ *   - Imagen alineada: sin su <div class="wp-block-image"> exterior.
+ *   - Estilos globales: 7 reglas de alineación de más (.is-layout-constrained
+ *     > * con margin:auto !important) que centraban títulos y achicaban
+ *     módulos dentro de columnas.
+ * Con esto el contenido sale con el mismo HTML y los mismos estilos de
+ * WordPress que con GeneratePress (comparado página por página). El padre
+ * no se toca: su theme.json sigue ahí para cualquier otro sitio que lo use.
+ * wp_theme_has_theme_json() pasa la ruta por este mismo filtro.
+ */
+add_filter( 'theme_file_path', function ( $path, $file ) {
+	return 'theme.json' === $file ? '' : $path;
+}, 10, 2 );
+
+/**
  * Versión de un archivo del tema para el query string: filemtime() cambia
  * solo cada vez que se guarda el archivo, así el navegador nunca se queda
  * con una copia vieja cacheada después de una edición.
