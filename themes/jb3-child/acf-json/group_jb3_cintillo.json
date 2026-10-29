@@ -1,0 +1,83 @@
+{
+    "key": "group_jb3_cintillo",
+    "title": "Cintillo",
+    "fields": [
+        {
+            "key": "field_jb3_cintillo_texto",
+            "label": "Texto del cintillo",
+            "name": "cintillo",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "Etiqueta chica que se ve arriba a la izquierda del afiche\/miniatura en las grillas (ej. \"NUEVO\", \"EN CINES\", \"PRÓXIMAMENTE\"). Opcional — vacío no muestra nada. En Películas\/Series: si hay contenido de Renta\/Alquiler activo para el país del visitante, el título de esa sección (ej. \"Alquiler\") reemplaza este texto automáticamente, sin importar lo que se cargue acá.",
+            "required": false,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "peliculas"
+            }
+        ],
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "series"
+            }
+        ],
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "op_comerciales"
+            }
+        ],
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "prod_originales"
+            }
+        ],
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "videos"
+            }
+        ],
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "integraciones"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "acf_after_title",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": [],
+    "active": true,
+    "description": "",
+    "show_in_rest": false,
+    "display_title": "",
+    "allow_ai_access": false,
+    "ai_description": "",
+    "modified": 1788803935
+}

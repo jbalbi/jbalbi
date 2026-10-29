@@ -1,0 +1,176 @@
+/**
+ * JB3 — estilos complementarios a theme.json.
+ * Colores, tipografía y espaciados vienen de las variables --wp--preset--*.
+ */
+
+/* Base ------------------------------------------------------------------ */
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+img,
+video {
+	max-width: 100%;
+	height: auto;
+}
+
+/* Footer al fondo cuando hay poco contenido */
+.site {
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+}
+
+.site-main {
+	flex: 1;
+	padding-top: var(--wp--preset--spacing--50);
+	padding-bottom: var(--wp--preset--spacing--50);
+}
+
+/* Accesibilidad ---------------------------------------------------------- */
+.screen-reader-text {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(1px, 1px, 1px, 1px);
+	white-space: nowrap;
+}
+
+.skip-link:focus {
+	clip: auto;
+	width: auto;
+	height: auto;
+	top: 0.5rem;
+	left: 0.5rem;
+	z-index: 1000;
+	padding: 0.75rem 1rem;
+	background: var(--wp--preset--color--contrast);
+	color: var(--wp--preset--color--base);
+}
+
+:focus-visible {
+	outline: 2px solid var(--wp--preset--color--primary);
+	outline-offset: 2px;
+}
+
+/* Cabecera / pie de respaldo PHP ---------------------------------------- */
+.header-inner,
+.footer-inner {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	max-width: var(--wp--style--global--wide-size);
+	margin: 0 auto;
+	padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--40);
+}
+
+.header-inner ul,
+.footer-inner ul {
+	display: flex;
+	gap: 1.25rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.site-branding {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.site-title {
+	font-weight: 700;
+	text-decoration: none;
+	color: inherit;
+}
+
+/* Entradas -------------------------------------------------------------- */
+.entry-meta {
+	margin-top: 0.25rem;
+	color: var(--wp--preset--color--muted);
+	font-size: var(--wp--preset--font-size--small);
+}
+
+.entry-summary {
+	padding-bottom: var(--wp--preset--spacing--40);
+	margin-bottom: var(--wp--preset--spacing--40);
+	border-bottom: 1px solid var(--wp--preset--color--secondary);
+}
+
+.entry-summary .entry-title {
+	font-size: var(--wp--preset--font-size--large);
+	margin-bottom: 0;
+}
+
+.entry-summary .entry-title a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.entry-summary .entry-title a:hover {
+	color: var(--wp--preset--color--primary);
+}
+
+.post-thumbnail img {
+	display: block;
+	width: 100%;
+	border-radius: 6px;
+}
+
+/* Navegación entre entradas */
+.post-navigation {
+	margin-top: var(--wp--preset--spacing--50);
+}
+
+.nav-links {
+	display: flex;
+	justify-content: space-between;
+	gap: 1rem;
+}
+
+.pagination .nav-links {
+	justify-content: center;
+}
+
+.pagination .page-numbers {
+	padding: 0.25rem 0.6rem;
+}
+
+.pagination .current {
+	font-weight: 700;
+}
+
+/* Formularios ----------------------------------------------------------- */
+input[type="text"],
+input[type="email"],
+input[type="url"],
+input[type="search"],
+textarea {
+	width: 100%;
+	padding: 0.6rem 0.75rem;
+	border: 1px solid #d1d5db;
+	border-radius: 6px;
+	font: inherit;
+}
+
+.search-form {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.search-submit,
+.form-submit .submit {
+	padding: 0.6rem 1.1rem;
+	border: 0;
+	border-radius: 6px;
+	background: var(--wp--preset--color--primary);
+	color: var(--wp--preset--color--base);
+	font: inherit;
+	cursor: pointer;
+}

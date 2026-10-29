@@ -1,0 +1,68 @@
+{
+    "key": "group_6a81f3bbcb224",
+    "title": "Título y Bajada",
+    "fields": [
+        {
+            "key": "field_6a81f3bbce83e",
+            "label": "Título",
+            "name": "tb_titulo",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "Opcional. Con contenido, se ve con la rayita vertical y entra a la navegación (subnav) de la página. Vacío = no se ve, no entra (aunque haya Bajada).",
+            "required": 0,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_6a81f3bce89ca",
+            "label": "Bajada",
+            "name": "tb_bajada",
+            "aria-label": "",
+            "type": "wysiwyg",
+            "instructions": "Opcional, con editor de texto enriquecido. Nunca entra a la navegación (a diferencia del Título).",
+            "required": 0,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "tabs": "all",
+            "toolbar": "full",
+            "media_upload": 1,
+            "delay": 0,
+            "default_value": ""
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "block",
+                "operator": "==",
+                "value": "acf\/titulo-bajada"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": false,
+    "display_title": "",
+    "allow_ai_access": false,
+    "ai_description": "",
+    "modified": 1786901435
+}

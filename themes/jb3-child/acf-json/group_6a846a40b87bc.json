@@ -1,0 +1,52 @@
+{
+    "key": "group_6a846a40b87bc",
+    "title": "Contenido por País",
+    "fields": [
+        {
+            "key": "field_6a846bcbb7cd6",
+            "label": "Países",
+            "name": "cp_paises",
+            "aria-label": "",
+            "type": "taxonomy",
+            "instructions": "Vacio = NO se ve para nadie todavia. Marca los paises que SI lo pueden ver.",
+            "required": 0,
+            "conditional_logic": false,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "taxonomy": "pais",
+            "field_type": "checkbox",
+            "return_format": "slug",
+            "add_term": 0,
+            "save_terms": 0,
+            "load_terms": 0,
+            "multiple": 0,
+            "allow_null": 0,
+            "bidirectional_target": []
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "block",
+                "operator": "==",
+                "value": "acf\/contenido-por-pais"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": [],
+    "active": true,
+    "description": "",
+    "show_in_rest": false,
+    "display_title": "",
+    "allow_ai_access": false,
+    "ai_description": "",
+    "modified": 1787062848
+}

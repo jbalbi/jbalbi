@@ -1,0 +1,3837 @@
+/**
+ * JB3 — estilos del sitio.
+ *
+ * Orden: VARIABLES (todo lo que se cambia seguido: colores, tipografía,
+ * paddings) → BASE (elementos nativos) → estructura, HEADER y NAVEGACIÓN →
+ * FOOTER → componentes propios (sliders, módulos, grillas, modales...).
+ * También se carga dentro del editor de bloques (add_editor_style()).
+ *
+ * @package JB3
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VARIABLES
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+    /* Cambiar la tipografía del sitio = cambiar esta línea nomás. */
+    --tipografia-1:     'Montserrat', sans-serif;
+
+    /* Paleta base */
+    --color-primary:    #730687;
+    --color-secondary:  #e770bd;
+
+    /* Botón por defecto del sitio — mismos valores en TODOS lados (CTA del
+       nav, botones nativos de WordPress/Gutenberg, componentes propios como
+       el slider). Cambiar el estilo de los botones de todo el sitio = editar
+       estas variables acá, no hace falta tocar nada más. */
+    --btn-bg:         var(--color-primary);
+    --btn-bg-hover:   var(--color-secondary);
+    --btn-text:       #ffffff;
+    --btn-text-hover: var(--color-primary);
+    --btn-radius:     0;
+
+    /* Cuerpo (fondo/texto/links del sitio en general) */
+    --body-bg:            rgb(0, 0, 0);
+    --body-text:          #f6f6f6;
+    --link-color:         var(--color-primary);
+    --link-hover-color:   var(--color-secondary);
+
+    /* Barra superior (preheader) */
+    --topbar-bg:          transparent;
+    --topbar-text:        #ffaaaa;
+    --topbar-link:        #ffffff;
+    --topbar-link-hover:  var(--color-primary);
+
+    /* Cabecera */
+    --header-bg:          #00000000; /* si le pones aa al final, queda semitransparente */
+    --site-title-color:   #ffffff;
+    --site-tagline-color: #ffffff;
+    /* Fallback mientras carga header-height.js, que la corrige al alto real
+       (ver sección HERO más abajo). */
+    --header-height:      140px;
+
+    /* Navegación principal */
+    --nav-bg:             transparent;
+    --nav-bg-hover:       transparent;
+    --nav-bg-current:     transparent;
+    --nav-text:           #ffffff;
+    --nav-hover:          var(--color-secondary);
+    --nav-current:        var(--color-secondary);
+    --nav-cta-bg:         var(--btn-bg);
+    --nav-cta-hover:      var(--btn-bg-hover);
+    --nav-cta-text:       var(--btn-text);
+    --nav-cta-text-hover: var(--btn-text-hover);
+    --nav-cta-margin-left: 20px;
+    --nav-font-size:          11px;
+    --nav-font-size-mobile:   26px;
+    --nav-font-weight:        700;
+    --nav-font-weight-mobile: 400;
+    /* line-height normal (no un px fijo) para que las líneas de un ítem que
+       hace wrap (ej. "Conéctate con nosotros" en dos líneas) no queden
+       separadas por un espacio enorme; la altura del botón la da el padding
+       vertical, no el line-height. */
+    --nav-item-line-height: 1.3;
+    --nav-item-padding-y:   12px;
+    --nav-item-padding-x:   12px;
+    --header-padding-y:   5px;
+    --header-padding-x:   80px;
+    --nav-gap-from-logo:  20px;
+    --icon-gap:           12px;
+
+    /* Submenú (dropdown) */
+    --dropdown-bg:         #333333;
+    --dropdown-bg-hover:   #3f3f3f;
+    --dropdown-text:       #ffffff;
+    --dropdown-text-hover: var(--color-secondary);
+    --dropdown-current-bg: #f0f0f01a;
+
+    /* Íconos del header (LinkedIn, perfil, buscador) — blancos, sin fondo;
+       en hover solo cambian de color, sin cuadrado atrás (probado y
+       descartado 2026-08-24). */
+    --icon-color:      #ffffff;
+    --icon-hover:      var(--color-secondary);
+    --icon-bg:         transparent;
+    --icon-radius:     0;
+
+    /* Footer */
+    --footer-bg:            #17002d;
+    --footer-text:          #f6f6f6;
+    --footer-link-color:    #cccccc;
+    --footer-link-hover:    var(--color-secondary);
+    --footer-gap:           40px;
+
+    /* Efecto de agrandar al pasar el mouse (pósters, miniaturas, tarjetas,
+       galería): una sola duración y un solo tamaño para todo el sitio. La
+       duración era .3s; desde 2026-10-16 más rápido, sin dejar de ser
+       progresivo (pedido). El cintillo de las grillas acompaña ese
+       agrandamiento (ver .jb3-grid-cintillo). */
+    --jb3-zoom-duracion:    .1s;
+    --jb3-zoom-escala:      1.03;
+    --footer-padding-y:     20px;
+    --footer-padding-x:     80px;
+    --footer-bar-bg:        var(--color-primary);
+    --footer-bar-text:      #ffffff;
+    --footer-bar-cta:       var(--color-secondary);
+    --footer-bar-height:    48px;
+
+    /* Slider Home — caja del logo del canal. Mismo ancho/alto para
+       cualquier logo (ver .jb3-home-slider__canal-logo) — tocar estos dos
+       valores para probar tamaños sin tener que buscar la regla. */
+    --slider-logo-width:  240px;
+    --slider-logo-height: 87px;
+    /* Escala del logo del canal en el slide: 1 = tamaño de desktop. Se
+       achica en mobile (ver el breakpoint ≤767 más abajo) — ese es el ÚNICO
+       número a tocar para agrandar/achicar los logos en el celular. */
+    --slider-logo-escala: 1;
+
+    /* Padding lateral del texto sobre el slide — mismos 3 valores que
+       --footer-padding-x (ver breakpoints acá abajo), para que el
+       contenido de la Home respire igual en el footer y en el slider. */
+    --slider-text-padding-x: 80px;
+
+    /* Subnav + módulos de contenido ([jb3_subnav]/[jb3_modulo]) — mismos 3
+       valores que --footer-padding-x, para que respiren igual que el resto
+       del sitio a cada tamaño de pantalla. */
+    --jb3-modulo-padding-x: 80px;
+}
+
+/* Breakpoints propios de "tablet" (768-1023) y "mobile" (≤767, mismo corte
+   que ya usa el resto del sitio para mobile) — footer, slider, subnav y
+   módulos comparten estos 3 pasos (80/40/20 lateral) para que el contenido
+   respire igual en todo el sitio. En mobile (breakpoint del hamburguesa)
+   --nav-font-size también pasa a usar --nav-font-size-mobile. Como todas
+   las reglas ya usan var(...), redefinir las variables acá alcanza — no
+   hace falta duplicar selectores. */
+@media (max-width: 1023px) {
+    :root {
+        --header-padding-x:      40px;
+        --footer-padding-x:      40px;
+        --slider-text-padding-x: 40px;
+        --jb3-modulo-padding-x:  40px;
+    }
+}
+
+@media (max-width: 767px) {
+    :root {
+        --header-padding-x:      20px;
+        --footer-padding-x:      20px;
+        --slider-text-padding-x: 20px;
+        --jb3-modulo-padding-x:  20px;
+        /* Logos del slide 35% más chicos en el celular (pedido 2026-09-30:
+           primero 25%, después "un poco más"). .65 = 65% del tamaño de
+           desktop. Antes esto se hacía bajando --slider-logo-width/height
+           a 180×65, pero eso no alcanzaba a los canales con
+           "logo_proporcion" cargada (ver .jb3-home-slider__canal-logo). */
+        --slider-logo-escala:    .65;
+        /* --footer-bar-height quedaba fija en 48px (el valor de desktop) —
+           afecta tanto el padding-bottom del body como los elementos
+           reposicionados por encima de la barra (badge de reCAPTCHA,
+           ícono de CookieYes), así que tiene que reflejar el alto real en
+           mobile. Bajado a 40px 2026-08-28 junto con la letra más chica y
+           sin padding vertical de acá abajo — valor estimado, no medido
+           en cada dispositivo real; si el texto sigue partiéndose en 2
+           líneas en algún celular angosto, subir este valor. */
+        --footer-bar-height:     40px;
+    }
+}
+
+/* Base general de tamaño de headings en mobile — el sitio no traía ningún
+   control de esto, así que cualquier h1-h6 sin una regla más específica
+   propia (la mayoría del contenido cargado a mano vía WYSIWYG en los
+   distintos bloques) heredaba el tamaño nativo del navegador y quedaba
+   gigante, con palabras largas cortándose en su propio renglón (ej.
+   "PROGRAMACIÓN"). Estas son solo el piso — cualquier clase con su propio
+   font-size (como .jb3-modulo__titulo más abajo) le sigue ganando por
+   especificidad, esto no las pisa. */
+@media (max-width: 767px) {
+    h1 { font-size: 28px; }
+    h2 { font-size: 24px; }
+    h3 { font-size: 20px; }
+    h4 { font-size: 18px; }
+    h5 { font-size: 16px; }
+    h6 { font-size: 14px; }
+}
+
+@media (max-width: 1279px) {
+    :root {
+        --nav-font-size: var(--nav-font-size-mobile);
+        --nav-font-weight: var(--nav-font-weight-mobile);
+        /* Padding vertical del header (logo + buscador + hamburguesa) lo más
+           chico posible en mobile. */
+        --header-padding-y: 5px;
+        /* Ítems del panel mobile más juntos entre sí (menos aire vertical
+           que en desktop) para que una tipografía más grande siga entrando
+           cómoda en pantalla — ver diseño de referencia 2026-08-25. */
+        --nav-item-padding-y: 6px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BASE
+   Reset, tipografía y elementos nativos (links, listas, botones, campos).
+   El tema no hereda CSS de nadie: todo lo que el sitio da por sentado
+   (tamaños de títulos, márgenes de párrafos, padding de botones) está acá.
+   ═══════════════════════════════════════════════════════════════════════════ */
+html {
+    box-sizing: border-box;
+    -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: inherit;
+}
+
+html, body, p, ol, ul, li, dl, dt, dd, blockquote, figure, fieldset, legend,
+textarea, pre, iframe, hr, h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+/* display:flex + min-height:100vh acá (y flex:1 en #page más abajo) son el
+   truco clásico de "sticky footer": si el contenido es corto, #page se
+   estira para ocupar el espacio libre del viewport, empujando el footer
+   (hermano de #page) a pegarse justo arriba de la barra fija en vez de
+   dejar un hueco de fondo entre el contenido y la barra.
+
+   overflow-x:hidden: red de seguridad — con body en flex-column, cualquier
+   contenido ancho en algún punto profundo del árbol (ej. un carrusel con
+   overflow:hidden propio, como .jb3-canales-slider) puede terminar
+   empujando el ancho de la página igual. Esto corta cualquier desborde
+   horizontal a nivel de página sin tocar el sticky footer ni ningún slider. */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-color: var(--body-bg);
+    color: var(--body-text);
+    font-family: var(--tipografia-1);
+    font-size: 17px;
+    line-height: 1.5;
+}
+
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+    font-size: 17px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: normal;
+    margin-bottom: 20px;
+}
+
+h1, h2, h3 {
+    line-height: 1.2em;
+}
+
+h1 { font-size: 42px; }
+h2 { font-size: 35px; }
+h3 { font-size: 29px; }
+h4 { font-size: 24px; }
+h5 { font-size: 20px; }
+h6 { font-size: 17px; }
+
+/* Piso de tamaño de headings en mobile: cualquier h1-h6 sin una regla más
+   específica propia (la mayoría del contenido cargado a mano vía WYSIWYG en
+   los distintos bloques) quedaba gigante, con palabras largas cortándose en
+   su propio renglón (ej. "PROGRAMACIÓN"). Cualquier clase con su propio
+   font-size (como .jb3-modulo__titulo) le sigue ganando por especificidad. */
+@media (max-width: 767px) {
+    h1 { font-size: 28px; }
+    h2 { font-size: 24px; }
+    h3 { font-size: 20px; }
+    h4 { font-size: 18px; }
+    h5 { font-size: 16px; }
+    h6 { font-size: 14px; }
+}
+
+p {
+    margin-bottom: 1.5em;
+}
+
+ul,
+ol {
+    margin: 0 0 1.5em 3em;
+}
+
+li > ul,
+li > ol {
+    margin-bottom: 0;
+    margin-left: 1.5em;
+}
+
+b,
+strong {
+    font-weight: bold;
+}
+
+img {
+    height: auto;
+    max-width: 100%;
+}
+
+embed,
+iframe,
+object {
+    max-width: 100%;
+}
+
+a {
+    color: var(--link-color);
+    text-decoration: underline;
+}
+
+a:hover,
+a:focus {
+    color: var(--link-hover-color);
+}
+
+a,
+button,
+input {
+    transition: color .1s ease-in-out, background-color .1s ease-in-out;
+}
+
+/* Botón por defecto del sitio (botón "Enviar" de formularios, bloque Botón
+   del editor, .button de las plantillas) — colores en las variables --btn-*
+   de :root. Los <button> van envueltos en :where() (especificidad cero):
+   cualquier componente que traiga su propio estilo de botón (flechas de un
+   slider, cerrar de un modal) le gana con una sola clase, sin !important.
+   .jb3-boton-icono (botones de íconos del header) queda afuera del todo. */
+:where(button, input[type="button"], input[type="reset"], input[type="submit"]):where(:not(.jb3-boton-icono)),
+.button,
+.wp-block-button__link {
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: var(--btn-radius);
+    background-color: var(--btn-bg);
+    color: var(--btn-text);
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+:where(button, input[type="button"], input[type="reset"], input[type="submit"]):where(:not(.jb3-boton-icono)):hover,
+:where(button, input[type="button"], input[type="reset"], input[type="submit"]):where(:not(.jb3-boton-icono)):focus,
+.button:hover,
+.button:focus,
+.wp-block-button__link:hover,
+.wp-block-button__link:focus {
+    background-color: var(--btn-bg-hover);
+    color: var(--btn-text-hover);
+}
+
+/* Borde transparente solo en los botones de formulario: iguala su alto con
+   el de un campo de texto de al lado (que sí tiene borde de 1px). */
+:where(button, input[type="button"], input[type="reset"], input[type="submit"]):where(:not(.jb3-boton-icono)) {
+    border: 1px solid transparent;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="url"],
+input[type="password"],
+input[type="search"],
+input[type="tel"],
+input[type="number"],
+textarea,
+select {
+    max-width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #f0f0f0;
+    border-radius: 0;
+    background-color: #f7f8f9;
+    color: #222222;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="url"]:focus,
+input[type="password"]:focus,
+input[type="search"]:focus,
+input[type="tel"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+    border-color: #b2b2be;
+}
+
+textarea {
+    width: 100%;
+}
+
+[type="search"] {
+    -webkit-appearance: textfield;
+    outline-offset: -2px;
+}
+
+/* Botón que es solo un ícono (header, buscador): sin nada del botón por
+   defecto, hereda el color del texto. */
+.jb3-boton-icono {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    line-height: 0;
+    cursor: pointer;
+}
+
+.jb3-icono {
+    display: block;
+    width: 20px;
+    height: 20px;
+}
+
+/* Formulario de búsqueda (searchform.php, ej. en la 404): campo + lupa. */
+.search-form {
+    display: flex;
+}
+
+.search-form .search-submit {
+    display: flex;
+    align-items: center;
+    padding: 10px 18px;
+}
+
+.search-form .search-submit .jb3-icono {
+    width: 18px;
+    height: 18px;
+}
+
+/* Alineaciones nativas del editor de bloques. */
+.alignleft {
+    float: left;
+    margin-right: 1.5em;
+}
+
+.alignright {
+    float: right;
+    margin-left: 1.5em;
+}
+
+.aligncenter {
+    clear: both;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Ancho completo de pantalla: margen negativo de "la mitad de lo que el
+   contenedor es más angosto que la pantalla", a cada lado. */
+.entry-content .alignfull {
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    max-width: 100vw;
+    width: auto;
+}
+
+@media (max-width: 768px) {
+    .alignleft,
+    .alignright {
+        float: none;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+.wp-block-image figcaption {
+    font-size: 13px;
+    text-align: center;
+}
+
+.wp-block-group__inner-container {
+    max-width: 2000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Separación entre el contenido de un post y lo que tenga arriba (ej. el
+   logo del canal en single-pagina_canal.php); el último párrafo no suma
+   margen abajo. */
+.entry-content:not(:first-child) {
+    margin-top: 2em;
+}
+
+.entry-content > p:last-child {
+    margin-bottom: 0;
+}
+
+/* Accesibilidad */
+.screen-reader-text {
+    border: 0;
+    clip: rect(1px, 1px, 1px, 1px);
+    clip-path: inset(50%);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute !important;
+    width: 1px;
+    word-wrap: normal !important;
+}
+
+.screen-reader-text:focus {
+    background-color: #f1f1f1;
+    border-radius: 3px;
+    box-shadow: 0 0 2px 2px rgba(0, 0, 0, .6);
+    clip: auto !important;
+    clip-path: none;
+    color: #21759b;
+    display: block;
+    font-size: .875rem;
+    font-weight: 700;
+    height: auto;
+    left: 5px;
+    line-height: normal;
+    padding: 15px 23px 14px;
+    text-decoration: none;
+    top: 5px;
+    width: auto;
+    z-index: 100000;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ESTRUCTURA: #page entre el header y el footer
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* flex: estira #page para el sticky footer (ver body).
+   min-width:0 + width:100%: #page es un flex item de <body>, y por default
+   un flex item nunca se encoge más chico que el ancho mínimo de SU
+   CONTENIDO — si algo adentro es ancho (ej. el carrusel de canales con
+   muchos logos), #page se agrandaba para hacerle lugar y todo lo de
+   adentro crecía con él. Con varios hijos de .entry-content usando el
+   truco de breakout (width:100vw + margin -50vw) a la vez, el ancho "auto"
+   además colapsaba a ~0 en Chrome (el hero de la Home desaparecía,
+   detectado 2026-08-13): el ancho explícito lo saca de ese cálculo. */
+#page {
+    flex: 1 0 auto;
+    min-width: 0;
+    width: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HEADER (header.php)
+   Sticky arriba de la pantalla, transparente para que el rotador/hero de la
+   Home, Series, Películas y Prod. Originales se vean completos detrás del
+   menú. El preheader va DENTRO de <header>, así que un solo sticky alcanza
+   para que suban y bajen juntos.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    background-color: var(--header-bg);
+}
+
+/* Fondo del header al scrollear (pedido 2026-10-08): al scrollear, el
+   contenido de la página pasaba POR DEBAJO del menú y se mezclaban los
+   textos. A medida que la página se scrollea aparece de a poco
+   (--jb3-header-fondo, de 0 a 1 en los primeros 200px — la calcula
+   header-height.js) detrás del menú un degradé oscuro que se desvanece
+   hasta 120px por debajo del header — sin tramo parejo, para que no se vea
+   como una banda (mismo criterio que el degradé de arriba del rotador).
+   z-index:-1 dentro del header (que ya arma su propio contexto con
+   z-index:200): queda detrás del menú, pero delante del contenido. */
+.site-header::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: -120px;
+    z-index: -1;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, .8) 0%, rgba(0, 0, 0, .6) 40%, rgba(0, 0, 0, .22) 72%, rgba(0, 0, 0, 0) 100%);
+    opacity: var(--jb3-header-fondo, 0);
+    pointer-events: none;
+}
+
+/* Debajo de la barra de admin de WordPress (mismo breakpoint que el core). */
+body.admin-bar .site-header {
+    top: 32px;
+}
+
+@media screen and (max-width: 782px) {
+    body.admin-bar .site-header {
+        top: 46px;
+    }
+}
+
+/* ─── Preheader: logo de Sony Pictures a la izquierda, Sony a la derecha ── */
+/* Mismo padding lateral que la fila de abajo (--header-padding-x) para que
+   los logos queden alineados con el logo/nav; sin límite de ancho, pegados
+   a los bordes incluso en monitores 4K+. */
+.jb3-preheader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px var(--header-padding-x) 0;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+}
+
+.jb3-preheader__logo {
+    display: block;
+    line-height: 0;
+}
+
+.jb3-preheader__logo img {
+    display: block;
+    height: 10px;
+    width: auto;
+}
+
+/* ─── Fila principal: logo + nav a la izquierda, íconos a la derecha ────── */
+.site-header__inner {
+    display: flex;
+    align-items: center;
+    padding: var(--header-padding-y) var(--header-padding-x);
+}
+
+.site-logo {
+    flex-shrink: 0;
+    line-height: 0;
+}
+
+.site-logo img {
+    width: 120px;
+    height: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HERO — Home, Series, Películas, Prod. Originales
+   El contenido de estas páginas arranca en el tope real del navegador y pasa
+   por DETRÁS del header (sticky, transparente) antes de seguir con el resto
+   normal. --header-height la corrige header-height.js (mide el alto real de
+   .site-header) — el valor en :root es solo el fallback mientras carga.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-hero {
+    position: relative;
+    z-index: 1;
+    margin-top: calc(-1 * var(--header-height));
+    overflow: hidden;
+}
+
+.jb3-hero img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* Barra de título debajo del hero (jb3_hero_titulo(), inc/hero.php):
+   Series/Películas/Prod. Originales — nombre del post centrado. */
+.jb3-hero-titulo {
+    background: var(--color-primary);
+    padding: 5px var(--jb3-modulo-padding-x);
+    text-align: center;
+}
+
+.jb3-hero-titulo__texto {
+    margin: 0;
+    color: #fff;
+    text-transform: uppercase;
+    font-weight: 400;
+    font-size: 28px;
+}
+
+@media (max-width: 767px) {
+    .jb3-hero-titulo__texto {
+        font-size: 20px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NAVEGACIÓN PRINCIPAL (menú "primary")
+   Desde 1280px, una fila al lado del logo con submenús desplegables; hasta
+   1279px, panel a pantalla completa que abre el botón hamburguesa (ver
+   NAVEGACIÓN MOBILE). Se probó pasar a hamburguesa recién en 1023px, pero
+   entre 1024 y 1279px el menú completo no entra en una línea y el CTA
+   "Conéctate con nosotros" salta de renglón. Los toggles los maneja nav.js.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.main-navigation ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.main-navigation li {
+    position: relative;
+}
+
+.main-navigation a {
+    display: block;
+    text-decoration: none;
+}
+
+.main-nav > ul {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* "> ul > li" (hijo directo) en toda esta sección: ".main-nav ul li"
+   matchearía también los <li> de los submenús, pisándoles sus reglas.
+   Tamaño/alto: igual para todos los ítems, incluido el CTA (el CTA solo
+   cambia de color/fondo). */
+.main-nav > ul > li > a {
+    font-size: var(--nav-font-size);
+    font-weight: var(--nav-font-weight);
+    line-height: var(--nav-item-line-height);
+    padding: var(--nav-item-padding-y) var(--nav-item-padding-x);
+    background-color: var(--nav-bg);
+}
+
+.main-nav > ul > li:not(.nav-cta) > a {
+    color: var(--nav-text);
+}
+
+.main-nav > ul > li:not([class*="current-menu-"]):not(.nav-cta):hover > a,
+.main-nav > ul > li:not([class*="current-menu-"]):not(.nav-cta):focus-within > a,
+.main-nav > ul > li.sfHover:not([class*="current-menu-"]):not(.nav-cta) > a {
+    color: var(--nav-hover);
+    background-color: var(--nav-bg-hover);
+}
+
+.main-nav > ul > li[class*="current-menu-"]:not(.nav-cta) > a {
+    color: var(--nav-current);
+    background-color: var(--nav-bg-current);
+}
+
+/* Ítem destacado (ej. "Conéctate con nosotros"): clase CSS "nav-cta" puesta
+   desde Apariencia > Menús > el ítem > Clases CSS (adicionales) — activar
+   "Opciones de pantalla" si no se ve ese campo. */
+.main-navigation .nav-cta > a {
+    background-color: var(--nav-cta-bg);
+    color: var(--nav-cta-text);
+    border-radius: var(--btn-radius);
+}
+
+.main-navigation .nav-cta:hover > a {
+    background-color: var(--nav-cta-hover);
+    color: var(--nav-cta-text-hover);
+}
+
+/* Submenú (dropdown), abierto por click (li.sfHover). El menú de cuenta
+   (.site-header-account__menu) vive fuera del nav pero comparte estos
+   mismos colores. */
+.main-navigation .sub-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 99999;
+    width: 200px;
+    box-shadow: 1px 1px 0 rgba(0, 0, 0, .1);
+}
+
+.main-navigation .sfHover > .sub-menu {
+    display: block;
+}
+
+.main-navigation .sub-menu,
+.site-header-account__menu {
+    background-color: var(--dropdown-bg);
+}
+
+.main-navigation .sub-menu a {
+    padding: 10px 20px;
+    line-height: normal;
+}
+
+.main-navigation .sub-menu a,
+.site-header-account__menu li a {
+    color: var(--dropdown-text);
+    font-size: var(--nav-font-size);
+    font-weight: var(--nav-font-weight);
+}
+
+.main-navigation .sub-menu li:hover > a,
+.main-navigation .sub-menu li.sfHover > a,
+.site-header-account__menu li:hover > a {
+    background-color: var(--dropdown-bg-hover);
+    color: var(--dropdown-text-hover);
+}
+
+.main-navigation .sub-menu li[class*="current-menu-"] > a {
+    background-color: var(--dropdown-current-bg);
+}
+
+@media (min-width: 1280px) {
+    .main-navigation {
+        margin-left: var(--nav-gap-from-logo);
+    }
+
+    /* La separación del CTA solo tiene sentido en la fila horizontal. */
+    .main-navigation .nav-cta {
+        margin-left: var(--nav-cta-margin-left);
+    }
+}
+
+/* ─── Íconos de la derecha: LinkedIn, cuenta/registro y buscador ────────── */
+.site-header-icons {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: var(--icon-gap);
+    margin-left: auto;
+}
+
+/* Mismo "botón" para los 3 íconos — fondo, radius, padding y color en un
+   solo lugar, controlado por las variables --icon-* de :root. */
+.site-header-icons__linkedin,
+.site-header-icons__search,
+.site-header-account__toggle {
+    display: flex;
+    padding: 6px;
+    border-radius: var(--icon-radius);
+    background-color: var(--icon-bg);
+    color: var(--icon-color);
+}
+
+.site-header-icons__linkedin:hover,
+.site-header-icons__linkedin:focus,
+.site-header-icons__search:hover,
+.site-header-account__toggle:hover {
+    color: var(--icon-hover);
+}
+
+/* Las lupas y el ícono de cuenta tienen el trazo más cerca del borde de su
+   caja que el de LinkedIn: un poco más chicos para igualar el peso visual. */
+.site-header-icons .jb3-icono--buscar,
+.jb3-menu-controles .jb3-icono--buscar {
+    width: 17px;
+    height: 17px;
+}
+
+.site-header-account__toggle .jb3-icono {
+    width: 18px;
+    height: 18px;
+}
+
+.site-header-icons__auth-link {
+    color: var(--nav-text);
+    text-transform: uppercase;
+    font-weight: var(--nav-font-weight);
+    font-size: 14px;
+    text-decoration: none;
+}
+
+.site-header-icons__auth-link:hover {
+    color: var(--nav-hover);
+}
+
+/* ─── Dropdown de cuenta (usuario logueado, header-account.js) ──────────── */
+/* Colores, tipografía y hover: sección "Submenú (dropdown)" de arriba. */
+.site-header-account {
+    position: relative;
+}
+
+.site-header-account__menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin: 8px 0 0;
+    padding: 8px 0;
+    min-width: 160px;
+    list-style: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .15);
+    z-index: 100;
+}
+
+.site-header-account.is-open .site-header-account__menu {
+    display: block;
+}
+
+.site-header-account__menu a {
+    display: block;
+    padding: 8px 16px;
+    text-decoration: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NAVEGACIÓN MOBILE (hasta 1279px)
+   Lupa + hamburguesa a la derecha del logo (.jb3-menu-controles). Al abrir,
+   el menú ocupa toda la fila de abajo (flex-wrap + flex-basis:100%) sobre
+   un overlay negro de pantalla completa, con los íconos de cuenta debajo.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-menu-controles {
+    display: none;
+    align-items: center;
+    margin-left: auto;
+}
+
+.jb3-menu-controles .jb3-boton-icono {
+    padding: 8px;
+    color: var(--nav-text);
+}
+
+.jb3-menu-controles .jb3-icono {
+    width: 18px;
+    height: 18px;
+}
+
+/* El botón muestra las rayitas cerrado y la cruz abierto. */
+.menu-toggle .jb3-icono--cerrar,
+.menu-toggle[aria-expanded="true"] .jb3-icono--menu {
+    display: none;
+}
+
+.menu-toggle[aria-expanded="true"] .jb3-icono--cerrar {
+    display: block;
+}
+
+/* :focus-visible en vez de :focus: un <button> queda enfocado después del
+   click, así que con :focus el ícono se quedaba "pegado" en el color de
+   hover después de cerrar el menú. (hover: hover): en pantallas táctiles no
+   hay mouse que se "aleje" para sacar el :hover después de tocar. */
+@media (hover: hover) {
+    .jb3-menu-controles .jb3-boton-icono:hover {
+        color: var(--nav-hover);
+    }
+}
+
+.jb3-menu-controles .jb3-boton-icono:focus-visible {
+    color: var(--nav-hover);
+}
+
+@media (max-width: 1279px) {
+    .jb3-menu-controles {
+        display: flex;
+    }
+
+    .site-header__inner {
+        flex-wrap: wrap;
+    }
+
+    .main-navigation {
+        display: none;
+        flex-basis: 100%;
+    }
+
+    .main-navigation.toggled {
+        display: block;
+    }
+
+    .main-nav > ul {
+        display: block;
+    }
+
+    /* Todo el texto del menú arranca en la misma X, con el mismo padding
+       lateral que separa al logo del borde (--header-padding-x). El
+       submenú, un poco más adentro para marcar que es un nivel anidado. */
+    .main-nav > ul > li > a,
+    .main-navigation .sub-menu a {
+        padding-left: var(--header-padding-x);
+        padding-right: var(--header-padding-x);
+    }
+
+    .main-navigation .sub-menu a {
+        padding-left: calc(var(--header-padding-x) + 20px);
+    }
+
+    /* Submenú integrado al panel (sin caja aparte, eso queda para desktop). */
+    .main-navigation .sub-menu {
+        position: static;
+        width: 100%;
+        box-shadow: none;
+        background-color: transparent;
+    }
+
+    /* CTA como un ítem más de la lista (mismo blanco y mismo tamaño que el
+       resto) — ver diseño de referencia 2026-08-25. */
+    .main-navigation .nav-cta > a {
+        background-color: transparent;
+        color: var(--nav-text);
+    }
+
+    .main-navigation .nav-cta:hover > a,
+    .main-navigation .nav-cta:focus-within > a {
+        background-color: transparent;
+        color: var(--nav-hover);
+    }
+
+    /* Íconos de cuenta/registro: ocultos con el menú cerrado; con el menú
+       abierto, en fila debajo de los ítems. El -6px compensa el padding
+       propio del ícono de LinkedIn, para que su dibujo quede en la misma X
+       que el texto del menú. La lupa no: ya está en .jb3-menu-controles. */
+    .site-header-icons {
+        display: none;
+    }
+
+    .main-navigation.toggled ~ .site-header-icons {
+        display: flex;
+        gap: 15px;
+        margin-left: 0;
+        padding: 15px 0 15px calc(var(--header-padding-x) - 6px);
+    }
+
+    .site-header-icons__search {
+        display: none;
+    }
+
+    /* El dropdown de cuenta se abre hacia la derecha: el botón ya no está
+       pegado al borde derecho como en desktop. */
+    .site-header-account__menu {
+        left: 0;
+        right: auto;
+    }
+}
+
+/* ─── Overlay del menú mobile ──────────────────────────────────────────── */
+/* nav.js agrega "mobile-menu-open" al <html> con el menú abierto.
+   Bloquear el scroll de fondo con overflow:hidden rompe el position:sticky
+   del header (si abrís el menú habiendo scrolleado, el header saltaba
+   arriba de todo, fuera de la pantalla). En su lugar, la página se
+   "congela" con position:fixed + un offset negativo igual al scroll actual
+   (mobile-menu-scroll-lock.js lo calcula y lo restaura al cerrar). El
+   header (z-index:200) queda por encima del overlay (99). */
+html.mobile-menu-open {
+    position: fixed;
+    left: 0;
+    right: 0;
+    width: 100%;
+}
+
+html.mobile-menu-open body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    background: #000000;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BUSCADOR (<dialog id="jb3-buscador">, footer.php + buscador.js)
+   El <dialog> ocupa toda la pantalla y es transparente: el fondo oscuro es
+   su ::backdrop, y el formulario queda a un cuarto de la altura.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-buscador {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 25vh 10px 0;
+    border: 0;
+    background: transparent;
+}
+
+.jb3-buscador[open] {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.jb3-buscador::backdrop {
+    background: rgba(0, 0, 0, .2);
+    backdrop-filter: blur(3px);
+}
+
+.jb3-buscador__form {
+    display: flex;
+    width: 500px;
+    max-width: 100%;
+    background-color: #ffffff;
+    color: #222222;
+}
+
+input.jb3-buscador__campo,
+input.jb3-buscador__campo:focus {
+    flex: 1;
+    min-width: 0;
+    height: 60px;
+    border: 0;
+    background-color: transparent;
+    color: currentColor;
+}
+
+.jb3-buscador__enviar {
+    justify-content: center;
+    width: 60px;
+}
+
+.jb3-buscador__enviar .jb3-icono {
+    width: 18px;
+    height: 18px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.jb3-footer {
+    background: var(--footer-bg);
+    color: var(--footer-text);
+}
+
+/* Desktop: texto institucional 4/7, menú 3/7 (era 2/3–1/3, pedido
+   2026-10-19; ampliado 2026-10-20 para que en notebooks el menú entre en
+   dos columnas — ver .jb3-footer-menu). Tablet:
+   mitad y mitad (en un tercio de 768px, 216px, los títulos largos del menú
+   se partían). Mobile: apiladas (mismo orden que el HTML, sin necesidad de
+   "order"). Breakpoints propios de esta sección, no los del hamburguesa
+   (1279px) — acá no depende del nav. */
+.jb3-footer-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--footer-gap);
+    margin: 0 auto;
+    padding: var(--footer-padding-y) var(--footer-padding-x);
+}
+
+@media (min-width: 768px) {
+    .jb3-footer-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (min-width: 1024px) {
+    .jb3-footer-grid {
+        grid-template-columns: 4fr 3fr;
+    }
+}
+
+.jb3-footer-logo {
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+.jb3-footer-logo img {
+    display: block;
+    width: 250px;
+    max-width: 100%;
+    height: auto;
+}
+
+.jb3-footer-col--main p {
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0 0 1.2em;
+}
+
+.jb3-footer-legal {
+    font-size: 13px;
+}
+
+/* Menú del footer (jb3_footer_menu(), inc/footer-menu.php): el menú
+   principal desplegado. Hasta dos columnas, cada una de al menos 225px:
+   el navegador pone la segunda solo si las dos entran con ese ancho, así
+   el título más largo ("Oportunidades comerciales", 223px medido) nunca
+   se parte en dos líneas — si no entran, queda en una sola columna. Cada
+   grupo (título + sus ítems) no se corta entre columnas (break-inside), y
+   el navegador reparte los grupos para que queden parejas — como el menú
+   cambia según el país, no se fija a mano qué va en cada una. */
+.jb3-footer-menu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    columns: 2 225px;
+    column-gap: 32px;
+}
+
+.jb3-footer-menu__grupo {
+    break-inside: avoid;
+    margin-bottom: 12px;
+}
+
+.jb3-footer-menu__titulo {
+    display: block;
+    color: var(--color-primary) !important; /* !important: la regla global "a { color: var(--link-color) !important }" (COLORES GLOBALES) le gana a cualquier color sin !important. */
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    text-decoration: none;
+}
+
+.jb3-footer-menu__sub {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+}
+
+.jb3-footer-menu__link {
+    display: block;
+    padding: 2px 0;
+    color: var(--footer-link-color) !important;
+    font-size: 12px;
+    text-transform: uppercase;
+    text-decoration: none;
+}
+
+a.jb3-footer-menu__titulo:hover,
+.jb3-footer-menu__link:hover {
+    color: var(--footer-link-hover) !important;
+}
+
+/* LinkedIn (jb3_footer_linkedin_script()): con consentimiento, el botón
+   "Seguir" reemplaza al link común. */
+.jb3-footer-linkedin--widget .jb3-footer-linkedin__link {
+    display: none;
+}
+
+/* ─── Barra inferior (CTA + volver arriba) ──────────────────────────────── */
+/* Fixed al viewport, siempre visible mientras se scrollea (no solo al
+   llegar al final de la página). Como sale del flujo normal, le sumamos
+   --footer-bar-height como padding-bottom al body para que no tape ni el
+   resto del footer ni el final del contenido. */
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    padding-bottom: var(--footer-bar-height);
+}
+
+/* position:fixed también sirve de contenedor de posicionamiento para
+   .jb3-footer-bar__totop (position:absolute) más abajo — así el botón queda
+   anclado a la derecha sin afectar el centrado del texto, que sigue siendo
+   el único elemento en el flujo flex normal. */
+.jb3-footer-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 150;
+    box-sizing: border-box;
+    min-height: var(--footer-bar-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--footer-bar-bg);
+    padding: 10px 20px;
+    text-align: center;
+}
+
+/* Badge de reCAPTCHA (esquina inferior derecha, página de registro) — por
+   defecto Google lo posiciona a bottom:14px, que queda tapado detrás de
+   esta barra fija de 48px (jb3-footer-bar, arriba). Google fija esa
+   posición con un style inline en el elemento (mayor especificidad que
+   cualquier clase), así que hace falta !important acá para pisarlo — es
+   la forma que la propia documentación de Google sugiere para reubicar
+   el badge (a diferencia de OCULTARLO del todo, que si se hace exige
+   agregar el texto de aviso "protegido por reCAPTCHA" a mano en algún
+   lado — acá no hace falta, el badge sigue visible, solo más arriba). */
+.grecaptcha-badge {
+    bottom: calc(var(--footer-bar-height) + 14px) !important;
+}
+
+/* Botón flotante "revisitar consentimiento" de CookieYes (plugin
+   cookie-law-info) — mismo problema que el badge de reCAPTCHA de arriba:
+   queda tapado detrás de la barra fija del footer. CookieYes arma la
+   clase del contenedor como "cky-revisit-" + posición elegida en su panel
+   (ej. "cky-revisit-bottom-left") — [class*=] agarra cualquier posición
+   "bottom-*" sin tener que saber el nombre exacto completo. Reportado en
+   vivo 2026-08-28 (captura: el ícono circular quedaba pisando la barra). */
+[class*="cky-revisit-bottom"] {
+    bottom: calc(var(--footer-bar-height) + 14px) !important;
+}
+
+/* !important porque la regla global "a { color: var(--link-color) !important }"
+   (sección COLORES GLOBALES) le gana por !important a cualquier color sin
+   !important acá, sin importar la especificidad de la clase — por eso el
+   texto quedaba invisible (mismo violeta que el fondo de la barra).
+   position:absolute + inset:0: el link (y su hover) ocupan TODA la barra,
+   no solo el texto — .jb3-footer-bar ya es position:fixed, así que sirve
+   de contenedor de posicionamiento sin agregar nada más. El botón de
+   volver arriba sigue siendo clickeable por separado porque va DESPUÉS en
+   el HTML: con z-index igual, el que pinta último (totop) queda arriba en
+   la pila y se queda con el click en su propia zona.
+
+   Bug real confirmado 2026-08-28: el texto de acá adentro (footer.php)
+   tiene que ir envuelto en un <span> ("CONECTATE <strong>AQUÍ</strong>
+   CON...") — sin ese <span>, al ser display:flex acá, el navegador arma
+   un ítem flex SEPARADO por cada tramo de texto suelto alrededor del
+   <strong> (uno para "CONECTATE ", otro para el <strong>AQUÍ</strong> en
+   sí, otro para " CON NUESTRO EQUIPO COMERCIAL"), y los acomoda como 3
+   columnas en fila en vez de dejarlos fluir como una sola oración — en
+   mobile, donde no entran en una fila, cada "columna" se corta por su
+   cuenta en vez de cortarse prolijo como una sola línea de texto. El
+   <span> hace que flex vea un solo ítem (el span), y adentro de ese span
+   el texto + <strong> fluyen como contenido inline normal, sin partirse. */
+.jb3-footer-bar__cta {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--footer-bar-text) !important;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+/* Sin color propio a propósito: hereda el de .jb3-footer-bar__cta (acá
+   arriba y en :hover) — todo el texto cambia de color junto, en vez de
+   cruzarse entre "aquí" y el resto. margin: solo respiro visual alrededor
+   de la palabra destacada, no un parche de espaciado. */
+.jb3-footer-bar__cta strong {
+    margin: 0 .3em;
+    font-size: 1.2em;
+}
+
+/* Pedido explícito 2026-08-28: en mobile letra más chica, sin padding
+   vertical en la barra (el horizontal se mantiene, evita que el texto
+   toque los bordes/íconos de las esquinas), y "AQUÍ" del mismo tamaño
+   que el resto en vez de destacado — ver --footer-bar-height más arriba,
+   bajado en conjunto con este cambio. */
+@media (max-width: 767px) {
+    .jb3-footer-bar {
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+    .jb3-footer-bar__cta {
+        font-size: 11px;
+    }
+    .jb3-footer-bar__cta strong {
+        font-size: 1em;
+    }
+}
+
+.jb3-footer-bar__cta:hover,
+.jb3-footer-bar__cta:focus-visible {
+    color: var(--footer-bar-cta) !important;
+}
+
+/* Botón circular con el ícono; el texto "Ir arriba" vive en un tooltip
+   propio (span), oculto hasta el hover/focus — no es un title="" nativo
+   porque esos no se pueden animar ni estilar. Anclado a la derecha de la
+   barra con position:absolute, así no compite con el centrado del texto.
+   z-index explícito: queda por encima de .jb3-footer-bar__cta (que ahora
+   cubre toda la barra) para que su click siga siendo suyo. */
+.jb3-footer-bar__totop {
+    position: absolute;
+    z-index: 1;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .15);
+    color: var(--footer-bar-text) !important;
+    text-decoration: none;
+    transition: background-color .2s ease, transform .2s ease;
+}
+
+.jb3-footer-bar__totop:hover,
+.jb3-footer-bar__totop:focus-visible {
+    background: rgba(255, 255, 255, .3);
+    transform: translateY(calc(-50% - 2px));
+}
+
+.jb3-footer-bar__totop-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    margin-bottom: 8px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: #000000;
+    color: #ffffff;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 4px);
+    transition: opacity .2s ease, transform .2s ease;
+}
+
+.jb3-footer-bar__totop:hover .jb3-footer-bar__totop-tooltip,
+.jb3-footer-bar__totop:focus-visible .jb3-footer-bar__totop-tooltip {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+/* En mobile no hay hover para mostrar el tooltip, y el CTA de texto ya
+   ocupa todo el ancho de la barra — se oculta el botón en vez de dejarlo
+   sin la pista visual de qué hace. Mismo breakpoint que el grid del footer. */
+@media (max-width: 767px) {
+    .jb3-footer-bar__totop {
+        display: none;
+    }
+}
+
+/* Botón "Cookies" — mismo patrón exacto que .jb3-footer-bar__totop de
+   arriba, espejado a la izquierda en vez de la derecha. Reabre el panel
+   de CookieYes (ver footer.php, onclick="revisitCkyConsent()") — con esto
+   en la barra fija (visible en TODO el sitio, siempre) ya no hace falta
+   el ícono flotante propio del plugin, que hay que desactivar en su panel
+   para no duplicar. Mismo criterio 2026-08-28: se ocultó en mobile igual
+   que totop (ver más abajo) porque el texto del CTA ya ocupa todo el
+   ancho ahí — si hace falta acceso a esto en mobile también, sumar el
+   link al final del menú del footer (jb3_footer_menu()). */
+.jb3-footer-bar__cookies {
+    position: absolute;
+    z-index: 1;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .15);
+    color: var(--footer-bar-text) !important;
+    text-decoration: none;
+    transition: background-color .2s ease, transform .2s ease;
+}
+
+.jb3-footer-bar__cookies:hover,
+.jb3-footer-bar__cookies:focus-visible {
+    background: rgba(255, 255, 255, .3);
+    transform: translateY(calc(-50% - 2px));
+}
+
+.jb3-footer-bar__cookies-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    margin-bottom: 8px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: #000000;
+    color: #ffffff;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 4px);
+    transition: opacity .2s ease, transform .2s ease;
+}
+
+.jb3-footer-bar__cookies:hover .jb3-footer-bar__cookies-tooltip,
+.jb3-footer-bar__cookies:focus-visible .jb3-footer-bar__cookies-tooltip {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+@media (max-width: 767px) {
+    .jb3-footer-bar__cookies {
+        display: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SLIDER HOME ([home_slider], inc/home-slider.php)
+
+   Medidas de las imágenes para diseño: inc/imagenes.php (referencia
+   única de imágenes del sitio). Comportamiento por pantalla y el porqué de
+   cada decisión: comentario al principio de inc/home-slider.php
+   (definido con el usuario el 2026-09-30).
+
+   Resumen de lo que implementa este bloque:
+   ┌────────────────────────┬──────────────────────────┬───────────────────┐
+   │ Pantalla               │ Alto del rotador         │ Imagen            │
+   ├────────────────────────┼──────────────────────────┼───────────────────┤
+   │ Celular vertical ≤767  │ 100% de la pantalla      │ mobile (9:16)     │
+   │ Celular apaisado ≤767  │ imagen + 230px de fondo  │ desktop (16:9)    │
+   │ Tablet 768-1023        │ imagen + 230px de fondo  │ desktop (16:9)    │
+   │ Desktop ≥1024          │ imagen, techo = ventana  │ desktop (16:9)    │
+   └────────────────────────┴──────────────────────────┴───────────────────┘
+   En todos: imagen a ancho completo y anclada arriba; nunca se recortan
+   los costados ni el borde superior. Donde el alto tiene techo (celular
+   vertical, desktop) solo puede quedar afuera la franja de abajo.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Alto proporcional al ancho con la técnica del "padding-top trick" (la
+   proporción sale de la imagen real, ver más abajo). Ya se probaron TRES
+   formas de que el alto salga solo de la imagen — aspect-ratio en CSS,
+   height:auto puesto a mano, y autoHeight:true de Swiper (que mide por
+   JS) — y las tres rompen apenas hay 2+ slides: Chrome calcula un ancho
+   "infinito" en algún punto de la cadena y lo satura en su límite interno
+   (~33.554.432px, LayoutUnit::Max). El padding-top trick da el mismo
+   resultado visual (alto proporcional al ancho) por un mecanismo de
+   layout completamente distinto — padding en % resuelve contra el ancho
+   del contenedor, nada que ver con flex/aspect-ratio/JS — así que no
+   dispara nada de esto. .jb3-home-slider queda con position:absolute +
+   inset:0 llenando la caja que arma el ::before, así que Swiper mide un
+   elemento con ancho/alto ya resueltos de entrada, sin cálculo circular,
+   estable sin importar cuántos slides tenga el repeater. */
+/* LA IMAGEN NUNCA SE RECORTA DE LOS COSTADOS NI DE ARRIBA (pedido explícito
+   2026-09-30): va siempre a ancho completo, anclada arriba, con el alto que
+   le da su proporción real. Antes había un max-height:100dvh (+ 240% en
+   mobile para forzar pantalla completa) que, combinado con un
+   object-fit:cover centrado, recortaba ~38% de los costados en celular y
+   ~10-15% repartido entre arriba y abajo en desktop (medido con Playwright).
+   Hoy, por breakpoint:
+   - desktop (≥1024): alto = el de la imagen, con techo = alto de ventana;
+   - tablet / celular apaisado: alto = imagen + franja extra para el texto;
+   - celular vertical (≤767): alto = 100% de la pantalla.
+   Donde hay techo, lo único que queda afuera es la franja de abajo (la del
+   degradé que el arte trae para fundir con el fondo de la página).
+   --jb3-slider-ratio / --jb3-slider-ratio-mobile (alto/ancho, sin unidad)
+   las imprime inc/home-slider.php inline a partir de las dimensiones
+   reales de los adjuntos (la más alta entre los slides vigentes); los
+   fallback de acá son las proporciones pedidas al diseñador (16:9 desktop =
+   .5625, 9:16 mobile = 1.7778) y solo rigen si el adjunto no tiene metadata.
+   --jb3-slider-ratio-actual es la que rige en cada breakpoint — la usan el
+   ::before (alto de la caja), el <img> y el overlay (ver más abajo). */
+.jb3-home-slider-wrap {
+    --jb3-slider-ratio-actual: var(--jb3-slider-ratio, .5625);
+    --jb3-slider-extra: 0px;
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+}
+
+/* --jb3-slider-extra: franja de fondo de página que se suma DEBAJO de la
+   imagen en tablet (y celular apaisado). Ahí la imagen completa queda más
+   baja que el bloque logo+texto+botón+copyright que lleva encima: en
+   tablet vertical (768px → imagen de 432px) llegaba a chocar con el
+   header y a tapar las caras. Con esta franja el bloque
+   (anclado abajo del slide) cae mayormente sobre el fondo y solo pisa el
+   borde inferior de la imagen, donde el arte ya trae su degradé hacia el
+   color de fondo. La imagen queda pegada arriba (object-position:top). */
+@media (max-width: 1023px) {
+    .jb3-home-slider-wrap {
+        --jb3-slider-extra: 230px;
+    }
+}
+
+.jb3-home-slider-wrap::before {
+    content: "";
+    display: block;
+    padding-top: calc(var(--jb3-slider-ratio-actual) * 100% + var(--jb3-slider-extra));
+}
+
+/* Celular vertical: el rotador ocupa SIEMPRE el 100% del alto de la
+   pantalla (pedido 2026-09-30, mismo criterio que desktop), con la imagen a
+   ancho completo y anclada arriba:
+   - imagen más corta que la pantalla (1000×1333 de hoy, o 1080×1920 en
+     celulares más alargados que 9:16, que son casi todos): debajo sigue el
+     fondo de la página, fundido con el degradé (ver ::after más abajo);
+   - imagen más alta que la pantalla: se corta solo la franja de abajo.
+   Nunca se recortan los costados. El bloque de texto queda al pie.
+   svh (no dvh): alto con la barra de direcciones visible, que es como abre
+   la página — llena justo la pantalla al entrar y NO cambia de tamaño
+   cuando la barra se esconde al scrollear (con dvh el rotador "saltaba").
+   "and (orientation: portrait)": la imagen mobile es vertical — con el
+   celular apaisado entra mucho mejor la de desktop, que sigue la regla de
+   tablet de arriba. Mismo media query en el <source> del <picture>
+   (inc/home-slider.php): tienen que coincidir siempre. */
+@media (max-width: 767px) and (orientation: portrait) {
+    .jb3-home-slider-wrap {
+        --jb3-slider-ratio-actual: var(--jb3-slider-ratio-mobile, 1.7778);
+        --jb3-slider-extra: 0px;
+        height: calc(100svh - var(--jb3-adminbar-h, 0px));
+    }
+
+    .jb3-home-slider-wrap::before {
+        display: none;
+    }
+}
+
+/* Con la barra de admin de WordPress arriba (32px; 46px en su propio
+   breakpoint ≤782px) la página queda corrida hacia abajo esos px — el
+   bloque de texto lo descuenta al calcular qué parte del slide se ve (ver
+   .jb3-home-slider__contenido). Sin efecto para un visitante real. */
+body.admin-bar .jb3-home-slider-wrap {
+    --jb3-adminbar-h: 32px;
+}
+
+@media screen and (max-width: 782px) {
+    body.admin-bar .jb3-home-slider-wrap {
+        --jb3-adminbar-h: 46px;
+    }
+}
+
+.jb3-home-slider.swiper {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+/* La imagen va SIEMPRE a ancho completo y anclada arriba, con su alto
+   natural (ancho × proporción) — no "100% de la caja": la caja del slide
+   puede ser más baja que la imagen (desktop/celular con techo de pantalla:
+   se corta lo de abajo, overflow:hidden del wrap) o más alta (celular con
+   imagen corta, tablet con franja extra: debajo queda el fondo). contain +
+   top: si un slide tiene otra proporción que el resto (la variable toma la
+   más alta de todos), se ve completo igual, pegado arriba. */
+.jb3-home-slider__picture {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.jb3-home-slider__picture img {
+    display: block;
+    width: 100%;
+    height: calc(var(--jb3-slider-ratio-actual) * 100vw);
+    object-fit: contain;
+    object-position: top center;
+}
+
+/* Desktop: techo = alto de la ventana (pedido 2026-09-30: sin techo, en
+   ventanas más bajas que 16:9 había que scrollear demasiado para llegar al
+   contenido que sigue). Lo único que puede quedar afuera es la franja de
+   abajo de la imagen — la del degradé que funde con el fondo. */
+@media (min-width: 1024px) {
+    .jb3-home-slider-wrap {
+        max-height: calc(100dvh - var(--jb3-adminbar-h, 0px));
+    }
+}
+
+/* Fundido del borde inferior de la imagen hacia el fondo de la página, solo
+   donde puede quedar fondo a la vista debajo de la imagen: celular con
+   imagen más corta que la pantalla, tablet con franja extra, y desktop
+   cuando el rotador se alargó para que el bloque de texto entre debajo del
+   título (clase --alargado, la pone ajustarAlto() en inc/home-slider.php).
+   Ahí el degradé del bloque no cae sobre el final de la imagen sino más
+   abajo, y si el arte no termina exactamente en el color de fondo (el de
+   desktop termina en azul oscuro, el fondo es negro) quedaba una línea de
+   corte visible. En desktop normal no hace falta: el bloque tapa esa unión. */
+.jb3-home-slider__picture {
+    position: relative;
+}
+
+.jb3-home-slider__picture::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(var(--jb3-slider-ratio-actual) * 100vw * .7);
+    height: calc(var(--jb3-slider-ratio-actual) * 100vw * .3 + 1px);
+    background: linear-gradient(to bottom, transparent, var(--body-bg));
+    pointer-events: none;
+}
+
+@media (min-width: 1024px) {
+    .jb3-home-slider-wrap:not(.jb3-home-slider-wrap--alargado) .jb3-home-slider__picture::after {
+        display: none;
+    }
+}
+
+/* Flechas de Swiper con la paleta del sitio en vez del negro default, y más
+   chicas que el tamaño default (44px) para que no interfieran con el
+   texto — --swiper-navigation-size es la variable oficial de Swiper para
+   esto (controla el tamaño del ícono ::after Y el cálculo de centrado
+   vertical del botón, que Swiper arma solo a partir de esta variable — por
+   eso alcanza con tocar esto para achicar la flecha, sin pisar width/
+   height/margin-top a mano). En el rotador de la Home el botón es un
+   círculo de 32px (ver más abajo). */
+.jb3-home-slider {
+    --swiper-navigation-size: 32px;
+}
+
+/* Mismo estilo de flechas para los sliders que las tienen (Home y Galería;
+   el de Canales no lleva flechas desde 2026-10-16, ver
+   inc/canales-slider.php). El rotador de la Home lleva además un círculo
+   de fondo (ver más abajo); la Galería, la flecha sola. */
+.jb3-home-slider .swiper-button-prev,
+.jb3-home-slider .swiper-button-next,
+.jb3-galeria-slider .swiper-button-prev,
+.jb3-galeria-slider .swiper-button-next {
+    color: #ffffff;
+}
+
+.jb3-home-slider .swiper-button-prev:hover,
+.jb3-home-slider .swiper-button-next:hover,
+.jb3-galeria-slider .swiper-button-prev:hover,
+.jb3-galeria-slider .swiper-button-next:hover {
+    color: var(--color-secondary);
+}
+
+/* Rotador de la Home: flecha oscura dentro de un círculo blanco bien
+   transparente (35%; 75% al pasar el mouse) — discreto a propósito, que no
+   compita con la imagen — con una sombra suave para
+   que se separe también sobre imágenes claras (pedido 2026-10-16). La flecha
+   la dibujamos con CSS (dos bordes en ángulo) en vez del ícono de Swiper:
+   ese ícono es una tipografía y su carácter no queda centrado dentro de un
+   círculo (por eso se había descartado el círculo el 2026-08-20). El
+   translate de cada lado compensa que el vértice de la flecha no está en
+   el centro de su caja, para que se vea ópticamente centrada. */
+.jb3-home-slider .swiper-button-prev,
+.jb3-home-slider .swiper-button-next {
+    width: var(--swiper-navigation-size);
+    border-radius: 50%;
+    color: #1a1a1a;
+    background: rgba(255, 255, 255, .35);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .15);
+    transition: background-color .2s ease;
+}
+
+.jb3-home-slider .swiper-button-prev:hover,
+.jb3-home-slider .swiper-button-next:hover {
+    color: #1a1a1a;
+    background: rgba(255, 255, 255, .75);
+}
+
+.jb3-home-slider .swiper-button-prev::after,
+.jb3-home-slider .swiper-button-next::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+}
+
+.jb3-home-slider .swiper-button-next::after {
+    transform: translateX(-1.5px) rotate(45deg);
+}
+
+.jb3-home-slider .swiper-button-prev::after {
+    transform: translateX(1.5px) rotate(-135deg);
+}
+
+/* En mobile/tablet se navega deslizando con el dedo — las flechas no hacen
+   falta. Mismo breakpoint que ya usa el nav para pasar a modo hamburguesa
+   (touch), para no sumar un tercer punto de corte distinto en el sitio.
+   La Home usa Swiper de verdad (soporta swipe); la Galería usa un
+   carrusel propio sin gestos táctiles todavía, así que ahí las flechas se
+   dejan visibles siempre — es la única forma de navegar en mobile. */
+@media (max-width: 1279px) {
+    .jb3-home-slider .swiper-button-prev,
+    .jb3-home-slider .swiper-button-next {
+        display: none;
+    }
+}
+
+/* ─── Texto, botón y copyright sobre la imagen ──────────────────────────── */
+.jb3-home-slider .swiper-slide {
+    position: relative;
+    /* Posición y alto del título — de acá sale el techo del bloque de
+       logo/texto/botón (ver .jb3-home-slider__overlay). */
+    --jb3-slider-titulo-top: calc(var(--header-height) + 20px);
+    --jb3-slider-titulo-alto: calc(13px * 1.4);
+}
+
+/* Degradé ARRIBA de cada slide, detrás del header (que es transparente) y
+   del título: que el menú y el título blancos se lean aunque la imagen sea
+   clara arriba (pedido 2026-10-08). Mismo criterio que el degradé del
+   bloque de texto de abajo, invertido. Va dentro del slide (no fijo en el
+   rotador) para que pase junto con cada imagen. z-index: por encima de la
+   imagen, por debajo del título y del bloque de texto (los dos con
+   z-index:1). */
+.jb3-home-slider .swiper-slide::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: calc(var(--jb3-slider-titulo-top) + var(--jb3-slider-titulo-alto) + 140px);
+    background: linear-gradient(to bottom, rgba(0, 0, 0, .45) 0%, rgba(0, 0, 0, .3) 40%, rgba(0, 0, 0, .12) 70%, rgba(0, 0, 0, 0) 100%);
+    pointer-events: none;
+}
+
+/* Título del slider (ej. "SUPER LUNES"): va apenas debajo del header, no
+   dentro de .jb3-home-slider__overlay (el bloque anclado abajo) — por eso es
+   un elemento aparte, posicionado con su propio top. --header-height ya la
+   mantiene sincronizada al alto real del header (ver header-height.js), así
+   que el título queda pegado debajo del nav y a la misma altura en
+   cualquier slide, sin importar cuánto texto/logo traiga cada uno. */
+.jb3-home-slider__titulo {
+    position: absolute;
+    top: var(--jb3-slider-titulo-top);
+    left: var(--slider-text-padding-x);
+    right: var(--slider-text-padding-x);
+    z-index: 1;
+    color: #ffffff;
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+/* Bloque de logo/texto/botón/copyright. Dos cajas:
+   - .jb3-home-slider__overlay es el ESPACIO DISPONIBLE: del título para
+     abajo (o del header para abajo, si el slide no tiene título). Ese es el
+     techo — el bloque nunca se mete por debajo del título (pedido
+     2026-10-08: en pantallas bajas, ej. 1024x600 o 1280x600, subía hasta
+     taparlo).
+   - .jb3-home-slider__contenido es el bloque en sí, apoyado abajo, con el
+     degradé para que el texto se lea sobre cualquier imagen.
+   "safe flex-end": si el bloque no entra entre el título y el pie, arranca
+   justo debajo del título y lo que sobra queda MÁS ABAJO (se llega
+   scrolleando) — con flex-end a secas sobresaldría hacia arriba, por
+   encima del título. El flex-end de la línea anterior es para navegadores
+   viejos que no entienden "safe". */
+.jb3-home-slider__overlay {
+    position: absolute;
+    top: var(--jb3-slider-titulo-top);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    justify-content: safe flex-end;
+    overflow: hidden;
+    pointer-events: none; /* El espacio vacío no tapa la imagen ni las flechas. */
+    z-index: 1; /* Por encima del degradé de arriba del slide. */
+    /* Anula lo que esta misma caja tenía antes de 2026-10-08 (padding,
+       degradé y max-height pasaron a .jb3-home-slider__contenido): si queda
+       una copia vieja del CSS dando vueltas (caché del navegador, o el CSS
+       crítico/único que arma LiteSpeed), no se suma a lo nuevo — pasó en
+       producción: margen doble a los costados y degradé en caja. */
+    max-height: none;
+    padding: 0;
+    background: none;
+}
+
+.jb3-home-slider__titulo + .jb3-home-slider__overlay {
+    top: calc(var(--jb3-slider-titulo-top) + var(--jb3-slider-titulo-alto) + 20px);
+}
+
+.jb3-home-slider__contenido {
+    flex-shrink: 0;
+    pointer-events: auto;
+    box-sizing: border-box;
+    padding: 24px var(--slider-text-padding-x);
+    /* El texto/botón/copyright tienen que verse SIN scrollear aunque la
+       imagen (que ya no tiene techo de pantalla) termine debajo del pliegue
+       y de la barra fija del pie (.jb3-footer-bar): el padding de abajo
+       crece exactamente lo que el borde inferior del slide se pasa de la
+       línea "alto visible − barra del pie". Alto del slide = ancho ×
+       proporción (100vw, el rotador es de ancho completo y arranca en el
+       tope de la página, detrás del header). Si el slide entra entero en
+       pantalla (mobile, tablet, monitores altos), max() da 0 y quedan los
+       24px de siempre. dvh (no vh): alto real visible en mobile. Si con ese
+       padding el bloque no entra debajo del título, gana el título (ver
+       arriba): el pie del bloque queda bajo el pliegue. */
+    padding-bottom: calc(24px + max(0px, var(--jb3-slider-ratio-actual) * 100vw + var(--jb3-slider-extra) + var(--jb3-adminbar-h, 0px) - 100dvh + var(--footer-bar-height)));
+    background: linear-gradient(to top, rgba(0, 0, 0, .85) 0%, rgba(0, 0, 0, 0) 60%);
+    color: #ffffff;
+}
+
+/* Desktop: mismo cálculo, pero el slide ahí tiene techo (alto de la
+   ventana, ver .jb3-home-slider-wrap en min-width:1024px) — su borde
+   inferior es el menor entre "alto natural de la imagen" y "alto visible". */
+@media (min-width: 1024px) {
+    .jb3-home-slider__contenido {
+        padding-bottom: calc(24px + max(0px, min(var(--jb3-slider-ratio-actual) * 100vw + var(--jb3-adminbar-h, 0px), 100dvh) - 100dvh + var(--footer-bar-height)));
+    }
+}
+
+/* Celular vertical: el slide mide justo el alto de la pantalla, así que su
+   pie coincide siempre con la barra fija — se reserva su alto y listo. */
+@media (max-width: 767px) and (orientation: portrait) {
+    .jb3-home-slider__contenido {
+        padding-bottom: calc(24px + var(--footer-bar-height));
+    }
+}
+
+/* Pantallas muy bajas (celular apaisado): el bloque de texto mide casi lo
+   mismo que toda la ventana — forzarlo a "entrar sin scrollear" lo hacía
+   chocar con el header. Ahí se deja al pie del slide y se llega scrolleando. */
+@media (max-height: 500px) and (max-width: 1023px) {
+    .jb3-home-slider__contenido {
+        padding-bottom: 24px;
+    }
+}
+
+/* Caja de tamaño fijo e igual para cualquier logo, sea vertical, horizontal
+   o cuadrado — la imagen se alinea a la izquierda (mismo borde que el
+   texto/botón de abajo) y se escala para entrar completa, sin recortar ni
+   estirar, sin necesidad de conocer la proporción de cada logo de
+   antemano. justify-content:flex-start (no "center"): con "center" un
+   logo angosto queda con aire a los dos lados y su borde izquierdo no
+   pega con el del texto — con flex-start siempre arranca en el mismo
+   punto, sea cual sea el ancho real del logo ya escalado.
+   Mismo patrón a reusar en cualquier "muro de marcas" (ej. sección
+   "Nuestras Marcas"/"Oportunidades Comerciales"). */
+.jb3-home-slider__canal-logo {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    /* --logo-w/--logo-h: inline por slide, calculados en PHP a partir del
+       campo ACF "logo_proporcion" del canal (ver jb3_slide_canal() en
+       inc/home-slider.php) — sin ese campo cargado, no vienen y se cae al
+       tamaño fijo de siempre. */
+    /* × --slider-logo-escala (1 en desktop/tablet, menor en mobile — ver
+       :root): --logo-w/--logo-h llegan en px calculados contra la caja de
+       DESKTOP, así que sin este factor los canales con "logo_proporcion"
+       cargada se veían a tamaño desktop en el celular. Un solo factor para
+       los dos casos (con y sin proporción). */
+    width: calc(var(--logo-w, var(--slider-logo-width)) * var(--slider-logo-escala));
+    height: calc(var(--logo-h, var(--slider-logo-height)) * var(--slider-logo-escala));
+    margin-bottom: 28px;
+}
+
+.jb3-home-slider__canal-logo img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+}
+
+.jb3-home-slider__texto {
+    max-width: 640px;
+    margin-bottom: 28px;
+}
+
+/* El editor WYSIWYG puede traer cualquier combinación de h1-h6/p (según lo
+   que pegue el que carga el slide, como el h1+h3 de este campo). Por
+   default h1-h6/p son "block" — SIEMPRE arrancan en un renglón nuevo, sin
+   importar cuánto se achique el margen o el line-height (eso solo reduce
+   el aire, no saca el salto de línea en sí). Para que el texto corra
+   seguido como un solo bloque, display:inline saca ese salto forzado —
+   el wrap pasa a depender nomás del ancho disponible, como un párrafo
+   normal. margin-right en vez de margin-bottom: separa un elemento del
+   siguiente con un espacio (en el HTML de origen no hay ninguno entre
+   </h1> y <h3>), no de abajo (ya no aplica con inline). Scopeado a este
+   contenedor nomás, sin tocar los títulos del resto del sitio. */
+.jb3-home-slider__texto h1,
+.jb3-home-slider__texto h2,
+.jb3-home-slider__texto h3,
+.jb3-home-slider__texto h4,
+.jb3-home-slider__texto h5,
+.jb3-home-slider__texto h6,
+.jb3-home-slider__texto p {
+    display: inline;
+    margin: 0;
+    line-height: 1.15;
+}
+
+.jb3-home-slider__texto > *:not(:last-child) {
+    margin-right: .35em;
+}
+
+/* En mobile, h1-h6 heredan el tamaño nativo de cada nivel (pensado para
+   texto de página, no para un slide de alto fijo) — con contenido largo
+   eso desborda el overlay (que corta con overflow:hidden) y llega a tapar
+   el botón/copyright. Mismo breakpoint que el resto del sitio usa para
+   mobile. */
+@media (max-width: 767px) {
+    .jb3-home-slider__texto h1,
+    .jb3-home-slider__texto h2,
+    .jb3-home-slider__texto h3,
+    .jb3-home-slider__texto h4,
+    .jb3-home-slider__texto h5,
+    .jb3-home-slider__texto h6,
+    .jb3-home-slider__texto p {
+        font-size: 18px;
+    }
+}
+
+/* Color del botón: lo pone inc/home-slider.php inline por slide vía
+   --jb3-slide-btn-bg/--jb3-slide-btn-bg-hover (ya resuelto con el fallback
+   a --color-primary/--color-secondary en PHP si el campo ACF vino vacío).
+   !important porque la regla global "a { color: var(--link-color) !important }"
+   le gana a cualquier color sin !important acá, sin importar la
+   especificidad de la clase (mismo criterio que ya usan en el footer). */
+.jb3-home-slider__btn {
+    display: inline-block;
+    padding: 10px 24px;
+    background: var(--jb3-slide-btn-bg);
+    color: var(--btn-text) !important;
+    text-decoration: none !important;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    border-radius: var(--btn-radius);
+    transition: background-color .2s ease, color .2s ease;
+}
+
+.jb3-home-slider__btn:hover,
+.jb3-home-slider__btn:focus-visible {
+    background: var(--jb3-slide-btn-bg-hover);
+    color: var(--btn-text-hover) !important;
+}
+
+.jb3-home-slider__copyright {
+    display: block;
+    margin-top: 28px;
+    font-size: 11px;
+    opacity: .6;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FONDO POR PÁGINA
+   Variables puestas por inc/backgrounds.php (hook wp_head) — la cascada
+   completa (override del post → default del tipo de contenido → genérico
+   del sitio → sin fondo) ya se resuelve ahí en PHP; acá solo se consume el
+   par final --jb3-bg-desktop/--jb3-bg-mobile, sin lógica por clase de body.
+   ═══════════════════════════════════════════════════════════════════════════ */
+body {
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    /* fixed (no scroll): "cover" se calcula contra el viewport, no contra el
+       alto total de la página — con contenido largo, sin esto el body se
+       vuelve mucho más alto que ancho y "cover" termina agrandando la
+       imagen para tapar ese alto, recortando casi todo el ancho. Como
+       beneficio extra, da el efecto de fondo fijo/detrás del nav que ya
+       estaba pensado para este tipo de páginas. */
+    background-attachment: fixed;
+    background-image: var(--jb3-bg-desktop, none);
+}
+
+@media (max-width: 767px) {
+    body {
+        background-image: var(--jb3-bg-mobile, var(--jb3-bg-desktop, none));
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SUBNAV DINÁMICA
+   Armada por inc/subnav.php ([jb3_subnav] + [jb3_subnav_anchor]) — todavía
+   sin sticky/scroll suave (paso siguiente, una vez que haya módulos reales
+   con los que probarla).
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-subnav {
+    background: var(--header-bg);
+    border-bottom: 1px solid rgba(255, 255, 255, .15);
+    /* Ancho completo propio (mismo truco que .jb3-contenedor) — sin esto,
+       al quedar como hijo suelto de .entry-content (shortcode [jb3_subnav]
+       puesto directo en el contenido), la regla de "bloque suelto" de más
+       abajo le agregaba 40px de padding arriba/abajo pensados para texto,
+       no para esta barra. Excluida de esa regla (ver
+       :not(.jb3-subnav) ahí) — este es su propio ancho completo, sin ese
+       padding de más. */
+    width: 100vw;
+    box-sizing: border-box;
+    position: relative;
+    left: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+}
+
+.jb3-subnav__menu {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    margin: 0;
+    padding: 10px var(--jb3-modulo-padding-x);
+}
+
+.jb3-subnav__link {
+    display: inline-block;
+    color: var(--nav-text) !important;
+    text-decoration: none !important;
+    /* Fijo, NO var(--nav-font-size)/--nav-font-weight: esas variables pasan a
+       los valores grandes/regular del panel mobile del header por debajo de
+       1279px (ver @media (max-width: 1279px) más arriba) — ese es el
+       breakpoint del hamburguesa del header, sin relación con esta subnav,
+       que tiene su propio breakpoint propio (se oculta recién a los 767px,
+       ver más abajo). Compartir la variable hacía que la subnav se viera
+       grande entre 768 y 1278px por accidente. */
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+.jb3-subnav__link:hover,
+.jb3-subnav__link:focus {
+    color: var(--nav-hover) !important;
+}
+
+/* En mobile no entra cómodo (muchos ítems envueltos en varias líneas,
+   ocupa demasiado alto arriba de todo) — se oculta directo, mismo
+   breakpoint que el resto del sitio. */
+@media (max-width: 767px) {
+    .jb3-subnav {
+        display: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOGO AUTOMÁTICO EN PÁGINAS DE CANAL (CPT pagina_canal, single-pagina_canal.php)
+   El resto del contenido de la página lo arma el editor de bloques libre —
+   esto es solo el logo, que sale solo del término vinculado (campo ACF
+   "canal") para no tener que volver a subirlo en cada página.
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* Sin padding propio a propósito, ver comentario grande de ".jb3-modulo" más
+   arriba — este div siempre lleva también la clase ".jb3-contenedor". */
+
+.jb3-canal-header__logo {
+    display: block;
+    max-width: 240px;
+    max-height: 120px;
+    width: auto;
+    height: auto;
+}
+
+.jb3-canal-redes {
+    display: flex;
+    gap: 16px;
+    padding: 16px var(--jb3-modulo-padding-x) 0;
+}
+
+.jb3-canal-redes__item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    color: #fff !important;
+    text-decoration: none !important;
+    opacity: .85;
+    transition: opacity .15s ease;
+}
+
+.jb3-canal-redes__item:hover {
+    opacity: 1;
+}
+
+.jb3-canal-redes__item svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Modificador para el bloque genérico "Redes Sociales" (jb3/redes-sociales)
+   usado suelto en cualquier página, ej. redes de un invitado/host — a
+   diferencia de la fila horizontal de solo íconos que usan los Canales
+   (arriba, sin tocar), acá va en lista vertical con el texto/handle de
+   cada fila al lado del ícono. */
+.jb3-canal-redes--lista {
+    flex-direction: column;
+    align-items: flex-start;
+    align-self: flex-start;
+    gap: 12px;
+    padding: 0;
+    margin-right: auto;
+}
+
+.jb3-canal-redes--lista .jb3-canal-redes__item {
+    width: auto;
+    height: auto;
+    justify-content: flex-start;
+    gap: 10px;
+}
+
+.jb3-canal-redes--lista .jb3-canal-redes__item svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.jb3-canal-redes__texto {
+    font-size: 15px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SLIDER "NUESTRAS MARCAS" (inc/canales-slider.php)
+   Mismo padding lateral (80/40/20) que el resto de los módulos. Caja de
+   tamaño fijo por logo (mismo patrón que .jb3-home-slider__canal-logo): la
+   imagen escala adentro sin recortar ni estirar, sea cual sea su proporción
+   real. slidesPerView:'auto' en el JS + ancho fijo acá = la cantidad de
+   logos visibles se ajusta sola a cualquier tamaño de pantalla.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-canales-slider {
+    padding: 40px var(--jb3-modulo-padding-x);
+}
+
+/* Título de módulo: mismo tratamiento en TODOS los módulos del sitio (acá y
+   en .jb3-modulo__titulo más abajo) — rayita vertical, 600, mayúsculas. Un
+   solo lugar para tocar el estilo si cambia a futuro. También el título de
+   cada Op. Comercial (pedido 2026-10-19), que es un <h1>: ver su tamaño en
+   .jb3-op-comercial__titulo. */
+.jb3-canales-slider__titulo,
+.jb3-modulo__titulo,
+.jb3-contenido-bloque__titulo,
+.jb3-op-comercial__titulo {
+    padding-left: 16px;
+    border-left: 6px solid var(--color-primary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+}
+
+/* Sin font-size propio, hereda el tamaño nativo de <h2> del navegador — en
+   mobile queda grande y palabras largas (ej. "PROGRAMACIÓN") no entran en
+   una línea y se ven cortadas. Mismo breakpoint mobile que el resto del
+   sitio. */
+@media (max-width: 767px) {
+    .jb3-canales-slider__titulo,
+    .jb3-modulo__titulo {
+        font-size: 22px;
+    }
+}
+
+.jb3-canales-slider__titulo {
+    margin: 0 0 20px;
+}
+
+.jb3-canales-slider__bajada {
+    margin: 0 0 20px;
+}
+
+.jb3-canales-slider__wrap {
+    /* Swiper necesita overflow:hidden propio para no desbordar el ancho del
+       contenedor mientras desliza — sin esto se ve todo el listado suelto.
+       OJO: nunca display:flex acá — Swiper necesita medir el ancho de ESTE
+       elemento (.swiper) tal cual lo da su propio padre para calcular el
+       tamaño de los slides; volverlo flex crea una dependencia circular y
+       el cálculo puede explotar a un tamaño absurdo. */
+    overflow: hidden;
+}
+
+/* Sin flechas (pedido 2026-10-16): avanza solo y se arrastra — ver
+   inc/canales-slider.php. */
+
+/* Ancho del slide: ya NO se fija acá — slidesPerView es numérico (ver
+   inc/canales-slider.php), Swiper reparte el ancho del contenedor exacto
+   entre esa cantidad. .jb3-canales-slider__logo con width:100% ocupa lo
+   que Swiper le asigne a cada slide, sea lo que sea. */
+.jb3-canales-slider__logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 105px;
+}
+
+.jb3-canales-slider__logo-img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+}
+
+/* Hover a color: solo los canales con página propia (jb3_canal_pagina_url())
+   Y con logo byn+color cargados los dos traen esta clase — el resto
+   muestra un único <img> normal, sin nada de esto. Logo byn y color
+   superpuestos en el mismo lugar (position:absolute, ambos ocupando toda
+   la caja) — position:relative en el link/span de arriba para que el
+   absolute de los <img> sea relativo a ESA caja, no a la página entera. */
+.jb3-canales-slider__logo--hover {
+    position: relative;
+}
+
+.jb3-canales-slider__logo--hover .jb3-canales-slider__logo-img {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    transition: opacity .25s ease;
+}
+
+.jb3-canales-slider__logo--hover .jb3-canales-slider__logo-img--hover {
+    opacity: 0;
+}
+
+.jb3-canales-slider__logo--hover:hover .jb3-canales-slider__logo-img--default {
+    opacity: 0;
+}
+
+.jb3-canales-slider__logo--hover:hover .jb3-canales-slider__logo-img--hover {
+    opacity: 1;
+}
+
+@media (max-width: 1023px) {
+    .jb3-canales-slider__logo {
+        height: 90px;
+    }
+}
+
+@media (max-width: 767px) {
+    .jb3-canales-slider__logo {
+        height: 75px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PÁGINA INDIVIDUAL DE OP. COMERCIAL (single-op_comerciales.php)
+   Único single-{cpt}.php del sitio con título visible (sin hero que le dé
+   identidad). Mismo padding lateral que el resto (--jb3-modulo-padding-x),
+   vía margin en vez de padding porque son varios elementos hermanos sueltos
+   (h1/div/div), no un único contenedor.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-op-comercial__titulo {
+    margin: 0 0 20px;
+    /* Es <h1> (el único título de la página), pero se ve igual que los
+       títulos de módulo, que son <h2>: mismo tamaño que el h2 del tema. El
+       resto del estilo (rayita, 600, mayúsculas) sale de la regla compartida
+       de títulos de módulo. */
+    font-size: 35px;
+    line-height: 1.2;
+}
+
+@media (max-width: 767px) {
+    .jb3-op-comercial__titulo {
+        font-size: 22px; /* Mismo tamaño que los títulos de módulo en mobile. */
+    }
+}
+
+.jb3-op-comercial__descripcion {
+    margin: 0 0 30px;
+}
+
+.jb3-op-comercial__pdf {
+    margin: 0;
+}
+
+/* Más aire alrededor del botón (pedido 2026-10-16): separado del PDF de
+   arriba y del módulo "Más oportunidades comerciales" de abajo (que ya trae
+   su propio espacio arriba; estos 48px se suman). */
+.jb3-op-comercial__pdf-descarga {
+    margin: 32px 0 48px;
+    text-align: center;
+}
+
+/* Bloque "Playlist de YouTube": botón "Ver playlist completa" debajo de la
+   grilla, centrado — mismo botón que "Descargar PDF" de arriba. */
+.jb3-playlist-youtube__mas {
+    margin: 32px 0 0;
+    text-align: center;
+}
+
+/* ─── Visor de PDF propio (inc/pdf-viewer.php) ────────────────────────────
+   Cada página del PDF es un <canvas> suelto, apilado uno debajo del otro
+   (scroll normal de la página, no del visor) — el navegador nunca "ve" que
+   es un PDF, así que ninguna extensión (Adobe Acrobat, etc.) tiene nada
+   que interceptar. */
+.jb3-pdf-viewer {
+    width: 100%;
+}
+
+.jb3-pdf-viewer__pagina {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .4);
+}
+
+.jb3-pdf-viewer__cargando,
+.jb3-pdf-viewer__error {
+    padding: 60px 20px;
+    text-align: center;
+    opacity: .7;
+}
+
+.jb3-pdf-viewer__login-cta {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.jb3-pdf-viewer__login-cta p {
+    margin: 0 0 16px;
+}
+
+/* Ingresar + Registrarte, uno al lado del otro con espacio entre sí */
+.jb3-pdf-viewer__login-cta .button {
+    margin: 0 6px;
+}
+
+/* Estado "sin sesión" (single-op_comerciales.php): miniatura destacada del
+   post en vez del PDF real — ver el comentario del template sobre por qué
+   el gate está ahí y no en el visor. */
+.jb3-pdf-viewer__preview {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MÓDULO DE CONTENIDO (inc/modulo.php)
+   SIN ancho ni padding propio a propósito, desde el rediseño del
+   2026-08-13: ".jb3-modulo" ya no maneja layout — depende de quién lo
+   imprima:
+   - jb3_relacionados_modulo() (Etiquetas/Relacionados) SÍ le suma
+     ".jb3-contenedor" directo, porque siempre se llama por PHP, fuera de
+     .entry-content, nunca insertable por el editor.
+   - jb3_modulo_render() ([jb3_modulo]/bloque "Módulo de Contenido") NO se
+     la suma sola — es insertable por Gutenberg en cualquier lugar
+     (adentro de un Grupo, de Columnas, etc.), y forzar el breakout ahí
+     rompía el layout al no poder escapar de un contenedor angosto. Queda
+     en manos del editor: si el módulo va suelto como hijo directo de
+     .entry-content, la regla de "bloque suelto" de más abajo ya lo
+     contiene; si necesita ir DENTRO de un Grupo/Columnas, envolverlo (o
+     dejarlo tal cual) con ".jb3-contenedor" en el bloque que lo contiene.
+   Ver ".jb3-contenedor" más abajo para el motor real.
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* El espacio entre un módulo y su hermano (adentro de un jb3-contenedor, o
+   de cualquier Grupo) ya NO se resuelve acá — pasó a ser una regla única y
+   general, la misma para cualquier tipo de bloque, en cualquier contexto.
+   Ver "ESPACIO ENTRE HERMANOS" más abajo (después de la regla de "bloque
+   suelto") — ahí está la explicación completa de por qué existía esta
+   regla puntual y por qué se unificó (2026-08-17). */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ANCHO POR DEFECTO DE UN BLOQUE SUELTO (sin ".jb3-contenedor" a mano)
+   Cualquier hijo directo de .entry-content queda CONTENIDO por defecto
+   (mismo ancho/padding que ".jb3-contenedor", ver más abajo) — no hace
+   falta que el editor arme un Grupo ni le ponga ninguna clase para que un
+   párrafo, una Imagen, un Módulo de Contenido, etc. se vean alineados con
+   el resto del sitio. Es la inversa del criterio viejo (todo suelto = a
+   pantalla completa por defecto, había que ACORDARSE de excluir cada
+   componente nuevo de una lista que no paraba de crecer) — ahora el
+   default es el caso común (contenido), y la lista de abajo son
+   ÚNICAMENTE los componentes que genuinamente necesitan pantalla completa
+   (Hero, Subnav) más los escapes nativos de Gutenberg (alignfull/alignwide).
+   ".jb3-modulo"/".jb3-canal-header" NO están acá: no lo necesitan, porque
+   siempre llevan pegada la clase ".jb3-contenedor" (ver comentario
+   arriba), que sí está excluida.
+   ".jb3-mw-*" TAMPOCO está excluida a propósito (2026-08-14, antes sí lo
+   estaba): ahora que jb3-mw-* es solo max-width sin ningún
+   posicionamiento propio, un jb3-mw-900px SUELTO (hijo directo de
+   .entry-content, sin ningún Grupo alrededor) necesita QUE ESTA regla lo
+   contenga igual que a cualquier otro bloque — si seguía excluida, se
+   quedaba sin padding de ningún lado (ni el propio, que ya no tiene; ni
+   este, por estar excluido) y terminaba pegado al borde real de la
+   pantalla. El max-width de jb3-mw-*px tiene !important puntualmente
+   para ganarle al max-width:100vw de acá abajo (ver esa regla).
+   ".alignleft"/".alignright" SÍ están excluidas (2026-08-16): son el
+   mecanismo nativo de Gutenberg para que una Imagen quede flotante y el
+   texto de alrededor la rodee (float, no requiere ninguna clase nuestra)
+   — si esta regla les forzaba width:100vw, el float se rompía de raíz (una
+   imagen "flotante" a pantalla completa no tiene espacio al lado para que
+   nada la rodee).
+   SOLO padding LATERAL acá (2026-08-17, antes también traía padding
+   arriba/abajo): el espacio VERTICAL entre bloques ya no es trabajo de
+   esta regla — lo resuelve, con un solo valor, la regla "ESPACIO ENTRE
+   HERMANOS" de más abajo. Mezclar los dos acá era la causa de raíz de que
+   dos bloques sueltos consecutivos quedaran separados por 80px (40 de
+   cada uno) en vez de 40. El espacio antes/después del PRIMER/ÚLTIMO
+   bloque de la página lo pone el padding-top/bottom de ".entry-content"
+   mismo (ver ahí abajo), no cada bloque.
+   ".jb3-a-center"/".jb3-a-right" SÍ están excluidas (2026-08-17): esas dos
+   clases centran/alinean con "margin:auto" puro, asumiendo que NADA más
+   les toca la posición — pero esta regla les forzaba SU PROPIO
+   margin:-50vw (con !important de los dos lados, gana la que tenga más
+   especificidad: esta regla, con siete ":not()", le ganaba a la clase
+   simple) y además "left:50%", así que un Grupo suelto con
+   "jb3-mw-900px jb3-a-center" (sin envolver en jb3-contenedor) quedaba
+   pegado al borde izquierdo en vez de centrado. Bug real confirmado
+   2026-08-17 en la página de Perfil. Sin esta regla encima, estos dos
+   quedan en el flujo normal del documento — ".entry-content" (ancho
+   completo, sin contenedor que lo limite) ya les da un ancho real contra
+   el que centrarse con margin:auto, sin necesitar ningún truco de vw. */
+.entry-content > *:not(.jb3-contenedor):not(.jb3-hero):not(.jb3-subnav):not(.alignfull):not(.alignwide):not(.alignleft):not(.alignright):not(.jb3-a-center):not(.jb3-a-right) {
+    box-sizing: border-box;
+    width: 100vw;
+    max-width: 100vw;
+    position: relative;
+    left: 50%;
+    /* !important en los dos margin: el editor de bloques (con iframe,
+       api_version 3) resetea el margin-left de cualquier bloque suelto
+       dentro de .is-root-container para su propio manejo de espaciado —
+       sin !important, ese reset le gana a este margin-left:-50vw y el
+       breakout deja de aplicarse (aunque "left:50%" sí se respeta), el
+       bloque queda desplazado en vez de centrado/a pantalla completa.
+       Bug real detectado 2026-08-14 al confirmarlo con DevTools dentro
+       del iframe: computed margin-left daba 0px en vez de -50vw. */
+    margin-left: -50vw !important;
+    margin-right: -50vw !important;
+    padding-left: var(--jb3-modulo-padding-x);
+    padding-right: var(--jb3-modulo-padding-x);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ESPACIO ENTRE HERMANOS — sistema único (2026-08-17)
+   Antes había TRES comportamientos de espaciado vertical distintos según
+   dónde estuviera el contenido: bloques sueltos en .entry-content sumaban
+   80px entre sí (40+40, cada uno con su propio padding); dentro de un
+   jb3-contenedor había una regla aparte que evitaba esa suma pero SOLO
+   para ".jb3-modulo"; y dentro de un Grupo simple (sin jb3-contenedor) NO
+   había ninguna regla — el espacio quedaba librado a las sobras de margin
+   que cada componente tuviera de casualidad (a veces 12px, a veces 0).
+   Bug real confirmado 2026-08-17 en la página de Aventura Gastronómica:
+   "HOST" (Título y Bajada) + 2 "Tarjeta" de video, las tres sueltas
+   adentro de un Grupo simple — el primer video quedaba a 12px del título
+   (el margen propio que le quedaba al título, no un espacio pensado) y el
+   segundo video pegado al primero, sin nada de por medio.
+
+   Ahora es UNA sola regla, mismo valor (40px), sin importar el contexto:
+   bloques sueltos en .entry-content, agrupados en un Grupo simple, o
+   agrupados en un jb3-contenedor — todos usan el mismo selector "hermano
+   siguiente" (* + *), que de por sí NUNCA aplica al primero de la lista
+   (no tiene hermano anterior) — por eso ya no hace falta ":not(:first-
+   child)" en ningún lado ni pensar caso por caso.
+
+   EXCLUYE a propósito los contenedores de GRILLA (jb3-cols-*,
+   jb3-grid-posters, jb3-grid-thumbs): esos separan sus celdas con "gap"
+   de CSS Grid, en fila, no en columna — sumarles este margin-top además
+   del gap correría hacia abajo a las celdas que no son la primera de cada
+   fila, rompiendo el alineado de la grilla.
+
+   El espacio ANTES del primer bloque NO es incondicional (2026-08-17,
+   bug real confirmado en la Home): si el primer hijo es el Hero o la
+   Subnav, esos dos se posicionan solos — el Hero en particular usa un
+   margin-top NEGATIVO calibrado para meterse detrás del header (ver
+   ".jb3-hero" más arriba), calculado asumiendo que no hay padding antes.
+   Un padding-top incondicional en .entry-content corría ese cálculo de
+   más, y el hero dejaba de tocar el borde real de la pantalla. */
+.entry-content {
+    padding-bottom: 40px;
+}
+
+/* Espacio entre el header/nav y el primer bloque de contenido de la página
+   — a propósito SEPARADO del espacio entre bloques hermanos de más abajo
+   (.entry-content > * + *, sigue en 40px): pedido explícito 2026-08-24 de
+   que este espacio inicial sea mayor, sin agrandar la separación entre
+   módulos ya establecida en el resto de la página. */
+.entry-content > *:first-child:not(.jb3-hero):not(.jb3-subnav) {
+    margin-top: 64px;
+}
+
+.entry-content > * + *,
+.wp-block-group:not([class*="jb3-cols-"]) > .wp-block-group__inner-container > * + * {
+    margin-top: 40px;
+}
+
+/* Utilidad genérica de ancho máximo — SOLO max-width, ninguna otra
+   propiedad (2026-08-14: antes traía también el breakout a pantalla
+   completa + margin negativo, se sacó a propósito). Esta clase no hace
+   ningún tipo de posicionamiento ni escapa de nada — si el bloque
+   necesita además escapar del ancho angosto que Gutenberg le pone por
+   defecto a un bloque suelto, o alinearse con el margen real del resto
+   del sitio, envolverlo en un Grupo con la clase "jb3-contenedor" (ver
+   más abajo) y poner jb3-mw-*px en el bloque de ADENTRO — cada clase
+   hace una sola cosa, se combinan según haga falta.
+   Nomenclatura: jb3-mw-{valor en px} para un ancho fijo, jb3-mw-{valor sin
+   unidad} para un porcentaje del contenedor (ver más abajo). Se aplica en
+   el editor: seleccionar el bloque → panel derecho → Avanzado → "Clases
+   CSS adicionales" → escribir jb3-mw-600px / -900px / -1200px / -25 / -40
+   / -50 / -60.
+   El selector [class*="jb3-mw-"] de la regla de "bloque suelto" más
+   arriba matchea CUALQUIER clase que empiece así, así que agregar un
+   ancho nuevo a futuro (fijo o porcentual) no requiere tocar esa
+   exclusión, solo sumarlo acá abajo. */
+/* !important: la regla genérica de "bloque suelto" de arriba ya no
+   excluye a jb3-mw-*, así que cuando ambas matchean el mismo elemento
+   (un jb3-mw-900px suelto, hijo directo de .entry-content), hay dos
+   max-width en juego — el de esa regla (100vw, más específica por tener
+   varios :not()) le ganaría a este si no fuera por el !important. */
+.jb3-mw-600px {
+    max-width: 600px !important;
+}
+
+.jb3-mw-900px {
+    max-width: 900px !important;
+}
+
+.jb3-mw-1200px {
+    max-width: 1200px !important;
+}
+
+/* Mismo patrón que las de arriba, pero relativo al contenedor en vez de un
+   valor fijo (ej. "la mitad del contenedor" en vez de "900px siempre").
+   Nomenclatura: con "px" al final = valor fijo en píxeles (jb3-mw-900px);
+   sin "px" = porcentaje (jb3-mw-50 = max-width:50%) — el mismo selector
+   [class*="jb3-mw-"] de la regla de "bloque suelto" de arriba cubre a las
+   dos formas por igual, así que agregar un porcentaje nuevo a futuro
+   tampoco requiere tocar esa exclusión. */
+.jb3-mw-25 {
+    max-width: 25% !important;
+}
+
+.jb3-mw-40 {
+    max-width: 40% !important;
+}
+
+.jb3-mw-50 {
+    max-width: 50% !important;
+}
+
+.jb3-mw-60 {
+    max-width: 60% !important;
+}
+
+/* Modificadores de alineación horizontal — para un bloque con jb3-mw-*px
+   que esté DENTRO de un contenedor ya posicionado (ej. un Grupo con
+   jb3-contenedor, o directamente hijo de .entry-content, que ya viene
+   contenido por defecto). Técnica estándar de margin:auto — nada de vw
+   ni matemática, porque acá el padre ya resuelve el ancho/posición real,
+   este bloque solo necesita alinearse DENTRO de eso.
+     - jb3-a-left   (default, no hace falta la clase): el bloque queda
+                     pegado al borde izquierdo de su contenedor.
+     - jb3-a-center: centra el bloque dentro de su contenedor — para una
+                     "isla" de contenido standalone (ej. un formulario).
+     - jb3-a-right:  el bloque queda pegado al borde derecho de su
+                     contenedor.
+   OJO no combinar jb3-a-center/jb3-a-right con jb3-contenedor en el
+   MISMO bloque: jb3-contenedor ya fuerza su propia posición (ancla a la
+   izquierda por diseño) y pisaría este margin:auto. Para un "isla"
+   centrada, la jerarquía correcta es Grupo(jb3-contenedor) >
+   bloque(jb3-mw-900px jb3-a-center) — el de afuera pone el límite real
+   de ancho/padding, el de adentro se alinea dentro de ese límite. */
+.jb3-a-center {
+    /* !important: el editor de bloques resetea el margin-left de
+       cualquier bloque suelto — ver comentario largo en
+       ".entry-content > *:not(...)" más arriba, mismo motivo acá. */
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+.jb3-a-right {
+    margin-left: auto !important;
+    margin-right: 0 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UTILIDAD: CONTENEDOR CON EL MISMO MARGEN QUE LOS MÓDULOS
+   Para páginas de contenido libre (páginas de canal, single-pagina_canal.php,
+   y similares): se aplica
+   a mano en el editor de bloques a un bloque Grupo — Configuración del
+   bloque → Avanzado → "Clases CSS adicionales" → escribir jb3-contenedor.
+   Cualquier bloque DENTRO de ese Grupo queda alineado 80/40/20 igual que
+   el resto de los módulos del sitio. Sin la clase, el bloque va a
+   pantalla completa sin márgenes — es la opción por defecto a propósito,
+   para poder elegir por bloque.
+   No usar esta clase alrededor del shortcode [jb3_modulo]: ese módulo ya
+   trae su propio padding (.jb3-modulo arriba) y se duplicaría.
+
+   El truco width:100vw + margin -50vw rompe el ancho de contenido
+   acotado que Gutenberg le pone por defecto a un bloque Grupo (una caja
+   angosta centrada) — SIN esto el padding de acá arriba quedaba aplicado
+   adentro de esa caja chica en vez de contra el borde real de la
+   pantalla (confirmado con DevTools: el padding se calculaba bien, pero
+   la caja en sí no llegaba a los bordes). Así no hace falta acordarse de
+   marcar "Ancho completo" en el bloque cada vez — funciona siempre.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-contenedor {
+    box-sizing: border-box;
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    /* !important: el editor de bloques resetea margin-left de cualquier
+       bloque suelto — ver comentario largo en ".entry-content > *:not(...)"
+       más arriba, mismo motivo acá. */
+    margin-left: -50vw !important;
+    padding: 40px var(--jb3-modulo-padding-x);
+}
+
+/* Bug real confirmado 2026-08-20 en single-peliculas.php (y cualquier otro
+   single-{cpt}.php con el mismo patrón): "Oportunidades Comerciales"
+   (jb3_relacionados_auto()) y "Etiquetas" se imprimen DESPUÉS del
+   <article>, pero AFUERA de .entry-content (hermanos, no hijos) — el
+   sistema de espaciado unificado de arriba (.entry-content > * + *) no los
+   alcanza, y en cambio se suma el padding-bottom de .entry-content (40px)
+   con el padding-top propio de .jb3-contenedor (40px más) = 80px, el doble
+   de lo que usa el resto del sitio. Se saca el padding-top SOLO acá (el
+   primer módulo pegado al <article>), sin tocar .jb3-contenedor en
+   cualquier otro lugar donde se usa (páginas de canal, etc.), que sigue
+   necesitando su espacio completo cuando no viene después de un <article>. */
+#jb3-main-content > article + .jb3-contenedor {
+    padding-top: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UTILIDAD: MENSAJE CENTRADO (404, "sin resultados", cualquier pantalla que
+   sea solo un aviso en vez de contenido real)
+   Centra horizontal Y verticalmente dentro del alto disponible de la
+   pantalla (100dvh menos el header, que es sticky) — con el mismo padding
+   lateral que el resto del sitio. Pensada para reusar en cualquier mensaje
+   de este tipo que aparezca a futuro (permiso denegado, carrito vacío, lo
+   que sea): sumar la clase "jb3-mensaje-centrado" al contenedor que
+   envuelve el aviso (ya la usa 404.php).
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-mensaje-centrado {
+    box-sizing: border-box;
+    min-height: calc(100dvh - var(--header-height));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px var(--jb3-modulo-padding-x);
+}
+
+.jb3-mensaje-centrado .search-form {
+    display: flex;
+    justify-content: center;
+}
+
+/* Mismo valor en los dos (2026-08-17, antes 12px/20px distintos): título→
+   bajada y bajada→contenido (grilla, imagen de Programación, etc.) son las
+   dos la misma clase de espacio — partes de UN módulo, no bloques
+   independientes — así que tienen que verse igual de separadas entre sí,
+   no una más apretada que la otra. */
+.jb3-modulo__titulo {
+    margin: 0 0 20px;
+}
+
+.jb3-modulo__bajada {
+    margin: 0 0 20px;
+}
+
+/* El contenido real del WYSIWYG (h1-h6/p, ej. el <h4><strong> de "Sony
+   Channel") queda ANIDADO adentro de este div, no en el div mismo — un
+   font-size acá no le pega al heading de adentro, que tiene su propio
+   tamaño nativo del navegador (más específico que heredar del padre). En
+   mobile ese tamaño nativo queda enorme y tapa el header. */
+@media (max-width: 767px) {
+    .jb3-modulo__bajada h1,
+    .jb3-modulo__bajada h2,
+    .jb3-modulo__bajada h3,
+    .jb3-modulo__bajada h4,
+    .jb3-modulo__bajada h5,
+    .jb3-modulo__bajada h6,
+    .jb3-modulo__bajada p {
+        font-size: 16px;
+    }
+}
+
+/* Imagen full-bleed del bloque "Programación" (blocks/programacion) — mismo
+   truco de ancho completo que .jb3-contenedor. */
+.jb3-programacion__imagen {
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    margin-top: 20px;
+}
+
+.jb3-programacion__imagen img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.jb3-modulo__ver-mas {
+    margin: 24px 0 0;
+    text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GRILLAS DE CONTENIDO (inc/grids.php)
+   Posters: vertical (2/3, tipo afiche de película), hasta 4 en desktop.
+   Thumbs: horizontal (3/2), hasta 3 en desktop, con ícono de play opcional.
+   Mismas proporciones que ya usa la miniatura del listado de admin
+   (inc/admin-columns.php: 50x75 posters, 60x40 thumbs) para que el
+   recorte se vea consistente en todos lados.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-grid-posters,
+.jb3-grid-thumbs {
+    display: grid;
+    gap: 40px;
+}
+
+/* --jb3-grid-cols: cantidad de columnas en desktop — inline, solo cuando
+   jb3_grid_posters()/jb3_grid_thumbs() reciben un $columnas explícito (ver
+   inc/grids.php); el fallback de var() de acá abajo es EL MISMO valor que
+   ya estaba a mano antes de esto (5 posters / 3 thumbs), así que una grilla
+   sin $columnas se ve idéntica a como se veía siempre. Tablet/mobile no
+   dependen de esta variable a propósito — quedan fijos (ver breakpoints).
+   4 en vez de 5 (cambiado 2026-09-04): múltiplo de las 2 columnas de
+   mobile, así el default "natural" (sin pedir ninguna cantidad puntual de
+   contenido) ya evita el huérfano solo, sin tener que acordarse de elegir
+   un límite par cada vez. */
+.jb3-grid-posters {
+    grid-template-columns: repeat(var(--jb3-grid-cols, 4), 1fr);
+}
+
+.jb3-grid-thumbs {
+    grid-template-columns: repeat(var(--jb3-grid-cols, 3), 1fr);
+}
+
+@media (max-width: 1023px) {
+    .jb3-grid-posters { grid-template-columns: repeat(3, 1fr); }
+    .jb3-grid-thumbs  { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COLUMNAS RESPONSIVE GENÉRICAS (jb3-cols-N)
+   Para cualquier Grupo nativo de Gutenberg que necesite varias columnas con
+   el MISMO quiebre responsive que el resto del sitio (arriba) — sirve tanto
+   para una grilla de ítems repetidos (varios bloques "Tarjeta" adentro)
+   como para columnas de contenido LIBRE y distinto entre sí (ej. una imagen
+   en una celda, un párrafo en la otra — el caso "Host: imagen + bio"). A
+   diferencia del bloque nativo "Columnas" (arma sus columnas con flexbox y
+   un solo quiebre fijo a 600px, sin paso intermedio en tablet — el bug que
+   motivó esto), acá cada hijo directo del Grupo es una celda de CSS Grid,
+   sin importar qué bloques tenga adentro cada una.
+   Se aplica en el editor: seleccionar el bloque Grupo → Avanzado → "Clases
+   CSS adicionales" → jb3-cols-2 / -3 / -4 / -6 / -8.
+   Quiebres pensados como punto de partida (mitad en tablet, 1 en mobile) —
+   fáciles de ajustar acá si algún caso puntual necesita otra densidad.
+   ">.wp-block-group__inner-container", no la clase directa: el bloque
+   Grupo de Gutenberg envuelve sus hijos reales en ese div extra (mismo
+   motivo que ".jb3-contenedor .jb3-modulo" más abajo usa selector
+   descendiente en vez de hijo directo) — el display:grid tiene que vivir
+   ahí, si no el Grupo tiene un solo hijo (el inner-container) y las
+   columnas nunca se ven. Confirmado armando el bloque a mano con
+   do_blocks() y mirando el HTML real, 2026-08-16. */
+[class*="jb3-cols-"] > .wp-block-group__inner-container {
+    display: grid;
+    gap: 40px;
+}
+
+.jb3-cols-2 > .wp-block-group__inner-container { grid-template-columns: repeat(2, 1fr); }
+.jb3-cols-3 > .wp-block-group__inner-container { grid-template-columns: repeat(3, 1fr); }
+.jb3-cols-4 > .wp-block-group__inner-container { grid-template-columns: repeat(4, 1fr); }
+.jb3-cols-5 > .wp-block-group__inner-container { grid-template-columns: repeat(5, 1fr); }
+.jb3-cols-6 > .wp-block-group__inner-container { grid-template-columns: repeat(6, 1fr); }
+.jb3-cols-8 > .wp-block-group__inner-container { grid-template-columns: repeat(8, 1fr); }
+
+@media (max-width: 1023px) {
+    .jb3-cols-3 > .wp-block-group__inner-container { grid-template-columns: repeat(2, 1fr); }
+    .jb3-cols-4 > .wp-block-group__inner-container { grid-template-columns: repeat(2, 1fr); }
+    .jb3-cols-5 > .wp-block-group__inner-container { grid-template-columns: repeat(3, 1fr); }
+    .jb3-cols-6 > .wp-block-group__inner-container { grid-template-columns: repeat(3, 1fr); }
+    .jb3-cols-8 > .wp-block-group__inner-container { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* gap:20px acá (en vez de los 40px de desktop/tablet): en mobile hay menos
+   ancho para repartir, y jb3-grid-posters/jb3-cols-2 siguen mostrando 2
+   columnas a este tamaño — con 40px de gap les queda poco espacio real a
+   los contenidos. Pedido explícito 2026-08-17. */
+@media (max-width: 767px) {
+    [class*="jb3-cols-"] > .wp-block-group__inner-container {
+        grid-template-columns: repeat(1, 1fr);
+        gap: 20px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BLOQUE "GRILLA" (blocks/grilla) — columnas configurables por número,
+   InnerBlocks real. Mismos 40/40/20px de gap que el resto del sitio.
+   Las tres variables --jb3-grilla-cols-* las pone render.php inline, según
+   los campos gr_columnas_desktop/tablet/mobile del bloque — cada
+   instancia del bloque puede tener su propio número de columnas por
+   breakpoint, por eso son variables por-instancia (inline), no clases
+   fijas como jb3-cols-N.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-grilla {
+    display: grid;
+    grid-template-columns: repeat(var(--jb3-grilla-cols-desktop, 3), 1fr);
+    gap: 40px;
+}
+
+@media (max-width: 1023px) {
+    .jb3-grilla {
+        grid-template-columns: repeat(var(--jb3-grilla-cols-tablet, 2), 1fr);
+    }
+}
+
+@media (max-width: 767px) {
+    .jb3-grilla {
+        grid-template-columns: repeat(var(--jb3-grilla-cols-mobile, 1), 1fr);
+        gap: 20px;
+    }
+}
+
+/* min-width:0: mismo motivo que #page más arriba — un hijo ancho adentro
+   de un ítem (una imagen grande sin object-fit, por ejemplo) puede
+   empujar esa columna de grid más allá de su 1fr si no se le pone este
+   freno explícito. */
+.jb3-grilla__item {
+    min-width: 0;
+    grid-column-start: var(--jb3-grilla-gc-desktop, auto);
+}
+
+@media (max-width: 1023px) {
+    .jb3-grilla__item { grid-column-start: var(--jb3-grilla-gc-tablet, auto); }
+}
+
+@media (max-width: 767px) {
+    .jb3-grilla__item { grid-column-start: var(--jb3-grilla-gc-mobile, auto); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GAP DEL SITIO EN CUALQUIER LAYOUT "CUADRÍCULA" NATIVO DE GUTENBERG
+   Para cuando el editor arma la grilla con el panel nativo del bloque
+   (Ajustes → Diseño → Cuadrícula) en vez de la clase jb3-cols-N de acá
+   arriba — mismo resultado visual, sin que el editor tenga que acordarse de
+   ninguna clase.
+   WordPress le pone gap:0.5em a CUALQUIER bloque con layout grid con esta
+   regla nativa: ":where(.is-layout-grid){gap: 0.5em;}" — el ":where()" es
+   a propósito de WordPress (especificidad CERO), pensado justo para que un
+   tema lo pise fácil con un selector normal, sin hacer falta !important acá.
+   Mismos 40px/20px que el resto de las grillas del sitio (jb3-grid-thumbs,
+   jb3-cols-N) para que se vea igual sea cual sea el mecanismo que usó el
+   editor para armar la grilla. */
+.is-layout-grid {
+    gap: 40px;
+}
+
+@media (max-width: 767px) {
+    .is-layout-grid {
+        gap: 20px;
+    }
+}
+
+@media (max-width: 767px) {
+    .jb3-grid-posters,
+    .jb3-grid-thumbs {
+        gap: 20px;
+    }
+    .jb3-grid-posters { grid-template-columns: repeat(2, 1fr); }
+    .jb3-grid-thumbs  { grid-template-columns: repeat(1, 1fr); }
+}
+
+/* "Te puede interesar" de posters (inc/etiquetas.php, 2026-10-01).
+   REGLA DEL USUARIO: siempre filas completas, nunca un poster suelto en la
+   última fila. Trae 6 y se ven según la pantalla:
+     ≥ 1600px                         6 en una fila (--jb3-grid-cols:6 inline)
+     1024–1599px                      4 en una fila (1024 → ~186px, 1599 → ~330px)
+     tablet (768–1023px, 3 columnas)  6, en 2 filas de 3
+     celular (≤ 767px, 2 columnas)    4, en 2 filas de 2
+   Corte en 1600 (antes 1280, cambiado el mismo día): con 6 por fila, por
+   debajo de 1600 los títulos largos del catálogo ("Ghostbusters Apocalipsis
+   Fantasma", "...aventura gastronomica argentina") quedaban en 3 líneas.
+   Medido con los títulos más largos: desde 1280 hasta arriba ninguno pasa
+   de 2 líneas. Única excepción: 1024–1279 con palabras muy anchas en
+   mayúsculas ("GASTRONOMICA") — ahí ya no hay menos columnas pares posibles.
+   Se probó antes con 8 en una fila en desktop: en notebooks (1280-1600px)
+   los posters quedaban de 116-153px, demasiado chicos. Los ocultos no se
+   descargan (carga diferida). El sizes de las imágenes cuenta 6 columnas
+   en todo desktop: entre 1024 y 1599 (4 columnas) pide de menos, pero la
+   copia que elige igual alcanza (400 en pantallas comunes, 800 en retina). */
+@media (min-width: 1024px) and (max-width: 1599px) {
+    .jb3-relacionados--6 .jb3-grid-posters {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    .jb3-relacionados--6 .jb3-grid-posters__item:nth-child(n+5) {
+        display: none;
+    }
+}
+
+@media (max-width: 767px) {
+    .jb3-relacionados--6 .jb3-grid-posters__item:nth-child(n+5) {
+        display: none;
+    }
+}
+
+.jb3-grid-posters__item,
+.jb3-grid-thumbs__item {
+    display: block;
+    position: relative;
+    color: var(--body-text) !important;
+    text-decoration: none !important;
+}
+
+/* Crecimiento real (no recortado) — la imagen se agranda de verdad, por
+   encima de la celda vecina. */
+.jb3-grid-posters__media,
+.jb3-grid-thumbs__media {
+    display: block;
+    position: relative;
+}
+
+/* Cintillo (pedido 2026-09-07): etiqueta chica arriba a la izquierda del
+   afiche/miniatura — "NUEVO", "EN CINES", "PRÓXIMAMENTE", o el título de
+   Renta/Alquiler activo (jb3_grid_cintillo_texto(), inc/grids.php).
+   Reusado por las 3 grillas (posters/thumbs/mixto), todas con __media en
+   position:relative ya de por sí. z-index:1: sin esto, el zoom del hover en
+   la imagen (que crece de verdad, no recortado — ver arriba) puede
+   terminar tapándolo según el orden de pintado. */
+.jb3-grid-cintillo {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    max-width: calc(100% - 8px);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    background: var(--color-primary);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    padding: 4px 10px;
+    border-radius: 0 0 6px 0;
+    transition: top var(--jb3-zoom-duracion) ease, left var(--jb3-zoom-duracion) ease;
+}
+
+/* Al pasar el mouse la imagen crece desde el centro, así que su esquina
+   superior izquierda se corre hacia afuera la mitad de lo que crece (1.03 →
+   1,5%). El cintillo se corre lo mismo, a la misma velocidad, y sigue pegado
+   a la esquina (pedido 2026-10-16). top/left en %: se miden contra el alto y
+   el ancho de la imagen, igual que el agrandamiento. */
+.jb3-grid-posters__item:hover .jb3-grid-cintillo,
+.jb3-grid-thumbs__item:hover .jb3-grid-cintillo,
+.jb3-grid-mixto__item:hover .jb3-grid-cintillo {
+    top: calc((1 - var(--jb3-zoom-escala)) / 2 * 100%);
+    left: calc((1 - var(--jb3-zoom-escala)) / 2 * 100%);
+}
+
+.jb3-grid-posters__item:hover,
+.jb3-grid-thumbs__item:hover {
+    z-index: 2;
+}
+
+.jb3-grid-posters__media img,
+.jb3-grid-thumbs__media img {
+    transition: transform var(--jb3-zoom-duracion) ease;
+}
+
+.jb3-grid-posters__item:hover img,
+.jb3-grid-thumbs__item:hover img {
+    transform: scale(var(--jb3-zoom-escala));
+}
+
+.jb3-grid-posters__media img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+}
+
+/* 16:9 (antes 3:2, cambiado 2026-10-01): es la proporción en la que ya se
+   suben los thumbs de videos, integraciones y Op. Comerciales (1920×1080,
+   2400×1350) — con 3:2 se les recortaban los costados. Medida a pedir al
+   diseñador: ver inc/imagenes.php. */
+.jb3-grid-thumbs__media img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+}
+
+.jb3-grid-posters__titulo,
+.jb3-grid-thumbs__titulo {
+    display: block;
+    margin-top: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GRILLA MIXTA (jb3_grid_mixto(), inc/grids.php)
+   Para listados de tipos heterogéneos que necesitan mantener su orden
+   original (ej. resultados de búsqueda por relevancia) — jb3_modulo_render()
+   ya resuelve el caso "posters + thumbs" separando en dos grillas prolijas,
+   pero eso reordena el contenido por tipo; acá no se puede. Cada item
+   conserva su propia proporción (afiche 2/3 o miniatura 3/2, ver
+   --poster/--thumb abajo). Masonry real por JS (assets/js/grid-mixto-masonry.js):
+   cada item se coloca con position:absolute en la columna que en ESE
+   momento tiene menos altura acumulada — mismo algoritmo que usan
+   librerías tipo Masonry.js, sin depender de ninguna.
+   Se probaron y se descartaron otras 2 variantes antes de esta el
+   2026-08-28:
+   1) column-count: ordena de arriba a abajo por columna y, cuando la
+      cantidad de items no cierra pareja, deja columnas más cortas que
+      otras con un hueco visible al lado.
+   2) CSS Grid con grid-row-end:span calculado por JS: cuando dos columnas
+      de la misma fila terminaban a alturas ligeramente distintas, el
+      auto-posicionamiento de Grid mandaba el siguiente item a la primera
+      columna con hueco libre, no la que le tocaba en orden — se veía
+      desalineado, "en cualquier lado".
+   position:absolute con columna elegida a mano en JS no tiene ninguno de
+   los dos problemas: el orden y la columna de cada item son 100%
+   determinísticos.
+   Pedido explícito 2026-08-28: los resultados del buscador recortaban los
+   afiches (Garfield, Peter Rabbit) al forzarlos al formato horizontal de
+   jb3_grid_thumbs(), pensado para Op.Comerciales/Videos/Integraciones.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-grid-mixto {
+    position: relative; /* ancla a los items, que son position:absolute */
+    --jb3-mixto-cols: var(--jb3-grid-cols, 4);
+    --jb3-mixto-gap: 40px;
+}
+
+@media (max-width: 1023px) {
+    .jb3-grid-mixto { --jb3-mixto-cols: 3; }
+}
+
+@media (max-width: 767px) {
+    .jb3-grid-mixto { --jb3-mixto-cols: 2; --jb3-mixto-gap: 20px; }
+}
+
+/* left/top/width los pone grid-mixto-masonry.js — top:0 acá es solo el
+   valor inicial antes de que el script corra la primera vez. */
+.jb3-grid-mixto__item {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: var(--body-text) !important;
+    text-decoration: none !important;
+}
+
+.jb3-grid-mixto__item:hover {
+    z-index: 2;
+}
+
+/* Mismo criterio que posters/thumbs: la imagen crece de verdad al hacer
+   hover, por encima de la celda vecina (nada de overflow:hidden acá). */
+.jb3-grid-mixto__media {
+    display: block;
+    position: relative;
+}
+
+.jb3-grid-mixto__media img {
+    display: block;
+    width: 100%;
+    transition: transform var(--jb3-zoom-duracion) ease;
+}
+
+.jb3-grid-mixto__item:hover .jb3-grid-mixto__media img {
+    transform: scale(var(--jb3-zoom-escala));
+}
+
+.jb3-grid-mixto__item--poster .jb3-grid-mixto__media img {
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+}
+
+.jb3-grid-mixto__item--thumb .jb3-grid-mixto__media img {
+    aspect-ratio: 16 / 9; /* mismo criterio que .jb3-grid-thumbs (ver arriba) */
+    object-fit: cover;
+}
+
+.jb3-grid-mixto__titulo {
+    display: block;
+    margin-top: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESULTADOS DE BÚSQUEDA (search.php)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-search-sin-resultados {
+    padding: 20px 0 40px;
+    opacity: .8;
+}
+
+.jb3-search-pagination {
+    margin-top: 40px;
+}
+
+.jb3-search-pagination .page-numbers {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    margin-right: 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, .06);
+    color: #ffffff !important;
+    text-decoration: none !important;
+}
+
+.jb3-search-pagination .page-numbers.current {
+    background: var(--color-primary);
+}
+
+.jb3-search-pagination .page-numbers:hover:not(.current) {
+    background: rgba(255, 255, 255, .14);
+}
+
+.jb3-grid-thumbs__play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, .25);
+    pointer-events: none;
+    transition: transform var(--jb3-zoom-duracion) ease;
+}
+
+/* Sin esto, al crecer la imagen (scale) este overlay se queda en el
+   tamaño original — el anillo que la imagen gana de más queda sin el
+   oscurecido semitransparente, y ESO es el "borde más claro" que se veía.
+   Con el mismo scale acá, crece exactamente igual que la imagen.
+   jb3_grid_mixto() reusa esta misma clase __play (ver inc/grids.php) —
+   de ahí el selector .jb3-grid-mixto__item acá también. */
+.jb3-grid-thumbs__item:hover .jb3-grid-thumbs__play,
+.jb3-grid-mixto__item:hover .jb3-grid-thumbs__play {
+    transform: scale(var(--jb3-zoom-escala));
+}
+
+.jb3-grid-thumbs__play svg {
+    width: 64px;
+    height: 64px;
+    padding: 16px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    color: #ffffff;
+    background: rgba(0, 0, 0, .5);
+    transition: transform var(--jb3-zoom-duracion) ease;
+}
+
+.jb3-grid-thumbs__item:hover .jb3-grid-thumbs__play svg,
+.jb3-grid-mixto__item:hover .jb3-grid-thumbs__play svg {
+    transform: scale(1.15);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TARJETAS — bloque genérico "Tarjeta" (blocks/tarjeta): ítem suelto, sin
+   contenedor propio (se inserta adentro de lo que sea — un Grupo con
+   jb3-cols-N o con layout Grid nativo, jb3-grid-thumbs/posters — ver más
+   arriba). Sin proporción de imagen forzada a propósito: tiene que servir
+   tanto para posters verticales como para imágenes horizontales.
+   (Existió en paralelo un bloque "Grilla de Tarjetas", con su propio
+   contenedor/proporción fija, pero nunca llegó a usarse en ningún post —
+   eliminado 2026-09-01 junto con blocks/grilla-tarjetas/.)
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* !important: la regla global "a { color: var(--link-color) !important }"
+   (sección COLORES GLOBALES) le gana a cualquier color sin !important acá,
+   sin importar la especificidad de la clase — mismo motivo que ya usan
+   .jb3-grid-posters__item/.jb3-canal-redes__item para este mismo caso
+   (una tarjeta que a veces es un <a>, sin verse como link). */
+.jb3-tarjeta {
+    display: block;
+    position: relative; /* para el z-index del hover, ver abajo */
+    color: var(--body-text) !important;
+    text-decoration: none !important;
+}
+
+/* Hover: mismo z-index que .jb3-grid-posters__item/.jb3-grid-thumbs__item
+   (más arriba, en la sección de esas grillas) — sin esto la tarjeta que
+   crece de verdad (ver abajo) queda tapada por la celda vecina siguiente. */
+.jb3-tarjeta:hover {
+    z-index: 2;
+}
+
+.jb3-tarjeta__media {
+    display: block;
+    position: relative; /* ancla al ícono de play (.jb3-grid-thumbs__play, inset:0) cuando hay video */
+    /* Sin overflow:hidden a propósito — mismo criterio "crecimiento real"
+       que .jb3-grid-posters__media/.jb3-grid-thumbs__media (ver arriba): la
+       imagen se agranda de verdad al hacer hover, por encima de la celda
+       vecina, en vez de quedar recortada dentro de un canvas fijo. */
+}
+
+/* Hover del ícono de play reusado — .jb3-grid-thumbs__item:hover ya lo
+   agranda (ver arriba), pero esta tarjeta no lleva esa clase (no es un
+   ítem de esa grilla), así que necesita su propio disparador de hover. */
+a.jb3-tarjeta:hover .jb3-grid-thumbs__play {
+    transform: scale(var(--jb3-zoom-escala));
+}
+
+a.jb3-tarjeta:hover .jb3-grid-thumbs__play svg {
+    transform: scale(1.15);
+}
+
+.jb3-tarjeta__media img {
+    display: block;
+    width: 100%;
+    height: auto;
+    transition: transform var(--jb3-zoom-duracion) ease;
+}
+
+a.jb3-tarjeta:hover .jb3-tarjeta__media img {
+    transform: scale(var(--jb3-zoom-escala));
+}
+
+.jb3-tarjeta__titulo {
+    display: block;
+    margin-top: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+}
+
+.jb3-tarjeta__texto {
+    display: block;
+    margin: 6px 0 0;
+    font-size: 14px;
+    line-height: 1.5;
+    opacity: .75;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODAL DE VIDEO (inc/video-modal.php)
+   Un solo modal reusado por toda la página, para cualquier [data-jb3-video].
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-video-modal[hidden] {
+    display: none;
+}
+
+.jb3-video-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jb3-video-modal__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .9);
+}
+
+.jb3-video-modal__dialog {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* position:fixed (no absolute contra el diálogo, que ahora ES la pantalla
+   entera): con el diálogo a 100vw/100vh ya no hay "arriba del diálogo"
+   donde flotar el botón como cuando era una caja chica centrada — fixed
+   arriba a la derecha lo deja siempre visible sobre el video. */
+.jb3-video-modal__close {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100001;
+    background: none;
+    border: 0;
+    color: #ffffff;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jb3-video-modal__frame {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #000000;
+}
+
+.jb3-video-modal__frame iframe,
+.jb3-video-modal__frame video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODAL DE PÁGINA (inc/page-modal.php)
+   Mismo patrón que el modal de video (overlay + diálogo + cerrar), pero
+   pensado para leer contenido en vez de reproducir un video: diálogo con
+   ancho/alto acotados (no pantalla completa) y scroll propio si el
+   contenido no entra. El HTML de adentro (.jb3-page-modal__contenido) es
+   literalmente el de la Página real (the_content ya filtrado) — hereda los
+   estilos normales del sitio (jb3-modulo__titulo, jb3-cols-*, etc.), así
+   que la Página se puede armar con los mismos bloques de siempre.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-page-modal[hidden] {
+    display: none;
+}
+
+.jb3-page-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.jb3-page-modal__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .85);
+}
+
+/* El diálogo en sí NO scrollea — su tamaño queda fijo (hasta max-height) y
+   es ".jb3-page-modal__contenido" el que scrollea adentro. Así el botón de
+   cerrar, posicionado contra el diálogo (no contra el contenido), queda
+   siempre visible en la esquina sin importar cuánto scroll tenga el texto. */
+.jb3-page-modal__dialog {
+    position: relative;
+    width: 100%;
+    max-width: 1100px;
+    max-height: 90vh;
+    background: var(--body-bg, #000000);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.jb3-page-modal__close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 1;
+    background: rgba(0, 0, 0, .4);
+    border: 0;
+    border-radius: 50%;
+    color: var(--body-text);
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jb3-page-modal__contenido {
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 48px;
+}
+
+.jb3-page-modal__cargando {
+    text-align: center;
+    opacity: .7;
+}
+
+/* ".jb3-contenedor" hace su truco de "romper" al ancho real del viewport
+   (100vw + margin-left:-50vw) asumiendo que está en el flujo normal de la
+   página — ACÁ NO: vive adentro de un diálogo ya acotado (max-width,
+   centrado, con su propio padding), así que ese mismo truco lo saca
+   disparado fuera del modal en vez de contenerlo. Si la Página usada como
+   modal tiene algún Grupo con esta clase, se neutraliza a un contenedor
+   normal (ancho/posición del propio padre, sin vw). El resto de las clases
+   del sitio (jb3-modulo, jb3-mw-*, jb3-cols-*, jb3-tarjeta...) no hacen
+   este truco, así que no necesitan este reset. */
+.jb3-page-modal__contenido .jb3-contenedor {
+    width: auto;
+    position: static;
+    left: auto;
+    margin-left: 0 !important;
+    padding: 0;
+}
+
+@media (max-width: 767px) {
+    .jb3-page-modal__contenido {
+        padding: 32px 20px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GALERÍA CON SLIDER (bloque "Galería con Slider", blocks/galeria-slider)
+   Carrusel centrado con "peek" (se ve un pedacito del slide anterior/
+   siguiente, mismo lenguaje visual que la referencia que pasó el usuario,
+   ej. "Brand 100 Chile") — el estilo de flechas ya está cubierto por la
+   regla consolidada de los 3 sliders del sitio, ver ".jb3-home-slider" más
+   arriba. Acá solo lo propio: tamaño de imagen y la paginación en forma
+   de rayitas (no puntos redondos — Swiper trae bullets circulares por
+   default) para marcar cuántas imágenes tiene el slider.
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* Carrusel propio (JS vanilla, ver blocks/galeria-slider/render.php) — solo
+   reusa de Swiper el CSS de flechas/rayitas (cargado igual por
+   jb3_enqueue_swiper(), para el ícono de fuente de las flechas), no la
+   librería en sí. ".jb3-galeria-slider__container" hace de contexto
+   posicionado para las flechas (position:absolute, igual que antes cuando
+   ese contexto lo daba la propia clase ".swiper" de la librería). */
+.jb3-galeria-slider__container {
+    position: relative;
+    --swiper-navigation-size: 16px;
+}
+
+.jb3-galeria-slider__wrap {
+    overflow: hidden;
+    /* pan-y: el navegador sigue interpretando el gesto vertical como scroll
+       de la página — solo el horizontal lo toma el JS (swipe del carrusel). */
+    touch-action: pan-y;
+    cursor: grab;
+}
+
+.jb3-galeria-slider__wrap:active {
+    cursor: grabbing;
+}
+
+.jb3-galeria-slider__track {
+    display: flex;
+}
+
+.jb3-galeria-slider__track img {
+    -webkit-user-drag: none;
+    user-select: none;
+}
+
+/* Alto fijo (sin importar el formato de origen) para que todas las fotos
+   midan lo mismo en el carrusel, pero SIN recortar: el ancho del slide se
+   deja "auto" y sigue el ancho natural que le toca a la imagen a esa
+   altura — una foto vertical queda angosta, una horizontal queda ancha,
+   pero ambas se ven completas.
+
+   Separación entre fotos con border-right (parte del propio ancho del
+   slide, contado en su offsetWidth) en vez de gap en el track (espacio
+   vacío APARTE de los slides): cada slide se centra según su propio
+   ancho — con gap, si a una foto le tocaba un "asomo" más chico que el
+   gap, esa porción no mostraba nada de la foto vecina, solo el hueco
+   vacío ("la flechita queda en un espacio entre imágenes" — bug real
+   2026-08-26). Con el borde como parte del elemento medido, cualquier
+   asomo, por chico que sea, siempre entra dentro de un slide real. */
+.jb3-galeria-slider__slide {
+    flex: 0 0 auto;
+    height: 420px;
+    border-right: 3px solid var(--body-bg);
+    /* overflow:hidden para que el zoom en hover de más abajo no se salga
+       del recorte de la foto hacia el slide de al lado. */
+    overflow: hidden;
+}
+
+.jb3-galeria-slider__slide:last-child {
+    border-right: none;
+}
+
+.jb3-galeria-slider__slide img {
+    display: block;
+    width: auto;
+    height: 100%;
+    cursor: pointer;
+    /* Mismo efecto de zoom en hover que posters/thumbs (ver
+       .jb3-grid-posters__item:hover img más arriba en este archivo). */
+    transition: transform var(--jb3-zoom-duracion) ease;
+}
+
+.jb3-galeria-slider__slide:hover img {
+    transform: scale(var(--jb3-zoom-escala));
+}
+
+@media (max-width: 1023px) {
+    .jb3-galeria-slider__slide {
+        height: 320px;
+    }
+}
+
+@media (max-width: 767px) {
+    .jb3-galeria-slider__slide {
+        height: 220px;
+    }
+}
+
+/* La paginación vive AFUERA de ".jb3-galeria-slider__wrap" (ver
+   blocks/galeria-slider/render.php) para no superponerse nunca a las fotos
+   — position:static la deja en su lugar natural, debajo del carrusel. */
+.jb3-galeria-slider__container .swiper-pagination {
+    position: static;
+    margin-top: 20px;
+    text-align: center;
+}
+
+.jb3-galeria-slider__container .swiper-pagination-bullet {
+    width: 24px;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, .3);
+    opacity: 1;
+    transition: background .2s ease;
+}
+
+.jb3-galeria-slider__container .swiper-pagination-bullet-active {
+    background: var(--color-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODAL DE IMAGEN (inc/image-modal.php)
+   Un solo modal reusado por toda la página, para cualquier [data-jb3-image]
+   — mismo patrón que el modal de video (arriba). Usado desde la Galería con
+   Slider para abrir cada foto a tamaño original.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-image-modal[hidden] {
+    display: none;
+}
+
+.jb3-image-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jb3-image-modal__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .9);
+}
+
+/* Pantalla completa (mismo criterio que .jb3-video-modal__dialog): la
+   proporción de la foto nunca se deforma (max-width/max-height + auto), lo
+   único que cambia respecto a una caja chica es cuánto aire oscuro queda
+   alrededor cuando la foto no es panorámica. */
+.jb3-image-modal__dialog {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jb3-image-modal__close {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100001;
+    background: none;
+    border: 0;
+    color: #ffffff;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jb3-image-modal__img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CONTENIDO ESTRUCTURADO (Flexible Content) — módulo compartido por
+   Películas/Series (inc/contenido-pelicula.php) y Prod. Originales
+   (inc/contenido-original.php), cada uno con su propio campo ACF pero el
+   mismo contenedor/estilo visual. Vive dentro de .entry-content (columna de
+   lectura normal, sin .jb3-contenedor) — no necesita ancho completo.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.jb3-contenido-modulo {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+/* .jb3-contenido-bloque__titulo comparte la regla de la "rayita" vertical
+   con .jb3-modulo__titulo/.jb3-canales-slider__titulo más arriba (mismo
+   estilo de título que ya usa el resto del sitio) — acá solo el margen
+   propio de este contexto. */
+.jb3-contenido-bloque__titulo {
+    margin: 0 0 16px;
+}
+
+.jb3-contenido-bloque--texto .jb3-contenido-bloque__texto,
+.jb3-contenido-bloque--imagen-texto .jb3-contenido-bloque__texto {
+    line-height: 1.6;
+}
+
+/* Grid de 2 columnas compartido por Sinopsis+Información agrupadas
+   (jb3_contenido_render_texto_par: 2 columnas SOLO cuando las dos están
+   cargadas — con una sola, el grid de 1 columna implícito ya la deja a
+   ancho completo) Y por el layout "Imagen + Texto"
+   (jb3_contenido_render_imagen_texto: imagen a la izquierda, texto a la
+   derecha, siempre las 2 columnas juntas). */
+.jb3-contenido-fila--dos-columnas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+}
+
+@media (max-width: 767px) {
+    .jb3-contenido-fila--dos-columnas {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+}
+
+/* "Imagen + Texto": la imagen PRINCIPAL (la del campo "imagen", hijo DIRECTO
+   de .jb3-contenido-fila--dos-columnas) ocupa toda su columna, sin tope de
+   ancho — a diferencia de "Imagen suelta", acá SIEMPRE comparte fila con
+   texto, no hace falta acotarla. Selector de hijo directo (">"), NO
+   descendiente: sin esto, la regla también agarraba cualquier <img> que el
+   editor pegara ADENTRO del WYSIWYG (.jb3-contenido-bloque__texto, un nivel
+   más abajo) — un logo insertado a 32x37px vía "Agregar objeto" quedaba
+   forzado a 100% del ancho de la columna, gigante y pixelado (bug real
+   2026-09-04, reportado con imágenes de prueba en el texto de "Host"). */
+.jb3-contenido-fila--dos-columnas > img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* Layout "Video" (Trailer/Ver completo/Especiales/etc., título libre):
+   mismo triángulo de "play" sobre un rectángulo oscuro — el modal real
+   (video/YouTube/Vimeo/archivo) lo abre inc/video-modal.php, esto es
+   solo el disparador visual. Cada video al 100% del ancho disponible
+   (columna central de .entry-content, no full-bleed) — varios videos
+   dentro del mismo repetidor (ej. 2 trailers) quedan uno debajo del otro,
+   cada uno con su subtítulo propio si lo completaron
+   (jb3_contenido_render_video), no lado a lado achicados. */
+.jb3-contenido-videos {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.jb3-contenido-videos__item-titulo {
+    margin: 8px 0 0;
+    font-size: 0.95em;
+}
+
+/* background-image (miniatura de YouTube) lo pone PHP inline cuando puede
+   resolverla (jb3_contenido_youtube_thumb()) — Vimeo/archivo propio se
+   quedan con el fondo negro de acá, sin miniatura. */
+.jb3-contenido-video {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background-color: #000000;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Círculo semitransparente detrás del triángulo — sin esto, el triángulo
+   solo (sin nada atrás) se pierde contra una miniatura con colores claros
+   o mucho detalle en el centro. */
+.jb3-contenido-video__play {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, .55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jb3-contenido-video__play::before {
+    content: '';
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 12px 0 12px 20px;
+    border-color: transparent transparent transparent #ffffff;
+    /* Optical centering: un triángulo apuntando a la derecha "pesa" más a
+       la izquierda que a la derecha — sin este margen se ve corrido del
+       centro del círculo. */
+    margin-left: 4px;
+}
+
+/* La galería del módulo de Contenido ya NO usa esta grilla propia — pasó a
+   reusar el carrusel compartido (.jb3-galeria-slider, ver
+   inc/galeria-slider.php) 2026-09-03. Reglas de grilla borradas de acá
+   por quedar sin uso. */
+
+/* Imagen suelta (jb3_contenido_render_imagen) — nunca se agrupa, es un
+   bloque chico para intercalar entre otros dos. */
+.jb3-contenido-bloque--imagen {
+    margin: 0;
+}
+
+.jb3-contenido-bloque--imagen img {
+    display: block;
+    width: 100%;
+    height: auto; /* el <img> trae width/height (jb3_img()): sin esto se deformaba. */
+    max-width: 720px;
+    border-radius: 8px;
+}
+
+/* Banner — a diferencia de Imagen suelta, va a ancho completo (no tiene
+   tope de 720px) y es un <a> clickeable, no una <figure>. */
+.jb3-contenido-bloque--banner {
+    display: block;
+}
+
+/* Banner "Ancho completo" (pedido 2026-10-01): de borde a borde de la
+   pantalla, sin los márgenes laterales del contenido. Breakout SOLO con
+   márgenes: margin-left/right = 50% − 50vw (la mitad de lo que el
+   contenedor es más angosto que la pantalla, en negativo). Es la MISMA
+   fórmula que la clase nativa .alignfull (sección BASE), que el banner
+   también lleva — así las dos reglas coinciden en vez de sumarse. NO usar
+   acá el otro truco (left:50% + margin-left:-50vw): el margen de .alignfull
+   lo pisa y el left:50% queda sumado, corriendo el banner media pantalla a
+   la derecha (detectado con Playwright 2026-10-01). Funciona igual suelto en una
+   página (bloque) y dentro del módulo de Contenido de películas/series. */
+.jb3-contenido-bloque--banner-completo {
+    box-sizing: border-box;
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.jb3-contenido-bloque--banner img {
+    display: block;
+    width: 100%;
+    /* height:auto: el <img> ahora trae width/height (jb3_picture(), para
+       reservar el alto antes de que cargue) — sin esto el alto quedaba
+       fijo en el del archivo y la imagen se deformaba al achicarse. */
+    height: auto;
+}
+
+.jb3-contenido-bloque__epigrafe {
+    margin-top: 8px;
+    font-size: 0.9em;
+    color: #999999;
+}
+
+/* Renta/Alquiler — logos de las plataformas en fila, centrados en pantalla
+   (pedido explícito 2026-09-03, "uno al costado del otro centrados"). */
+.jb3-contenido-renta__plataformas {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 32px;
+}
+
+.jb3-contenido-renta__plataforma img {
+    display: block;
+    height: 80px; /* 40px + 100% (el doble del original) */
+    width: auto;
+}
+
+/* Mobile: 2 logos por fila (pedido 2026-10-01 — con el alto fijo de 80px
+   no entraban dos y quedaba uno por renglón). Cada link ocupa la mitad del
+   ancho menos medio gap, y el logo se ajusta a ese ancho manteniendo su
+   proporción (con el mismo techo de 80px de alto). flex (no grid) para que,
+   con una cantidad impar, el último quede centrado y no pegado a la
+   izquierda. */
+@media (max-width: 767px) {
+    .jb3-contenido-renta__plataformas {
+        gap: 16px;
+    }
+
+    .jb3-contenido-renta__plataforma {
+        flex: 0 0 calc(50% - 8px);
+        display: flex;
+        justify-content: center;
+    }
+
+    .jb3-contenido-renta__plataforma img {
+        width: 100%;
+        height: auto;
+        max-height: 80px;
+        object-fit: contain;
+    }
+}
