@@ -137,9 +137,17 @@ add_action( 'wp_ajax_jb3_generar_preview_pdf', function () {
 		wp_send_json_error( 'Imagen inválida.' );
 	}
 
-	$bits = base64_decode( $m[1] );
+	$bits = base64_decode( $m[1], true );
 	if ( ! $bits ) {
 		wp_send_json_error( 'No se pudo decodificar la imagen.' );
+	}
+
+	// El prefijo "data:image/jpeg" lo escribe quien manda el pedido, no
+	// prueba nada (auditoría 2026-10-29): se confirma que los bytes sean de
+	// verdad un JPEG antes de guardarlos en uploads/.
+	$info = getimagesizefromstring( $bits );
+	if ( ! $info || IMAGETYPE_JPEG !== $info[2] ) {
+		wp_send_json_error( 'Imagen inválida.' );
 	}
 
 	require_once ABSPATH . 'wp-admin/includes/image.php';

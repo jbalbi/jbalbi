@@ -1,5 +1,5 @@
 <?php
-
+defined( 'ABSPATH' ) || exit;
 
 function crear_taxonomia_canales() {
     // Etiquetas de la taxonomía

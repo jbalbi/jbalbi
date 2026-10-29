@@ -30,6 +30,13 @@ Options -Indexes
 # .gitignore, etc. Devuelve 404 para no confirmar siquiera que existen.
 RedirectMatch 404 "/\.(?!well-known/)[^/]*(/|$)"
 
+# Nada ejecutable dentro de uploads/ (auditoría 2026-10-29): ahí solo van
+# medios, nunca código. Si algún plugin con una falla dejara subir un
+# archivo .php (o variantes que algunos servidores también ejecutan), no se
+# puede correr pidiéndolo por URL — es la defensa estándar contra la
+# escalada típica "subo un archivo → tomo el servidor".
+RedirectMatch 403 "(?i)/uploads/.*\.(php[0-9]?|phtml|phar|pht|phps|cgi|pl|py|sh)$"
+
 # Archivos internos que no son para el público: documentación de los
 # plugins, definiciones de campos ACF (acf-json), la base de GeoIP (64 MB) y
 # respaldos o volcados que pudieran quedar por error.

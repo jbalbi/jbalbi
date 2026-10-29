@@ -15,7 +15,15 @@
  *   - inc/disable-comments.php: comentarios, trackbacks y pingbacks
  *     apagados en front, admin, REST, XML-RPC y editor de bloques.
  *   - inc/seguridad.php: XML-RPC apagado, usuarios ocultos a visitantes,
- *     /?author=N redirige a la portada, cabeceras de seguridad.
+ *     /?author=N redirige a la portada, cabeceras de seguridad (incluye
+ *     Permissions-Policy y HSTS con HTTPS — HSTS obliga a mantener HTTPS
+ *     para siempre), versión de WordPress oculta, y contenido con
+ *     contraseña servido por password.php (el hijo puede tener el suyo con
+ *     su diseño; si el hijo arma páginas con datos fuera de the_content(),
+ *     así no se filtran).
+ *   - Para el servidor: el .htaccess de wp-content del sitio Conectados
+ *     bloquea logs, .git, listados de carpetas y PHP dentro de uploads/ —
+ *     copiar esas reglas a cada sitio nuevo (no viajan con el tema).
  *   - "Update URI: false" en style.css: WordPress nunca lo reemplaza por un
  *     tema homónimo de wordpress.org.
  *

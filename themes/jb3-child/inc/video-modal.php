@@ -65,9 +65,27 @@ add_action( 'wp_footer', function () {
 			var modal    = document.getElementById( 'jb3-video-modal' );
 			var frame    = modal.querySelector( '.jb3-video-modal__frame' );
 
-			frame.innerHTML = 'iframe' === video.tipo
-				? '<iframe src="' + video.src + '" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>'
-				: '<video src="' + video.src + '" controls autoplay playsinline></video>';
+			// El reproductor se arma con elementos del DOM, no pegando texto
+			// como HTML (auditoría 2026-10-29): así la URL nunca se interpreta
+			// como código, venga de donde venga el data-jb3-video. Un archivo
+			// propio solo se acepta por http(s) o ruta del mismo sitio.
+			var el;
+			if ( 'iframe' === video.tipo ) {
+				el = document.createElement( 'iframe' );
+				el.setAttribute( 'frameborder', '0' );
+				el.setAttribute( 'allow', 'autoplay; fullscreen; picture-in-picture' );
+				el.setAttribute( 'allowfullscreen', '' );
+			} else {
+				if ( ! /^(https?:)?\//i.test( video.src ) ) {
+					return;
+				}
+				el = document.createElement( 'video' );
+				el.controls    = true;
+				el.autoplay    = true;
+				el.playsInline = true;
+			}
+			el.src = video.src;
+			frame.replaceChildren( el );
 
 			modal.hidden = false;
 			document.body.style.overflow = 'hidden';

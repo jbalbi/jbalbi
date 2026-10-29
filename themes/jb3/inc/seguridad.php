@@ -47,11 +47,72 @@ add_action( 'template_redirect', function () {
 	}
 } );
 
-// Cabeceras de seguridad: que el sitio no se pueda meter en un <iframe> de
-// otro dominio (clickjacking), que el navegador no "adivine" tipos de
-// archivo, y que al salir a otro sitio no viaje la URL completa.
-add_action( 'send_headers', function () {
+// Cabeceras de seguridad:
+//   - X-Frame-Options: el sitio no se puede meter en un <iframe> de otro
+//     dominio (clickjacking).
+//   - X-Content-Type-Options: el navegador no "adivina" tipos de archivo.
+//   - Referrer-Policy: al salir a otro sitio no viaja la URL completa.
+//   - Permissions-Policy: ninguna página (ni un script de terceros cargado
+//     en ella) puede pedir cámara, micrófono, ubicación, pagos ni USB. No
+//     toca autoplay/fullscreen/picture-in-picture (los usan los embeds de
+//     YouTube/Vimeo). Si un sitio necesita alguno, cambiarlo con el filtro
+//     jb3_permissions_policy desde el hijo.
+//   - Strict-Transport-Security (HSTS), solo si la página ya llegó por
+//     HTTPS: el navegador recuerda por 1 año que este dominio va SIEMPRE por
+//     HTTPS (corta ataques que fuerzan http://). Sin includeSubDomains a
+//     propósito: no sabemos qué otros subdominios tiene el dominio de cada
+//     sitio. OJO: una vez enviado, volver a http:// no es posible hasta que
+//     venza; el sitio tiene que tener HTTPS de forma permanente.
+// Función con nombre para que un hijo pueda reemplazarla entera con
+// remove_action( 'send_headers', 'jb3_cabeceras_seguridad' ).
+function jb3_cabeceras_seguridad() {
 	header( 'X-Frame-Options: SAMEORIGIN' );
 	header( 'X-Content-Type-Options: nosniff' );
 	header( 'Referrer-Policy: strict-origin-when-cross-origin' );
-} );
+	header( 'Permissions-Policy: ' . apply_filters( 'jb3_permissions_policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()' ) );
+	if ( is_ssl() ) {
+		header( 'Strict-Transport-Security: max-age=31536000' );
+	}
+}
+add_action( 'send_headers', 'jb3_cabeceras_seguridad' );
+
+// Versión de WordPress oculta: le ahorra a un atacante saber de antemano
+// qué fallas conocidas probar. Se saca el <meta name="generator"> (y su
+// equivalente en los feeds), y en los CSS/JS del core el "?ver=7.1.4" se
+// reemplaza por un código derivado de la versión + las claves del sitio:
+// sigue cambiando con cada actualización (el navegador baja los archivos
+// nuevos), pero no dice qué versión es.
+remove_action( 'wp_head', 'wp_generator' );
+add_filter( 'the_generator', '__return_empty_string' );
+
+function jb3_ocultar_version_wp( $src ) {
+	static $codigo = null;
+	$version = get_bloginfo( 'version' );
+	if ( $src && false !== strpos( $src, 'ver=' . $version ) ) {
+		if ( null === $codigo ) {
+			$codigo = substr( wp_hash( 'jb3-ver-' . $version ), 0, 8 );
+		}
+		$src = add_query_arg( 'ver', $codigo, $src );
+	}
+	return $src;
+}
+add_filter( 'style_loader_src', 'jb3_ocultar_version_wp', 9999 );
+add_filter( 'script_loader_src', 'jb3_ocultar_version_wp', 9999 );
+
+// Contenido protegido con contraseña (Visibilidad > Protegida con
+// contraseña): WordPress solo protege lo que pasa por the_content(); todo lo
+// que una plantilla imprime por su cuenta (campos ACF, bloques propios,
+// relacionados, PDFs) se mostraba igual sin pedirla. Mientras falte la
+// contraseña, se usa password.php (título + formulario, nada más) en vez de
+// la plantilla normal — cubre cualquier tipo de contenido, presente o
+// futuro, sin depender de que cada plantilla se acuerde de chequearlo. El
+// hijo puede tener su propio password.php con el diseño del sitio.
+add_filter( 'template_include', function ( $template ) {
+	if ( is_singular() && post_password_required() ) {
+		$password = locate_template( 'password.php' );
+		if ( $password ) {
+			return $password;
+		}
+	}
+	return $template;
+}, 99 );
