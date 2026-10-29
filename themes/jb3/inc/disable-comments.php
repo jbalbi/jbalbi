@@ -2,6 +2,11 @@
 /**
  * Desactiva por completo los comentarios, trackbacks y pingbacks.
  *
+ * Viene activo en todo sitio hecho sobre JB3. Si un sitio puntual SÍ quiere
+ * comentarios, su tema hijo agrega en su functions.php (se carga antes que
+ * el del padre, así que el filtro llega a tiempo):
+ *   add_filter( 'jb3_desactivar_comentarios', '__return_false' );
+ *
  * @package JB3
  */
 

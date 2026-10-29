@@ -1,22 +1,28 @@
 <?php
+/**
+ * Seguridad básica para cualquier sitio hecho sobre JB3.
+ *
+ * Vive en el tema padre para que todo sitio nuevo la tenga sin hacer nada.
+ * Si un sitio puntual necesita XML-RPC (app móvil de WordPress, Jetpack),
+ * su tema hijo puede devolverlo con:
+ *   remove_all_filters( 'xmlrpc_enabled' ); remove_all_filters( 'xmlrpc_methods' );
+ *
+ * Esto NO reemplaza un plugin de seguridad ni la configuración del servidor
+ * (HTTPS, permisos de archivos, wp-config.php, backups): es la base mínima.
+ *
+ * @package JB3
+ */
+
 defined( 'ABSPATH' ) || exit;
 
-// ─── SEGURIDAD BÁSICA (revisión pre-producción 2026-10-01) ────────────────────
-//
-// Vive en el tema padre para que cualquier sitio hecho sobre JB3 la tenga
-// sin hacer nada. Si un sitio puntual necesita XML-RPC (app móvil de
-// WordPress, Jetpack), su tema hijo puede devolverlo con:
-//   remove_all_filters( 'xmlrpc_enabled' ); remove_all_filters( 'xmlrpc_methods' );
-
-// XML-RPC: el sitio no lo usa (ni app móvil de WordPress ni Jetpack). Sin
-// métodos no queda nada que llamar — "xmlrpc_enabled" solo apaga los que
-// piden login, y xmlrpc.php seguía respondiendo el resto (pingbacks
-// incluidos, usados para ataques).
+// XML-RPC: "xmlrpc_enabled" solo apaga los métodos que piden login;
+// xmlrpc.php seguía respondiendo el resto (pingbacks incluidos, usados para
+// ataques). Sin métodos no queda nada que llamar.
 add_filter( 'xmlrpc_enabled', '__return_false' );
 add_filter( 'xmlrpc_methods', '__return_empty_array' );
 
-// Nombres de usuario: /wp-json/wp/v2/users y /?author=1 → /author/jbalbi/
-// le regalaban a cualquiera el usuario del administrador (la mitad de un
+// Nombres de usuario: /wp-json/wp/v2/users y /?author=1 → /author/<usuario>/
+// le regalan a cualquiera el usuario del administrador (la mitad de un
 // ataque de fuerza bruta al login). Solo para visitantes sin sesión: el
 // editor de bloques necesita la lista de usuarios estando logueado.
 add_filter( 'rest_endpoints', function ( $endpoints ) {
@@ -30,7 +36,7 @@ add_action( 'template_redirect', function () {
 		wp_safe_redirect( home_url( '/' ), 301 );
 		exit;
 	}
-}, 1 ); // Prioridad 1: antes de redirect_canonical (10), que si no manda /?author=1 a /author/jbalbi/ y ya mostró el nombre.
+}, 1 ); // Prioridad 1: antes de redirect_canonical (10), que si no manda /?author=1 a /author/<usuario>/ y ya mostró el nombre.
 
 // Los feeds de comentarios (/comments/feed/, /entrada/feed/) mandan a la
 // portada — complementa inc/disable-comments.php.
