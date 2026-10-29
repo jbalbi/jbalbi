@@ -148,7 +148,6 @@ add_filter( 'acf/settings/load_json', fn() => array( get_stylesheet_directory() 
 
 // ─── INCLUDES ─────────────────────────────────────────────────────────────────
 
-require_once __DIR__ . '/inc/seguridad.php';          // XML-RPC apagado, usuarios ocultos, cabeceras de seguridad
 require_once __DIR__ . '/inc/iconos.php';             // jb3_icono(): SVG del header (buscar, menú, cerrar, cuenta, LinkedIn)
 require_once __DIR__ . '/inc/taxonomias.php';         // Taxonomías personalizadas
 require_once __DIR__ . '/inc/custom-post-types.php';  // Custom Post Types

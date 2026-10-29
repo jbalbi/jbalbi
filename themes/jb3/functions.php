@@ -15,6 +15,10 @@ define( 'JB3_VERSION', wp_get_theme( get_template() )->get( 'Version' ) );
 // Sitio institucional: comentarios desactivados en front, admin, REST y XML-RPC.
 require get_template_directory() . '/inc/disable-comments.php';
 
+// Seguridad básica para cualquier sitio: XML-RPC apagado, usuarios ocultos,
+// cabeceras de seguridad.
+require get_template_directory() . '/inc/seguridad.php';
+
 /**
  * Soportes del tema.
  */

@@ -2,6 +2,11 @@
 defined( 'ABSPATH' ) || exit;
 
 // ─── SEGURIDAD BÁSICA (revisión pre-producción 2026-10-01) ────────────────────
+//
+// Vive en el tema padre para que cualquier sitio hecho sobre JB3 la tenga
+// sin hacer nada. Si un sitio puntual necesita XML-RPC (app móvil de
+// WordPress, Jetpack), su tema hijo puede devolverlo con:
+//   remove_all_filters( 'xmlrpc_enabled' ); remove_all_filters( 'xmlrpc_methods' );
 
 // XML-RPC: el sitio no lo usa (ni app móvil de WordPress ni Jetpack). Sin
 // métodos no queda nada que llamar — "xmlrpc_enabled" solo apaga los que
@@ -28,7 +33,7 @@ add_action( 'template_redirect', function () {
 }, 1 ); // Prioridad 1: antes de redirect_canonical (10), que si no manda /?author=1 a /author/jbalbi/ y ya mostró el nombre.
 
 // Los feeds de comentarios (/comments/feed/, /entrada/feed/) mandan a la
-// portada — complementa inc/disable-comments.php del tema padre.
+// portada — complementa inc/disable-comments.php.
 add_action( 'template_redirect', function () {
 	if ( is_comment_feed() ) {
 		wp_safe_redirect( home_url( '/' ), 301 );
