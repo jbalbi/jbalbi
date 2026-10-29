@@ -72,7 +72,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // get_template() para leer la versión del tema padre aunque haya un tema hijo activo.
-define( 'JB3_VERSION', wp_get_theme( get_template() )->get( 'Version' ) );
+// JB3_THEME_VERSION y no JB3_VERSION: ese nombre ya lo usa el plugin jb3-members
+// (definirla dos veces deja un PHP Warning en cada página).
+define( 'JB3_THEME_VERSION', wp_get_theme( get_template() )->get( 'Version' ) );
 
 // Comentarios desactivados en front, admin, REST y XML-RPC (un hijo puede
 // reactivarlos con el filtro jb3_desactivar_comentarios, ver ese archivo).
@@ -123,8 +125,8 @@ add_action( 'after_setup_theme', 'jb3_setup' );
  * CSS y JS del front.
  */
 function jb3_enqueue_assets() {
-	wp_enqueue_style( 'jb3-main', get_template_directory_uri() . '/assets/css/main.css', array(), JB3_VERSION );
-	wp_enqueue_script( 'jb3-main', get_template_directory_uri() . '/assets/js/main.js', array(), JB3_VERSION, array( 'strategy' => 'defer', 'in_footer' => true ) );
+	wp_enqueue_style( 'jb3-main', get_template_directory_uri() . '/assets/css/main.css', array(), JB3_THEME_VERSION );
+	wp_enqueue_script( 'jb3-main', get_template_directory_uri() . '/assets/js/main.js', array(), JB3_THEME_VERSION, array( 'strategy' => 'defer', 'in_footer' => true ) );
 }
 add_action( 'wp_enqueue_scripts', 'jb3_enqueue_assets' );
 

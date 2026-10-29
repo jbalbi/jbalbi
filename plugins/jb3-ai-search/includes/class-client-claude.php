@@ -24,6 +24,26 @@ class JB3_AISearch_Client_Claude {
 	const TOOL_NAME_CHAT = 'redactar_respuesta_chat';
 
 	/**
+	 * wp_remote_post() a la API con hasta 2 reintentos SOLO ante error de
+	 * red (WP_Error) — confirmado 2026-10-28: el cURL del PHP local cortaba
+	 * ~15% de las conexiones ("cURL error 35: Connection was reset", en el
+	 * handshake, 0.3s), y una sola falla dejaba al buscador y al chat sin
+	 * resultados ("no tengo ciencia ficción"). Ese corte pasa antes de que el
+	 * pedido llegue a Anthropic, así que reintentar no cobra doble. Un HTTP
+	 * de error (4xx/5xx, cuota) NO se reintenta: ahí la API sí respondió.
+	 */
+	private static function post( array $args ) {
+		for ( $intento = 0; $intento < 3; $intento++ ) {
+			$response = wp_remote_post( self::API_URL, $args );
+			if ( ! is_wp_error( $response ) ) {
+				break;
+			}
+			jb3_aisearch_debug_log( 'Claude: error de red (intento ' . ( $intento + 1 ) . '): ' . $response->get_error_message() );
+		}
+		return $response;
+	}
+
+	/**
 	 * @param string $pregunta Texto tal cual lo escribió el usuario.
 	 * @return array|null Filtros extraídos, o null si la API falló / no
 	 *                     devolvió nada usable (el llamador cae a búsqueda
@@ -35,7 +55,7 @@ class JB3_AISearch_Client_Claude {
 			return null;
 		}
 
-		$response = wp_remote_post( self::API_URL, [
+		$response = self::post( [
 			'timeout' => 12,
 			'headers' => [
 				'x-api-key'         => $api_key,
@@ -100,7 +120,7 @@ class JB3_AISearch_Client_Claude {
 			'titulos_reales'       => $titulos,
 		] );
 
-		$response = wp_remote_post( self::API_URL, [
+		$response = self::post( [
 			'timeout' => 12,
 			'headers' => [
 				'x-api-key'         => $api_key,
@@ -203,3 +223,18 @@ class JB3_AISearch_Client_Claude {
 		];
 	}
 }
+
+/**
+ * Conexión a la API de Anthropic siempre por IPv4. api.anthropic.com tiene
+ * IPv4 e IPv6, y por IPv6 la conexión se cortaba en el handshake ("cURL
+ * error 35: Connection was reset") — medido 2026-10-28 en local: 11/30
+ * conexiones bien por defecto, 30/30 forzando IPv4. Era lo que dejaba al
+ * buscador y al chat sin resultados de forma intermitente. IPv4 funciona en
+ * cualquier servidor, así que no hay nada que perder también en producción.
+ * Solo toca los pedidos a ese host, ningún otro de WordPress.
+ */
+add_action( 'http_api_curl', function ( $handle, $parsed_args, $url ) {
+	if ( 'api.anthropic.com' === wp_parse_url( $url, PHP_URL_HOST ) ) {
+		curl_setopt( $handle, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4 );
+	}
+}, 10, 3 );

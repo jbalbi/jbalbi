@@ -63,7 +63,22 @@ function jb3_aisearch_chat_ajax_handler() {
 		] );
 	}
 
-	$count     = count( $resultados );
+	$count = count( $resultados );
+
+	// $filtros null = la IA no respondió (red, cuota o freno global) y la
+	// búsqueda cayó a texto literal con la frase entera, que casi nunca
+	// encuentra nada. Sin resultados en ese caso NO significa "no hay ese
+	// contenido": antes la IA redactaba "no tengo ciencia ficción" y hasta
+	// lo sostenía cuando el usuario le nombraba un título que sí la tenía
+	// (2026-10-28). Se dice la verdad: falló la búsqueda, probá de nuevo.
+	if ( null === $filtros && 0 === $count ) {
+		wp_send_json_success( [
+			'respuesta' => 'Perdón, tuve un problema para buscar en este momento. ¿Me lo preguntás de nuevo?',
+			'html'      => '',
+			'count'     => 0,
+		] );
+	}
+
 	$titulos   = jb3_aisearch_chat_titulos( $resultados );
 	$respuesta = jb3_aisearch_chat_redactar_respuesta( $pregunta, $count, $titulos, ! empty( $historial ) )
 		?? jb3_aisearch_chat_texto_respuesta( $count, $pregunta, $filtros['resumen'] ?? null );

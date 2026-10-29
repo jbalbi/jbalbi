@@ -103,6 +103,9 @@ function jb3_aisearch_native_filtros_cacheados( string $pregunta ): ?array {
 	}
 
 	$filtros = jb3_aisearch_extraer_filtros( $pregunta );
-	set_transient( $key, $filtros ?? [], 10 * MINUTE_IN_SECONDS );
+	// La falla se cachea solo 1 minuto (no 10): suficiente para no insistir
+	// en cada recarga durante una caída real, sin que un corte de red de un
+	// segundo deje esa búsqueda sin resultados 10 minutos (pasó 2026-10-28).
+	set_transient( $key, $filtros ?? [], $filtros ? 10 * MINUTE_IN_SECONDS : MINUTE_IN_SECONDS );
 	return $filtros;
 }
