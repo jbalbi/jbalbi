@@ -6,7 +6,13 @@ class JB3_Email {
     // ─── Public API ───────────────────────────────────────────────────────────
 
     /**
-     * Send approval-request email to all representatives of the user's country.
+     * Send approval-request email to all representatives of the user's country
+     * AND to every administrator of the site (pedido 2026-10-29: un registro
+     * en producción no le llegó a nadie que pudiera aprobarlo — el país no
+     * tenía representante real y el "por defecto" era un correo de prueba).
+     * Sin duplicados: quien es representante y admin a la vez recibe un solo
+     * mail. El link de aprobación vale con el token, lo use quien lo use; si
+     * dos lo aprueban, el segundo ve "ya aprobado".
      */
     public static function send_approval_request( $user_id ) {
         $user    = get_userdata( $user_id );
@@ -35,8 +41,21 @@ class JB3_Email {
             'approve_url' => $approve_url,
         ] );
 
-        foreach ( $reps as $rep ) {
-            wp_mail( $rep->email, $subject, $body, self::headers() );
+        $destinatarios = array_merge(
+            wp_list_pluck( $reps, 'email' ),
+            get_users( [ 'role' => 'administrator', 'fields' => 'user_email' ] )
+        );
+        // Únicos sin distinguir mayúsculas; descarta vacíos o inválidos.
+        $unicos = [];
+        foreach ( $destinatarios as $email ) {
+            $email = sanitize_email( (string) $email );
+            if ( is_email( $email ) ) {
+                $unicos[ strtolower( $email ) ] = $email;
+            }
+        }
+
+        foreach ( $unicos as $email ) {
+            wp_mail( $email, $subject, $body, self::headers() );
         }
     }
 
