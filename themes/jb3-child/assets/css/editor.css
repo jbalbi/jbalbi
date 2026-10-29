@@ -38,3 +38,19 @@
 [class*="jb3-cols-"] > .wp-block-group__inner-container > .wp-block {
     margin: 0;
 }
+
+/* ─── Bloque "Grilla" (blocks/grilla) ──────────────────────────────────────
+   En el editor el bloque imprime <InnerBlocks />, y ACF mete los bloques de
+   adentro en su propio contenedor (.acf-innerblocks-container): la grilla
+   quedaba con un solo hijo (ese contenedor, en la primera columna) y todas
+   las tarjetas apiladas adentro. display:contents hace que el contenedor
+   "no exista" para la grilla, así cada tarjeta es una celda — mismas
+   columnas por breakpoint que en el sitio (--jb3-grilla-cols-*, main.css).
+   Sin el margin:auto/vertical del editor, igual que en los Grupos. */
+.jb3-grilla > .acf-innerblocks-container {
+    display: contents;
+}
+
+.jb3-grilla > .acf-innerblocks-container > .wp-block {
+    margin: 0;
+}
