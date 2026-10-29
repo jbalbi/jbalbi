@@ -76,3 +76,24 @@ function jb3_aisearch_throttle_ok(): bool {
 	set_transient( $key, $conteo + 1, MINUTE_IN_SECONDS );
 	return true;
 }
+
+/**
+ * Nonce nuevo para el chat y el buscador del shortcode (auditoría
+ * 2026-10-29). El nonce viaja dentro del HTML de la página, y en producción
+ * LiteSpeed puede servir una copia guardada hace días: un nonce de WordPress
+ * vence a las 12-24 horas, así que desde una copia vieja cada mensaje
+ * fallaba con "-1" (403) sin que nadie se diera cuenta. El JS, al recibir
+ * ese 403, pide uno nuevo acá y reintenta una sola vez.
+ *
+ * No debilita nada: es el mismo nonce que ya está en cualquier página
+ * pública, el que verifica check_ajax_referer() — los frenos reales contra
+ * el abuso siguen siendo los de IP y el global. La respuesta se marca para
+ * que ninguna caché (LiteSpeed, navegador, proxy) la guarde jamás.
+ */
+add_action( 'wp_ajax_jb3_ai_nonce', 'jb3_aisearch_nonce_ajax' );
+add_action( 'wp_ajax_nopriv_jb3_ai_nonce', 'jb3_aisearch_nonce_ajax' );
+function jb3_aisearch_nonce_ajax(): void {
+	nocache_headers();
+	header( 'X-LiteSpeed-Cache-Control: no-cache' );
+	wp_send_json_success( [ 'nonce' => wp_create_nonce( JB3_AISEARCH_NONCE ) ] );
+}

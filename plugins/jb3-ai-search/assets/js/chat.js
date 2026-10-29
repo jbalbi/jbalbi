@@ -179,6 +179,39 @@
 		}
 	} );
 
+	// Nonce vencido (auditoría 2026-10-29): el nonce viaja dentro del HTML, y
+	// en producción LiteSpeed puede servir una copia de la página guardada
+	// hace días — más que lo que dura un nonce (12-24 h). WordPress responde
+	// entonces 403 ("-1"). En ese caso se pide uno nuevo
+	// (jb3_ai_nonce, class-ajax.php — nunca se cachea) y se reintenta UNA
+	// sola vez; cualquier otro error sigue el camino de siempre.
+	function renovarNonce() {
+		var datos = new FormData();
+		datos.append( 'action', 'jb3_ai_nonce' );
+		return fetch( jb3AIChat.ajaxUrl, { method: 'POST', body: datos, credentials: 'same-origin' } )
+			.then( function ( r ) { return r.json(); } )
+			.then( function ( respuesta ) {
+				if ( ! respuesta || ! respuesta.success ) {
+					throw new Error( 'nonce' );
+				}
+				jb3AIChat.nonce = respuesta.data.nonce;
+				return jb3AIChat.nonce;
+			} );
+	}
+
+	function enviarConNonce( datos ) {
+		var opciones = { method: 'POST', body: datos, credentials: 'same-origin' };
+		return fetch( jb3AIChat.ajaxUrl, opciones ).then( function ( r ) {
+			if ( 403 !== r.status ) {
+				return r.json();
+			}
+			return renovarNonce().then( function ( nonce ) {
+				datos.set( 'nonce', nonce );
+				return fetch( jb3AIChat.ajaxUrl, opciones ).then( function ( r2 ) { return r2.json(); } );
+			} );
+		} );
+	}
+
 	form.addEventListener( 'submit', function ( e ) {
 		e.preventDefault();
 		if ( enviando ) {
@@ -201,8 +234,7 @@
 		datos.append( 'pregunta', pregunta );
 		datos.append( 'historial', JSON.stringify( historialParaEnviar( leerHistorial() ) ) );
 
-		fetch( jb3AIChat.ajaxUrl, { method: 'POST', body: datos, credentials: 'same-origin' } )
-			.then( function ( r ) { return r.json(); } )
+		enviarConNonce( datos )
 			.then( function ( respuesta ) {
 				enviando = false;
 				cargando.remove();

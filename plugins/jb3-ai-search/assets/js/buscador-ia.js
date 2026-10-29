@@ -4,6 +4,36 @@
  * servidor con jb3_grid_thumbs()) o el mensaje de "sin resultados".
  */
 ( function () {
+	// Nonce vencido por una copia vieja de la página en la caché de
+	// LiteSpeed: mismo mecanismo que chat.js (ver el comentario ahí) — ante
+	// un 403 se pide un nonce nuevo y se reintenta una sola vez.
+	function renovarNonce() {
+		var datos = new FormData();
+		datos.append( 'action', 'jb3_ai_nonce' );
+		return fetch( jb3AISearch.ajaxUrl, { method: 'POST', body: datos, credentials: 'same-origin' } )
+			.then( function ( r ) { return r.json(); } )
+			.then( function ( respuesta ) {
+				if ( ! respuesta || ! respuesta.success ) {
+					throw new Error( 'nonce' );
+				}
+				jb3AISearch.nonce = respuesta.data.nonce;
+				return jb3AISearch.nonce;
+			} );
+	}
+
+	function enviarConNonce( datos ) {
+		var opciones = { method: 'POST', body: datos, credentials: 'same-origin' };
+		return fetch( jb3AISearch.ajaxUrl, opciones ).then( function ( r ) {
+			if ( 403 !== r.status ) {
+				return r.json();
+			}
+			return renovarNonce().then( function ( nonce ) {
+				datos.set( 'nonce', nonce );
+				return fetch( jb3AISearch.ajaxUrl, opciones ).then( function ( r2 ) { return r2.json(); } );
+			} );
+		} );
+	}
+
 	document.querySelectorAll( '.jb3-aisearch' ).forEach( function ( bloque ) {
 		var form        = bloque.querySelector( '.jb3-aisearch__form' );
 		var input       = bloque.querySelector( '.jb3-aisearch__input' );
@@ -41,8 +71,7 @@
 			datos.append( 'nonce', jb3AISearch.nonce );
 			datos.append( 'pregunta', pregunta );
 
-			fetch( jb3AISearch.ajaxUrl, { method: 'POST', body: datos, credentials: 'same-origin' } )
-				.then( function ( r ) { return r.json(); } )
+			enviarConNonce( datos )
 				.then( function ( respuesta ) {
 					buscando = false;
 

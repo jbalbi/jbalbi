@@ -102,10 +102,43 @@ function jb3_aisearch_native_filtros_cacheados( string $pregunta ): ?array {
 		return $cacheado ? $cacheado : null; // [] guardado = "la API falló", se devuelve null.
 	}
 
+	// Antes de gastar una llamada a la API paga (auditoría 2026-10-29): el
+	// buscador nativo es una URL pública (?s=...) que cualquier robot puede
+	// pedir con miles de textos distintos, y hasta acá solo lo frenaba el
+	// tope GLOBAL de 300/hora — un solo robot podía agotarlo y dejar el
+	// buscador sin IA para todos durante una hora. Ahora pasa por los mismos
+	// frenos que el chat y el shortcode. En cualquiera de estos casos se
+	// devuelve null SIN cachear: WordPress hace su búsqueda nativa de
+	// siempre (gratis) para ESTE pedido, sin afectar a otros visitantes que
+	// busquen lo mismo.
+	//   - Texto de más de 200 caracteres: mismo tope que el chat/shortcode.
+	//   - Robots que se identifican como tales (buscadores, scrapers): no
+	//     necesitan IA para nada (además search.php ya sale con noindex).
+	//   - Freno por IP: el mismo presupuesto de 8/minuto que comparten el
+	//     chat y el shortcode (jb3_aisearch_throttle_ok(), class-ajax.php).
+	if ( mb_strlen( $pregunta ) > 200 || jb3_aisearch_es_robot() || ! jb3_aisearch_throttle_ok() ) {
+		return null;
+	}
+
 	$filtros = jb3_aisearch_extraer_filtros( $pregunta );
 	// La falla se cachea solo 1 minuto (no 10): suficiente para no insistir
 	// en cada recarga durante una caída real, sin que un corte de red de un
 	// segundo deje esa búsqueda sin resultados 10 minutos (pasó 2026-10-28).
 	set_transient( $key, $filtros ?? [], $filtros ? 10 * MINUTE_IN_SECONDS : MINUTE_IN_SECONDS );
 	return $filtros;
+}
+
+/**
+ * Robots que se identifican como tales (o que no mandan User-Agent, cosa que
+ * ningún navegador real hace): buscadores, herramientas de scraping y
+ * librerías HTTP. No es una defensa contra quien se hace pasar por un
+ * navegador — para eso está el freno por IP —, solo evita gastar llamadas
+ * a la API en el tráfico automático "honesto", que es la mayoría.
+ */
+function jb3_aisearch_es_robot(): bool {
+	$ua = isset( $_SERVER['HTTP_USER_AGENT'] ) ? (string) wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) : '';
+	if ( '' === trim( $ua ) ) {
+		return true;
+	}
+	return (bool) preg_match( '/bot\b|bot\/|crawl|spider|slurp|scrapy|headless|curl\/|wget|python|httpclient|okhttp|go-http|java\/|libwww|axios|node-fetch|facebookexternalhit|preview/i', $ua );
 }
