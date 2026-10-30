@@ -99,9 +99,9 @@ function jb3_child_asset_version( $archivo ) {
  * CSS y JS del front. Prioridad 20: después de jb3_enqueue_assets() del
  * padre, para sacar su CSS/JS genéricos.
  *
- * Tipografía del sitio (var --tipografia-1 en main.css). Para cambiarla:
- * actualizar la URL de Google Fonts acá Y el valor de --tipografia-1 en
- * main.css — son los dos únicos lugares que hay que tocar.
+ * Tipografía del sitio (var --tipografia-1 en main.css): Termina, con sus
+ * @font-face al principio de main.css y los archivos en assets/fonts.
+ * Montserrat se carga acá solo como respaldo.
  */
 function jb3_child_enqueue_assets() {
 	wp_dequeue_style( 'jb3-main' );

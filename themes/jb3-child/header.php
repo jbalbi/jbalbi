@@ -55,8 +55,8 @@ $jb3_logo_id = (int) get_theme_mod( 'custom_logo' );
 				<a href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home">
 					<?php
 					// Mismo logo que el footer (Apariencia > Personalizar > Identidad
-					// del sitio > Logo). Se ve a 120px de ancho (.site-logo img).
-					echo jb3_img( $jb3_logo_id, '120px', array( 'alt' => get_bloginfo( 'name' ), 'loading' => 'eager' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_img() ya escapa todo.
+					// del sitio > Logo). Se ve a 150px de ancho (.site-logo img).
+					echo jb3_img( $jb3_logo_id, '150px', array( 'alt' => get_bloginfo( 'name' ), 'loading' => 'eager' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_img() ya escapa todo.
 					?>
 				</a>
 			</div>

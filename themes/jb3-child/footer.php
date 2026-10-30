@@ -3,8 +3,9 @@
  * Pie: cierre de #page (abierto en header.php), footer del sitio, buscador
  * y cierre del documento.
  *
- * Grid de 2 columnas (apiladas en mobile) + barra de CTA abajo:
- *   - logo del sitio (el mismo del header) + texto institucional y legal;
+ * Logo del sitio (el mismo del header) solo en su fila, debajo un grid de 2
+ * columnas (apiladas en mobile) y barra de CTA abajo:
+ *   - texto institucional y legal;
  *   - el menú principal desplegado, filtrado por país (jb3_footer_menu(),
  *     inc/footer-menu.php).
  *
@@ -16,20 +17,22 @@ defined( 'ABSPATH' ) || exit;
 </div><!-- #page -->
 
 <footer id="site-footer" class="jb3-footer">
+	<?php
+	// Mismo logo que el header (Apariencia > Personalizar > Identidad del
+	// sitio > Logo): si se cambia ahí, cambia también acá.
+	$logo_id = (int) get_theme_mod( 'custom_logo' );
+	if ( $logo_id ) :
+		?>
+		<div class="jb3-footer-marca">
+			<a class="jb3-footer-logo" href="<?php echo esc_url( home_url( '/' ) ); ?>">
+				<?php echo jb3_img( $logo_id, '150px', array( 'alt' => get_bloginfo( 'name' ), 'loading' => 'lazy' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_img() ya escapa todo. ?>
+			</a>
+		</div>
+	<?php endif; ?>
+
 	<div class="jb3-footer-grid">
 
 		<div class="jb3-footer-col jb3-footer-col--main">
-			<?php
-			// Mismo logo que el header (Apariencia > Personalizar > Identidad del
-			// sitio > Logo): si se cambia ahí, cambia también acá.
-			$logo_id = (int) get_theme_mod( 'custom_logo' );
-			if ( $logo_id ) :
-				?>
-				<a class="jb3-footer-logo" href="<?php echo esc_url( home_url( '/' ) ); ?>">
-					<?php echo jb3_img( $logo_id, '250px', array( 'alt' => get_bloginfo( 'name' ), 'loading' => 'lazy' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- jb3_img() ya escapa todo. ?>
-				</a>
-			<?php endif; ?>
-
 			<p><strong>Conectados es tu acceso directo al universo de oportunidades que ofrece Sony Pictures Television en América Latina.</strong></p>
 			<p>
 				Aquí puedes descubrir alianzas estratégicas, explorar nuestros contenidos originales y encontrar soluciones creativas que conecten a tu marca con millones de personas.<br>

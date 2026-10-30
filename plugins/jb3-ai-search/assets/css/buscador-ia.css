@@ -29,7 +29,7 @@
     border-radius: 8px;
     background: var(--color-secondary, #a020f0);
     color: #ffffff;
-    font-weight: 600;
+    font-weight: 500;
     text-transform: uppercase;
     cursor: pointer;
 }

@@ -6,6 +6,26 @@
  */
 defined( 'ABSPATH' ) || exit;
 
+// ─── WYSIWYG: SOLAPA "VISUAL" VACÍA AL ABRIR LA PÁGINA ──────────────────────
+// Reproducido 2026-10-30 con Playwright (4 de 4 cargas, Bajada de Programación
+// en un Canal): con la pestaña Visual como preferida, ACF crea TinyMCE al
+// cargar, y unos 2 segundos después el editor de bloques MUEVE las cajas de
+// metadatos a su panel de abajo. Mover un iframe en el DOM lo reinicia en
+// blanco (about:blank): Visual queda vacío y sin poder escribir, mientras que
+// Texto (un textarea) sigue intacto. Con "Delay Initialization" TinyMCE se
+// crea recién al hacer clic en el campo, cuando la caja ya está en su lugar.
+// Solo si el campo arranca en Visual (misma lógica que render_field() de ACF):
+// arrancando en Texto TinyMCE no se crea al cargar, no hay nada que retrasar,
+// y con delay el primer clic en "Visual" no cambiaba de solapa.
+// prepare_field y no load_field: solo cambia lo que se dibuja, así no termina
+// guardado en la definición de los campos.
+add_filter( 'acf/prepare_field/type=wysiwyg', function ( $field ) {
+	if ( 'visual' === $field['tabs'] || ( 'text' !== $field['tabs'] && 'tinymce' === wp_default_editor() ) ) {
+		$field['delay'] = 1;
+	}
+	return $field;
+} );
+
 // ─── BOTONES DE ACCIÓN RÁPIDA EN CAMPOS DE CHECKBOXES DEL ADMIN ─────────────
 // Pedido puntual: cargar contenido para "todos los países menos uno" sin
 // tener que tildar uno por uno — tildás el que sobra, apretás "Invertir

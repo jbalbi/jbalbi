@@ -10,11 +10,51 @@
  */
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   TIPOGRAFÍA
+   Las 4 variantes institucionales de Termina viajan con el tema (assets/fonts):
+   las de Apariencia > Fuentes quedan en uploads/ y en la base de datos, y no
+   llegan a producción al subir los archivos del tema.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@font-face {
+    font-family: 'Termina';
+    src: url('../fonts/Termina-Light.otf') format('opentype');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Termina';
+    src: url('../fonts/Termina-Regular.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Termina';
+    src: url('../fonts/Termina-Medium.otf') format('opentype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Termina';
+    src: url('../fonts/Termina-Bold.otf') format('opentype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    VARIABLES
    ═══════════════════════════════════════════════════════════════════════════ */
 :root {
-    /* Cambiar la tipografía del sitio = cambiar esta línea nomás. */
-    --tipografia-1:     'Montserrat', sans-serif;
+    /* Cambiar la tipografía del sitio = cambiar esta línea nomás.
+       Montserrat queda de respaldo por si Termina no carga. */
+    --tipografia-1:     'Termina', 'Montserrat', sans-serif;
+    /* Pesos institucionales de Termina: SOLO 300, 400, 500 y 700. */
 
     /* Paleta base */
     --color-primary:    #730687;
@@ -29,6 +69,7 @@
     --btn-text:       #ffffff;
     --btn-text-hover: var(--color-primary);
     --btn-radius:     0;
+    --btn-font-weight: 500;
 
     /* Cuerpo (fondo/texto/links del sitio en general) */
     --body-bg:            rgb(0, 0, 0);
@@ -64,8 +105,8 @@
     --nav-cta-margin-left: 20px;
     --nav-font-size:          11px;
     --nav-font-size-mobile:   26px;
-    --nav-font-weight:        700;
-    --nav-font-weight-mobile: 400;
+    --nav-font-weight:        500;
+    --nav-font-weight-mobile: 500;
     /* line-height normal (no un px fijo) para que las líneas de un ítem que
        hace wrap (ej. "Conéctate con nosotros" en dos líneas) no queden
        separadas por un espacio enorme; la altura del botón la da el padding
@@ -141,8 +182,12 @@
    respire igual en todo el sitio. En mobile (breakpoint del hamburguesa)
    --nav-font-size también pasa a usar --nav-font-size-mobile. Como todas
    las reglas ya usan var(...), redefinir las variables acá alcanza — no
-   hace falta duplicar selectores. */
-@media (max-width: 1023px) {
+   hace falta duplicar selectores.
+   Los "hasta" terminan en .98 y no en 1279/1023/767: con zoom o escala de
+   Windows el ancho puede ser fraccionario, y en 1279,2px no aplicaban ni
+   "hasta 1279" ni "desde 1280": quedaba el menú de escritorio con la letra
+   más grande y en dos filas (salto reportado 2026-10-30). */
+@media (max-width: 1023.98px) {
     :root {
         --header-padding-x:      40px;
         --footer-padding-x:      40px;
@@ -151,7 +196,7 @@
     }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     :root {
         --header-padding-x:      20px;
         --footer-padding-x:      20px;
@@ -183,7 +228,7 @@
    "PROGRAMACIÓN"). Estas son solo el piso — cualquier clase con su propio
    font-size (como .jb3-modulo__titulo más abajo) le sigue ganando por
    especificidad, esto no las pisa. */
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     h1 { font-size: 28px; }
     h2 { font-size: 24px; }
     h3 { font-size: 20px; }
@@ -192,7 +237,7 @@
     h6 { font-size: 14px; }
 }
 
-@media (max-width: 1279px) {
+@media (max-width: 1279.98px) {
     :root {
         --nav-font-size: var(--nav-font-size-mobile);
         --nav-font-weight: var(--nav-font-weight-mobile);
@@ -286,7 +331,7 @@ h6 { font-size: 17px; }
    los distintos bloques) quedaba gigante, con palabras largas cortándose en
    su propio renglón (ej. "PROGRAMACIÓN"). Cualquier clase con su propio
    font-size (como .jb3-modulo__titulo) le sigue ganando por especificidad. */
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     h1 { font-size: 28px; }
     h2 { font-size: 24px; }
     h3 { font-size: 20px; }
@@ -356,6 +401,7 @@ input {
     border-radius: var(--btn-radius);
     background-color: var(--btn-bg);
     color: var(--btn-text);
+    font-weight: var(--btn-font-weight);
     text-transform: uppercase;
     text-decoration: none;
     cursor: pointer;
@@ -645,7 +691,7 @@ body.admin-bar .site-header {
 }
 
 .site-logo img {
-    width: 120px;
+    width: 150px;
     height: auto;
 }
 
@@ -685,7 +731,7 @@ body.admin-bar .site-header {
     font-size: 28px;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-hero-titulo__texto {
         font-size: 20px;
     }
@@ -871,6 +917,27 @@ body.admin-bar .site-header {
     color: var(--nav-hover);
 }
 
+/* Termina es mucho más ancha que Montserrat: con el menú de visitante (trae
+   Regístrate + Ingresa) el CTA saltaba a una segunda fila debajo de ~1396px,
+   y a 1280px faltaban 116px. Medido 2026-10-30. El CTA conserva su relleno. */
+@media (min-width: 1280px) and (max-width: 1439px) {
+    :root {
+        --nav-font-size:       10px;
+        --nav-item-padding-x:  6px;
+        --nav-cta-margin-left: 12px;
+        --nav-gap-from-logo:   12px;
+    }
+
+    .main-navigation .nav-cta > a {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .site-header-icons__auth-link {
+        font-size: 12px;
+    }
+}
+
 /* ─── Dropdown de cuenta (usuario logueado, header.js (menú de cuenta)) ──────────── */
 /* Colores, tipografía y hover: sección "Submenú (dropdown)" de arriba. */
 .site-header-account {
@@ -946,7 +1013,7 @@ body.admin-bar .site-header {
     color: var(--nav-hover);
 }
 
-@media (max-width: 1279px) {
+@media (max-width: 1279.98px) {
     .jb3-menu-controles {
         display: flex;
     }
@@ -1143,14 +1210,25 @@ input.jb3-buscador__campo:focus {
     }
 }
 
+/* El logo va solo en su fila, arriba de las columnas: el texto y el menú
+   arrancan a la misma altura. Sin logo cargado, el grid conserva su padding. */
+.jb3-footer-marca {
+    padding: var(--footer-padding-y) var(--footer-padding-x) 20px;
+}
+
+.jb3-footer-marca + .jb3-footer-grid {
+    padding-top: 0;
+}
+
 .jb3-footer-logo {
-    display: inline-block;
-    margin-bottom: 20px;
+    display: block;
+    width: fit-content;
+    max-width: 100%;
 }
 
 .jb3-footer-logo img {
     display: block;
-    width: 250px;
+    width: 150px;
     max-width: 100%;
     height: auto;
 }
@@ -1190,7 +1268,7 @@ input.jb3-buscador__campo:focus {
     display: block;
     color: var(--color-primary) !important; /* !important: la regla global "a { color: var(--link-color) !important }" (COLORES GLOBALES) le gana a cualquier color sin !important. */
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     text-decoration: none;
 }
@@ -1308,7 +1386,7 @@ body {
     justify-content: center;
     color: var(--footer-bar-text) !important;
     text-decoration: none;
-    font-weight: 600;
+    font-weight: var(--btn-font-weight);
     font-size: 14px;
 }
 
@@ -1326,13 +1404,13 @@ body {
    toque los bordes/íconos de las esquinas), y "AQUÍ" del mismo tamaño
    que el resto en vez de destacado — ver --footer-bar-height más arriba,
    bajado en conjunto con este cambio. */
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-footer-bar {
         padding-top: 0;
         padding-bottom: 0;
     }
     .jb3-footer-bar__cta {
-        font-size: 11px;
+        font-size: 10px;
     }
     .jb3-footer-bar__cta strong {
         font-size: 1em;
@@ -1400,7 +1478,7 @@ body {
 /* En mobile no hay hover para mostrar el tooltip, y el CTA de texto ya
    ocupa todo el ancho de la barra — se oculta el botón en vez de dejarlo
    sin la pista visual de qué hace. Mismo breakpoint que el grid del footer. */
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-footer-bar__totop {
         display: none;
     }
@@ -1462,7 +1540,7 @@ body {
     transform: translate(-50%, 0);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-footer-bar__cookies {
         display: none;
     }
@@ -1539,7 +1617,7 @@ body {
    (anclado abajo del slide) cae mayormente sobre el fondo y solo pisa el
    borde inferior de la imagen, donde el arte ya trae su degradé hacia el
    color de fondo. La imagen queda pegada arriba (object-position:top). */
-@media (max-width: 1023px) {
+@media (max-width: 1023.98px) {
     .jb3-home-slider-wrap {
         --jb3-slider-extra: 230px;
     }
@@ -1566,7 +1644,7 @@ body {
    celular apaisado entra mucho mejor la de desktop, que sigue la regla de
    tablet de arriba. Mismo media query en el <source> del <picture>
    (inc/home-slider.php): tienen que coincidir siempre. */
-@media (max-width: 767px) and (orientation: portrait) {
+@media (max-width: 767.98px) and (orientation: portrait) {
     .jb3-home-slider-wrap {
         --jb3-slider-ratio-actual: var(--jb3-slider-ratio-mobile, 1.7778);
         --jb3-slider-extra: 0px;
@@ -1737,7 +1815,7 @@ body.admin-bar .jb3-home-slider-wrap {
    La Home usa Swiper de verdad (soporta swipe); la Galería usa un
    carrusel propio sin gestos táctiles todavía, así que ahí las flechas se
    dejan visibles siempre — es la única forma de navegar en mobile. */
-@media (max-width: 1279px) {
+@media (max-width: 1279.98px) {
     .jb3-home-slider .swiper-button-prev,
     .jb3-home-slider .swiper-button-next {
         display: none;
@@ -1863,7 +1941,7 @@ body.admin-bar .jb3-home-slider-wrap {
 
 /* Celular vertical: el slide mide justo el alto de la pantalla, así que su
    pie coincide siempre con la barra fija — se reserva su alto y listo. */
-@media (max-width: 767px) and (orientation: portrait) {
+@media (max-width: 767.98px) and (orientation: portrait) {
     .jb3-home-slider__contenido {
         padding-bottom: calc(24px + var(--footer-bar-height));
     }
@@ -1872,7 +1950,7 @@ body.admin-bar .jb3-home-slider-wrap {
 /* Pantallas muy bajas (celular apaisado): el bloque de texto mide casi lo
    mismo que toda la ventana — forzarlo a "entrar sin scrollear" lo hacía
    chocar con el header. Ahí se deja al pie del slide y se llega scrolleando. */
-@media (max-height: 500px) and (max-width: 1023px) {
+@media (max-height: 500px) and (max-width: 1023.98px) {
     .jb3-home-slider__contenido {
         padding-bottom: 24px;
     }
@@ -1914,22 +1992,22 @@ body.admin-bar .jb3-home-slider-wrap {
     height: auto;
 }
 
+/* Relativo al ancho de pantalla porque la imagen del slide escala con ella;
+   con Termina (más ancha) los 640px fijos dejaban renglones de una o dos
+   palabras. Piso de 640px para las pantallas chicas y techo para que no se
+   meta en el arte en las grandes. */
 .jb3-home-slider__texto {
-    max-width: 640px;
+    max-width: clamp(640px, 50vw, 860px);
     margin-bottom: 28px;
 }
 
-/* El editor WYSIWYG puede traer cualquier combinación de h1-h6/p (según lo
-   que pegue el que carga el slide, como el h1+h3 de este campo). Por
-   default h1-h6/p son "block" — SIEMPRE arrancan en un renglón nuevo, sin
-   importar cuánto se achique el margen o el line-height (eso solo reduce
-   el aire, no saca el salto de línea en sí). Para que el texto corra
-   seguido como un solo bloque, display:inline saca ese salto forzado —
-   el wrap pasa a depender nomás del ancho disponible, como un párrafo
-   normal. margin-right en vez de margin-bottom: separa un elemento del
-   siguiente con un espacio (en el HTML de origen no hay ninguno entre
-   </h1> y <h3>), no de abajo (ya no aplica con inline). Scopeado a este
-   contenedor nomás, sin tocar los títulos del resto del sitio. */
+/* El editor WYSIWYG puede traer cualquier combinación de h1-h6/p. Cada uno
+   arranca en su propio renglón, igual que en el editor: los Enter que carga
+   el editor se respetan (pedido 2026-10-30; antes iban con display:inline y
+   corrían todos seguidos). Sin margen y con interlineado corto para que el
+   bloque no crezca de más: un renglón vacío en el editor (<p>&nbsp;</p>) sí
+   deja un espacio. Scopeado a este contenedor nomás, sin tocar los títulos
+   del resto del sitio. */
 .jb3-home-slider__texto h1,
 .jb3-home-slider__texto h2,
 .jb3-home-slider__texto h3,
@@ -1937,13 +2015,8 @@ body.admin-bar .jb3-home-slider-wrap {
 .jb3-home-slider__texto h5,
 .jb3-home-slider__texto h6,
 .jb3-home-slider__texto p {
-    display: inline;
     margin: 0;
     line-height: 1.15;
-}
-
-.jb3-home-slider__texto > *:not(:last-child) {
-    margin-right: .35em;
 }
 
 /* En mobile, h1-h6 heredan el tamaño nativo de cada nivel (pensado para
@@ -1951,7 +2024,7 @@ body.admin-bar .jb3-home-slider-wrap {
    eso desborda el overlay (que corta con overflow:hidden) y llega a tapar
    el botón/copyright. Mismo breakpoint que el resto del sitio usa para
    mobile. */
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-home-slider__texto h1,
     .jb3-home-slider__texto h2,
     .jb3-home-slider__texto h3,
@@ -1975,7 +2048,7 @@ body.admin-bar .jb3-home-slider-wrap {
     background: var(--jb3-slide-btn-bg);
     color: var(--btn-text) !important;
     text-decoration: none !important;
-    font-weight: 700;
+    font-weight: var(--btn-font-weight);
     font-size: 13px;
     text-transform: uppercase;
     border-radius: var(--btn-radius);
@@ -2016,7 +2089,7 @@ body {
     background-image: var(--jb3-bg-desktop, none);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     body {
         background-image: var(--jb3-bg-mobile, var(--jb3-bg-desktop, none));
     }
@@ -2062,13 +2135,13 @@ body {
     text-decoration: none !important;
     /* Fijo, NO var(--nav-font-size)/--nav-font-weight: esas variables pasan a
        los valores grandes/regular del panel mobile del header por debajo de
-       1279px (ver @media (max-width: 1279px) más arriba) — ese es el
+       1279px (ver @media (max-width: 1279.98px) más arriba) — ese es el
        breakpoint del hamburguesa del header, sin relación con esta subnav,
        que tiene su propio breakpoint propio (se oculta recién a los 767px,
        ver más abajo). Compartir la variable hacía que la subnav se viera
        grande entre 768 y 1278px por accidente. */
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     letter-spacing: .05em;
     text-transform: uppercase;
 }
@@ -2081,7 +2154,7 @@ body {
 /* En mobile no entra cómodo (muchos ítems envueltos en varias líneas,
    ocupa demasiado alto arriba de todo) — se oculta directo, mismo
    breakpoint que el resto del sitio. */
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-subnav {
         display: none;
     }
@@ -2175,7 +2248,7 @@ body {
 }
 
 /* Título de módulo: mismo tratamiento en TODOS los módulos del sitio (acá y
-   en .jb3-modulo__titulo más abajo) — rayita vertical, 600, mayúsculas. Un
+   en .jb3-modulo__titulo más abajo) — rayita vertical, 700, mayúsculas. Un
    solo lugar para tocar el estilo si cambia a futuro. También el título de
    cada Op. Comercial (pedido 2026-10-19), que es un <h1>: ver su tamaño en
    .jb3-op-comercial__titulo. */
@@ -2185,7 +2258,7 @@ body {
 .jb3-op-comercial__titulo {
     padding-left: 16px;
     border-left: 6px solid var(--color-primary);
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .02em;
 }
@@ -2194,7 +2267,7 @@ body {
    mobile queda grande y palabras largas (ej. "PROGRAMACIÓN") no entran en
    una línea y se ven cortadas. Mismo breakpoint mobile que el resto del
    sitio. */
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-canales-slider__titulo,
     .jb3-modulo__titulo {
         font-size: 22px;
@@ -2271,13 +2344,13 @@ body {
     opacity: 1;
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1023.98px) {
     .jb3-canales-slider__logo {
         height: 90px;
     }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-canales-slider__logo {
         height: 75px;
     }
@@ -2300,7 +2373,7 @@ body {
     line-height: 1.2;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-op-comercial__titulo {
         font-size: 22px; /* Mismo tamaño que los títulos de módulo en mobile. */
     }
@@ -2705,7 +2778,7 @@ body {
    font-size acá no le pega al heading de adentro, que tiene su propio
    tamaño nativo del navegador (más específico que heredar del padre). En
    mobile ese tamaño nativo queda enorme y tapa el header. */
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-modulo__bajada h1,
     .jb3-modulo__bajada h2,
     .jb3-modulo__bajada h3,
@@ -2771,7 +2844,7 @@ body {
     grid-template-columns: repeat(var(--jb3-grid-cols, 3), 1fr);
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1023.98px) {
     .jb3-grid-posters { grid-template-columns: repeat(3, 1fr); }
     .jb3-grid-thumbs  { grid-template-columns: repeat(2, 1fr); }
 }
@@ -2816,7 +2889,7 @@ body {
 .jb3-cols-6 > .wp-block-group__inner-container { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .jb3-cols-8 > .wp-block-group__inner-container { grid-template-columns: repeat(8, minmax(0, 1fr)); }
 
-@media (max-width: 1023px) {
+@media (max-width: 1023.98px) {
     .jb3-cols-3 > .wp-block-group__inner-container { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .jb3-cols-4 > .wp-block-group__inner-container { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .jb3-cols-5 > .wp-block-group__inner-container { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -2828,7 +2901,7 @@ body {
    ancho para repartir, y jb3-grid-posters/jb3-cols-2 siguen mostrando 2
    columnas a este tamaño — con 40px de gap les queda poco espacio real a
    los contenidos. Pedido explícito 2026-08-17. */
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     [class*="jb3-cols-"] > .wp-block-group__inner-container {
         grid-template-columns: repeat(1, minmax(0, 1fr));
         gap: 20px;
@@ -2850,13 +2923,13 @@ body {
     gap: 40px;
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1023.98px) {
     .jb3-grilla {
         grid-template-columns: repeat(var(--jb3-grilla-cols-tablet, 2), minmax(0, 1fr));
     }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-grilla {
         grid-template-columns: repeat(var(--jb3-grilla-cols-mobile, 1), minmax(0, 1fr));
         gap: 20px;
@@ -2872,11 +2945,11 @@ body {
     grid-column-start: var(--jb3-grilla-gc-desktop, auto);
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1023.98px) {
     .jb3-grilla__item { grid-column-start: var(--jb3-grilla-gc-tablet, auto); }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-grilla__item { grid-column-start: var(--jb3-grilla-gc-mobile, auto); }
 }
 
@@ -2897,13 +2970,13 @@ body {
     gap: 40px;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .is-layout-grid {
         gap: 20px;
     }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-grid-posters,
     .jb3-grid-thumbs {
         gap: 20px;
@@ -2939,7 +3012,7 @@ body {
     }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-relacionados--6 .jb3-grid-posters__item:nth-child(n+5) {
         display: none;
     }
@@ -3038,7 +3111,7 @@ body {
     display: block;
     margin-top: 8px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .03em;
 }
@@ -3077,11 +3150,11 @@ body {
     --jb3-mixto-gap: 40px;
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1023.98px) {
     .jb3-grid-mixto { --jb3-mixto-cols: 3; }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-grid-mixto { --jb3-mixto-cols: 2; --jb3-mixto-gap: 20px; }
 }
 
@@ -3131,7 +3204,7 @@ body {
     display: block;
     margin-top: 8px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .03em;
 }
@@ -3436,7 +3509,7 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
     padding: 0;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-page-modal__contenido {
         padding: 32px 20px;
     }
@@ -3525,13 +3598,13 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
     transform: scale(var(--jb3-zoom-escala));
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1023.98px) {
     .jb3-galeria-slider__slide {
         height: 320px;
     }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-galeria-slider__slide {
         height: 220px;
     }
@@ -3658,7 +3731,7 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
     gap: 40px;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-contenido-fila--dos-columnas {
         grid-template-columns: 1fr;
         gap: 24px;
@@ -3823,7 +3896,7 @@ a.jb3-tarjeta:hover .jb3-tarjeta__media img {
    proporción (con el mismo techo de 80px de alto). flex (no grid) para que,
    con una cantidad impar, el último quede centrado y no pegado a la
    izquierda. */
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
     .jb3-contenido-renta__plataformas {
         gap: 16px;
     }
