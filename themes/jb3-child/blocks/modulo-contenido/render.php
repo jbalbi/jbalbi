@@ -68,6 +68,9 @@ if ( $is_preview ) {
 			Tipo: <strong><?php echo esc_html( $tipos_texto ); ?></strong><br>
 			Canal: <strong><?php echo esc_html( $canales_texto ); ?></strong><br>
 			Título: <strong><?php echo esc_html( $titulo ?: '(sin completar)' ); ?></strong>
+			<?php if ( get_field( 'mc_filtro_canal' ) ) : ?>
+				<br>Filtro por canal: <strong>sí</strong>
+			<?php endif; ?>
 			<?php if ( $pais_override ) : ?>
 				<br>Mostrando override de: <strong><?php echo esc_html( $pais_override ); ?></strong> (según "Ver como país…")
 			<?php endif; ?>
@@ -86,5 +89,6 @@ echo jb3_modulo_render(
 	(string) get_field( 'mc_boton_texto' ),
 	(string) get_field( 'mc_boton_link' ),
 	0,
-	(int) get_field( 'mc_columnas' )
+	(int) get_field( 'mc_columnas' ),
+	(bool) get_field( 'mc_filtro_canal' )
 );

@@ -107,7 +107,23 @@ function jb3_grid_sizes( string $grilla, int $columnas = 0 ): string {
 		. ', ' . $ancho( $desktop, 160, 40 );
 }
 
-function jb3_grid_posters( array $posts, int $columnas = 0 ): string {
+/**
+ * Atributo data-jb3-canales="slug slug" de una tarjeta, para el filtro por
+ * canal del Módulo de Contenido (jb3_filtro_canal_html(), inc/modulo.php,
+ * y assets/js/filtro-canal.js). Vacío si no se pide o el post no tiene canal.
+ */
+function jb3_grid_canales_attr( WP_Post $post, bool $con_canales ): string {
+	if ( ! $con_canales ) {
+		return '';
+	}
+	$terms = get_the_terms( $post, 'canales' );
+	if ( ! $terms || is_wp_error( $terms ) ) {
+		return ' data-jb3-canales=""';
+	}
+	return ' data-jb3-canales="' . esc_attr( implode( ' ', wp_list_pluck( $terms, 'slug' ) ) ) . '"';
+}
+
+function jb3_grid_posters( array $posts, int $columnas = 0, bool $con_canales = false ): string {
 	if ( empty( $posts ) ) {
 		return '';
 	}
@@ -121,7 +137,7 @@ function jb3_grid_posters( array $posts, int $columnas = 0 ): string {
 			if ( ! $post ) continue;
 			$cintillo = jb3_grid_cintillo_texto( $post );
 		?>
-			<a class="jb3-grid-posters__item" href="<?php echo esc_url( get_permalink( $post ) ); ?>">
+			<a class="jb3-grid-posters__item" href="<?php echo esc_url( get_permalink( $post ) ); ?>"<?php echo jb3_grid_canales_attr( $post, $con_canales ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapado adentro. ?>>
 				<span class="jb3-grid-posters__media">
 					<?php if ( has_post_thumbnail( $post ) ) : ?>
 						<?php echo get_the_post_thumbnail( $post, 'large', array( 'sizes' => $sizes ) ); ?>
@@ -198,7 +214,7 @@ function jb3_grid_mixto( array $posts, int $columnas = 0 ): string {
 	return ob_get_clean();
 }
 
-function jb3_grid_thumbs( array $posts, int $columnas = 0 ): string {
+function jb3_grid_thumbs( array $posts, int $columnas = 0, bool $con_canales = false ): string {
 	if ( empty( $posts ) ) {
 		return '';
 	}
@@ -217,6 +233,7 @@ function jb3_grid_thumbs( array $posts, int $columnas = 0 ): string {
 				class="jb3-grid-thumbs__item"
 				href="<?php echo esc_url( get_permalink( $post ) ); ?>"
 				<?php if ( $video_url ) : ?>data-jb3-video="<?php echo esc_url( $video_url ); ?>"<?php endif; ?>
+				<?php echo jb3_grid_canales_attr( $post, $con_canales ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapado adentro. ?>
 			>
 				<span class="jb3-grid-thumbs__media">
 					<?php if ( has_post_thumbnail( $post ) ) : ?>

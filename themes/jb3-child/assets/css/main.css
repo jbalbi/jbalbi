@@ -2325,23 +2325,25 @@ body {
     position: relative;
 }
 
+/* Cambio instantáneo, con visibility y sin fundido: los logos no se pueden
+   mostrar semitransparentes por un tema legal, ni siquiera durante una
+   transición (2026-11-03). */
 .jb3-canales-slider__logo--hover .jb3-canales-slider__logo-img {
     position: absolute;
     inset: 0;
     margin: auto;
-    transition: opacity .25s ease;
 }
 
 .jb3-canales-slider__logo--hover .jb3-canales-slider__logo-img--hover {
-    opacity: 0;
+    visibility: hidden;
 }
 
 .jb3-canales-slider__logo--hover:hover .jb3-canales-slider__logo-img--default {
-    opacity: 0;
+    visibility: hidden;
 }
 
 .jb3-canales-slider__logo--hover:hover .jb3-canales-slider__logo-img--hover {
-    opacity: 1;
+    visibility: visible;
 }
 
 @media (max-width: 1023.98px) {
@@ -2810,6 +2812,107 @@ body {
 .jb3-modulo__ver-mas {
     margin: 24px 0 0;
     text-align: center;
+}
+
+/* Filtro por canal del Módulo de Contenido (jb3_filtro_canal_html(),
+   inc/modulo.php; assets/js/filtro-canal.js). Con "Todos", los logos a
+   color. Con un canal elegido, ese queda a color con borde violeta y el
+   resto pasa al logo en blanco y negro del canal; al pasar el mouse vuelve el
+   de color. Los logos van SIEMPRE opacos, nunca con opacity: por un tema
+   legal no se pueden mostrar semitransparentes (para eso está el logo en
+   blanco y negro). */
+.jb3-filtro-canal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 0 0 32px;
+}
+
+.jb3-filtro-canal__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 88px;
+    height: 88px;
+    margin: 0;
+    padding: 8px;
+    border: 2px solid transparent;
+    border-radius: 0;
+    background: rgba(255, 255, 255, .06);
+    color: var(--body-text);
+    cursor: pointer;
+    transition: border-color .15s, background-color .15s;
+}
+
+.jb3-filtro-canal__btn img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.jb3-filtro-canal__btn--texto {
+    font-size: 12px;
+    font-weight: var(--btn-font-weight);
+    letter-spacing: .04em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.jb3-filtro-canal__btn:hover,
+.jb3-filtro-canal__btn:focus-visible {
+    border-color: var(--color-secondary);
+}
+
+.jb3-filtro-canal__btn[aria-pressed="true"] {
+    border-color: var(--color-primary);
+    background: rgba(115, 6, 135, .35);
+}
+
+.jb3-filtro-canal__btn .jb3-filtro-canal__byn {
+    display: none;
+}
+
+.jb3-filtro-canal--activo .jb3-filtro-canal__btn[aria-pressed="false"]:has(.jb3-filtro-canal__byn) .jb3-filtro-canal__color {
+    display: none;
+}
+
+.jb3-filtro-canal--activo .jb3-filtro-canal__btn[aria-pressed="false"] .jb3-filtro-canal__byn {
+    display: block;
+}
+
+.jb3-filtro-canal--activo .jb3-filtro-canal__btn[aria-pressed="false"]:hover .jb3-filtro-canal__byn {
+    display: none;
+}
+
+.jb3-filtro-canal--activo .jb3-filtro-canal__btn[aria-pressed="false"]:hover:has(.jb3-filtro-canal__byn) .jb3-filtro-canal__color {
+    display: block;
+}
+
+.jb3-filtro-canal--activo .jb3-filtro-canal__btn--texto[aria-pressed="false"] {
+    opacity: .6;
+}
+
+/* Celular: una sola fila que se desliza, hasta el borde de la pantalla. */
+@media (max-width: 767.98px) {
+    .jb3-filtro-canal {
+        flex-wrap: nowrap;
+        margin-right: calc(-1 * var(--jb3-modulo-padding-x));
+        padding-right: var(--jb3-modulo-padding-x);
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .jb3-filtro-canal::-webkit-scrollbar {
+        display: none;
+    }
+
+    .jb3-filtro-canal__btn {
+        flex: 0 0 auto;
+        width: 72px;
+        height: 72px;
+    }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

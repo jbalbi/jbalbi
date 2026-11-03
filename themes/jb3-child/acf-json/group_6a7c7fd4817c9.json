@@ -279,6 +279,27 @@
             "placeholder": "",
             "prepend": "",
             "append": ""
+        },
+        {
+            "key": "field_jb3_mc_filtro_canal",
+            "label": "Filtro por canal",
+            "name": "mc_filtro_canal",
+            "aria-label": "",
+            "type": "true_false",
+            "instructions": "Muestra los logos de los canales arriba de la grilla para que el visitante filtre. Solo aparecen los canales con contenido para su país, y solo si hay al menos dos. Filtra lo que se muestra: con un Límite cargado, solo entre esas tarjetas.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "message": "",
+            "default_value": 0,
+            "allow_in_bindings": 0,
+            "ui": 1,
+            "ui_on_text": "",
+            "ui_off_text": ""
         }
     ],
     "location": [
@@ -302,5 +323,5 @@
     "display_title": "",
     "allow_ai_access": false,
     "ai_description": "",
-    "modified": 1786629905
+    "modified": 1793718302
 }

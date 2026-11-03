@@ -78,15 +78,52 @@ El `.htaccess` de `wp-content/` sí viaja con el repo y no hay que tocarlo.
 - **ACF Pro**: reactivar la licencia en el dominio nuevo (Custom Fields →
   Updates).
 
+## 4 bis. Servidor, archivos y plugins (agregado 2026-11-03)
+
+- **Qué archivos subir**: `wp-content/` entero (temas, plugins, `uploads/`,
+  `mu-plugins/jb3-propietario.php`). **No** subir
+  `mu-plugins/jb3-vista-previa-tema.php` (solo local), `debug.log` ni
+  `upgrade*/`. Antes de subir, correr
+  `php themes/jb3-child/tools/minificar-css.php` (si no, `main.min.css`
+  queda viejo y el sitio muestra estilos anteriores).
+- **PHP**: 8.1 o más (local usa 8.3), con `gd` o `imagick` (WebP) e
+  `intl`/`mbstring`. `memory_limit` 256M y `upload_max_filesize` acorde a
+  los PDFs de Op. Comerciales.
+- **HTTPS**: certificado activo antes de mover. Las cookies de sesión y del
+  magic link se marcan seguras con https.
+- **Tema**: activo `jb3-child` (padre `jb3`). Los temas GeneratePress se
+  quedan instalados, no se borran.
+- **ACF**: después de subir, Custom Fields → Grupos de campos →
+  **Sincronizar** si aparece "Sincronización disponible".
+- **Enlaces permanentes**: Ajustes → Enlaces permanentes → Guardar (sin
+  cambiar nada) para regenerar las reglas.
+- **WP-Cron**: el vencimiento de contenido (jb3-content-expiration) y la
+  limpieza diaria de jb3-members dependen del cron. Con caché de página las
+  visitas casi no lo disparan: conviene un cron real del hosting cada 5–15
+  min a `https://DOMINIO/wp-cron.php?doing_wp_cron` y
+  `define( 'DISABLE_WP_CRON', true );` en wp-config.
+- **LiteSpeed Cache**: lo instala el hosting (no está en el repo). Si el
+  servidor nuevo no es LiteSpeed, no usarlo y sacar el bloque `JB3 GeoIP`
+  (sección 3). Purgar todo después de cada subida.
+- **Banner de cookies (CookieYes / cookie-law-info)**: la configuración
+  viaja en la base. Si está conectado a la cuenta web de CookieYes, agregar
+  el dominio nuevo allá y volver a escanear las cookies.
+- **Tipografía Termina**: la licencia web tiene que cubrir el dominio
+  definitivo.
+- **Indexación**: mientras haya contraseña de carpeta, nada se indexa. El
+  día del lanzamiento: sacar la contraseña, Ajustes → Lectura → destildar
+  "Disuadir a los motores de búsqueda", revisar `/robots.txt` y mandar el
+  sitemap en Search Console.
+
 ## 5. Cuentas externas que apuntan al dominio
 
 | Servicio | Qué cambiar |
 |---|---|
 | **Mailchimp** | Audiencia → Settings → Webhooks: la URL del webhook tiene el dominio (`https://DOMINIO/?jb3_mc_hook=...`). Actualizarla al nuevo (el secret es el mismo, está en la base) |
 | **reCAPTCHA** | Agregar el dominio nuevo (sección 1) |
-| **Google Analytics** | ID `G-EJZW4LPX6Y` en `themes/generatepress-child/_init_analytics.php` (`JB3_GA_MEASUREMENT_ID`). No es secreto. Cambiarlo solo si se usa otra propiedad (ej. una de Sony); actualizar la URL del flujo de datos en GA |
+| **Google Analytics** | ID `G-EJZW4LPX6Y` en `themes/jb3-child/inc/analytics.php` (`JB3_GA_MEASUREMENT_ID`). No es secreto. Cambiarlo solo si se usa otra propiedad (ej. una de Sony); actualizar la URL del flujo de datos en GA |
 | **Google Search Console** | Dar de alta el dominio nuevo |
-| **LinkedIn** | `JB3_LINKEDIN_EMPRESA_ID` en `_init_footer_menu.php` — es la empresa, no cambia con el servidor |
+| **LinkedIn** | `JB3_LINKEDIN_EMPRESA_ID` en `themes/jb3-child/inc/footer-menu.php` — es la empresa, no cambia con el servidor |
 
 ## 6. Después de subir — verificación
 

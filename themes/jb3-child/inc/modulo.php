@@ -105,7 +105,8 @@ function jb3_modulo_render(
 	string $boton_texto = '',
 	string $boton_link = '',
 	int $excluir_id = 0,
-	int $columnas = 0
+	int $columnas = 0,
+	bool $filtro_canal = false
 ): string {
 	// Se separan los tipos pedidos en las dos familias de grilla — si el
 	// módulo mezcla Películas (poster) con Videos (thumb), o directamente
@@ -160,11 +161,16 @@ function jb3_modulo_render(
 		<?php if ( $bajada ) : ?>
 			<div class="jb3-modulo__bajada"><?php echo wp_kses_post( $bajada ); ?></div>
 		<?php endif; ?>
+		<?php
+		$filtro_html  = $filtro_canal ? jb3_filtro_canal_html( array_merge( $posts_poster, $posts_thumb ) ) : '';
+		$con_canales  = '' !== $filtro_html;
+		echo $filtro_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapado adentro.
+		?>
 		<?php if ( $posts_poster ) : ?>
-			<?php echo jb3_grid_posters( $posts_poster, $columnas ); ?>
+			<?php echo jb3_grid_posters( $posts_poster, $columnas, $con_canales ); ?>
 		<?php endif; ?>
 		<?php if ( $posts_thumb ) : ?>
-			<?php echo jb3_grid_thumbs( $posts_thumb, $columnas ); ?>
+			<?php echo jb3_grid_thumbs( $posts_thumb, $columnas, $con_canales ); ?>
 		<?php endif; ?>
 		<?php if ( $hay_mas && $boton_texto && $boton_link ) : ?>
 			<p class="jb3-modulo__ver-mas">
@@ -172,6 +178,61 @@ function jb3_modulo_render(
 			</p>
 		<?php endif; ?>
 	</section>
+	<?php
+	return ob_get_clean();
+}
+
+// ─── FILTRO POR CANAL (pedido 2026-11-03) ───────────────────────────────────
+// Opción "Filtro por canal" del Módulo de Contenido: una fila de logos arriba
+// de la grilla. Al elegir uno, quedan solo las tarjetas de ese canal (lo hace
+// assets/js/filtro-canal.js, sin recargar), su logo a color y el resto con el
+// logo en blanco y negro del canal (campo "logo_byn"; sin él, el de color).
+// Se arma con las tarjetas que ya trajo jb3_modulo_query(), que ya filtró por
+// país: solo aparecen canales con contenido para el visitante, y la fila no
+// se muestra con menos de dos. Un contenido sin canal queda solo en "Todos".
+function jb3_filtro_canal_html( array $posts ): string {
+	$ids = [];
+	foreach ( $posts as $post ) {
+		$terms = get_the_terms( $post, 'canales' );
+		if ( $terms && ! is_wp_error( $terms ) ) {
+			$ids = array_merge( $ids, wp_list_pluck( $terms, 'term_id' ) );
+		}
+	}
+	$ids = array_unique( $ids );
+	if ( count( $ids ) < 2 ) {
+		return '';
+	}
+
+	$terms = get_terms( [ 'taxonomy' => 'canales', 'include' => $ids, 'hide_empty' => false ] );
+	if ( is_wp_error( $terms ) ) {
+		return '';
+	}
+
+	$path = get_stylesheet_directory() . '/assets/js/filtro-canal.js';
+	wp_enqueue_script( 'jb3-filtro-canal', get_stylesheet_directory_uri() . '/assets/js/filtro-canal.js', [], file_exists( $path ) ? filemtime( $path ) : false, true );
+
+	ob_start();
+	?>
+	<div class="jb3-filtro-canal" role="group" aria-label="<?php esc_attr_e( 'Filtrar por canal', 'jb3' ); ?>" data-jb3-filtro-canal>
+		<button type="button" class="jb3-filtro-canal__btn jb3-filtro-canal__btn--texto" data-canal="" aria-pressed="true"><?php esc_html_e( 'Todos', 'jb3' ); ?></button>
+		<?php foreach ( $terms as $term ) :
+			$color = function_exists( 'get_field' ) ? get_field( 'logo', 'canales_' . $term->term_id ) : '';
+			$byn   = function_exists( 'get_field' ) ? get_field( 'logo_byn', 'canales_' . $term->term_id ) : '';
+			$color = is_array( $color ) ? ( $color['url'] ?? '' ) : (string) $color;
+			$byn   = is_array( $byn ) ? ( $byn['url'] ?? '' ) : (string) $byn;
+			?>
+			<?php if ( $color ) : ?>
+				<button type="button" class="jb3-filtro-canal__btn" data-canal="<?php echo esc_attr( $term->slug ); ?>" aria-pressed="false" title="<?php echo esc_attr( $term->name ); ?>">
+					<img class="jb3-filtro-canal__color" src="<?php echo esc_url( $color ); ?>" alt="<?php echo esc_attr( $term->name ); ?>">
+					<?php if ( $byn ) : ?>
+						<img class="jb3-filtro-canal__byn" src="<?php echo esc_url( $byn ); ?>" alt="">
+					<?php endif; ?>
+				</button>
+			<?php else : ?>
+				<button type="button" class="jb3-filtro-canal__btn jb3-filtro-canal__btn--texto" data-canal="<?php echo esc_attr( $term->slug ); ?>" aria-pressed="false"><?php echo esc_html( $term->name ); ?></button>
+			<?php endif; ?>
+		<?php endforeach; ?>
+	</div>
 	<?php
 	return ob_get_clean();
 }
