@@ -54,7 +54,7 @@ $site_name   = get_bloginfo( 'name' );
                 [ 'País',            esc_html( $country_name ) ],
                 [ 'Sector',          esc_html( $sector ) ],
                 [ 'Intereses',       esc_html( $interests ) ],
-                [ 'Newsletter',      esc_html( $newsletter ) ],
+                [ 'Suscripto al newsletter', esc_html( $newsletter ) ],
                 [ 'Fecha registro',  esc_html( $registered ) ],
             ];
             foreach ( $rows as $i => [ $label, $value ] ) :

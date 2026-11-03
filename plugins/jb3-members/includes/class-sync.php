@@ -19,10 +19,12 @@ defined( 'ABSPATH' ) || exit;
  *   Optimization: update_meta_cache() loads all user meta in one SQL query
  *   per chunk (replaces N × 7 individual queries).
  *
- * Phase 2 — MC → Archive
+ * Phase 2 — MC → Archive (solo si el admin la tilda, 'archivar_sin_cuenta')
  *   Fetches Mailchimp members in pages of MC_CHUNK. A single SQL IN() query
  *   per page checks which emails exist in WordPress. Those that don't are
  *   archived via Batch API DELETE (archive = recoverable, not permanent).
+ *   Opcional desde 2026-11-02: archiva TODO contacto sin cuenta, incluidos los
+ *   cargados a mano en Mailchimp, así que no corre sin pedirlo.
  */
 class JB3_Sync {
 
@@ -74,6 +76,7 @@ class JB3_Sync {
             'admin_done' => false,
             'mc_offset'  => 0,
             'mc_total'   => -1,
+            'archivar_sin_cuenta' => ! empty( $_POST['archivar_sin_cuenta'] ),
             'subscribed'   => 0,
             'unsubscribed' => 0,
             'archived'     => 0,
@@ -195,7 +198,8 @@ class JB3_Sync {
         }
 
         // --- Transition to Phase 2 ---
-        $state['phase'] = 'mc_to_wp';
+        // ?? true: una sincronización a medias de antes de esta opción sigue como empezó.
+        $state['phase'] = ( $state['archivar_sin_cuenta'] ?? true ) ? 'mc_to_wp' : 'done';
         return $state;
     }
 

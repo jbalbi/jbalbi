@@ -120,6 +120,37 @@ function jb3_sync_newsletter_countries( int $user_id, bool $newsletter ): void {
     }
 }
 
+/**
+ * Reemplaza el grupo de newsletter de un país por el de otro, conservando los
+ * demás grupos. Sin grupo para el país nuevo, solo saca el viejo.
+ *
+ * @param string[] $ids Grupos actuales.
+ * @return string[]
+ */
+function jb3_reemplazar_grupo_pais( array $ids, string $pais_viejo, string $pais_nuevo ): array {
+    $por_codigo = [];
+    foreach ( JB3_Mailchimp::get_newsletter_interests() as $id => $name ) {
+        $por_codigo[ strtoupper( $name ) ] = $id;
+    }
+
+    $ids = array_diff( $ids, [ $por_codigo[ strtoupper( $pais_viejo ) ] ?? '', '' ] );
+    if ( isset( $por_codigo[ strtoupper( $pais_nuevo ) ] ) ) {
+        $ids[] = $por_codigo[ strtoupper( $pais_nuevo ) ];
+    }
+
+    return array_values( array_unique( $ids ) );
+}
+
+/** El usuario cambió de país sin cambiar su suscripción: su grupo de newsletter pasa al país nuevo. */
+function jb3_cambiar_pais_newsletter( int $user_id, string $pais_viejo, string $pais_nuevo ): void {
+    $ids = jb3_reemplazar_grupo_pais( (array) get_user_meta( $user_id, 'jb3_newsletter_countries', true ), $pais_viejo, $pais_nuevo );
+    if ( $ids ) {
+        update_user_meta( $user_id, 'jb3_newsletter_countries', $ids );
+    } else {
+        delete_user_meta( $user_id, 'jb3_newsletter_countries' );
+    }
+}
+
 // ─── User helpers ─────────────────────────────────────────────────────────────
 
 function jb3_is_member( $user_id ) {

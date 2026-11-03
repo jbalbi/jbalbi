@@ -250,6 +250,14 @@ class JB3_Magic_Link {
      * y reemite la cookie del navegador para que coincida — sin reemitir
      * la cookie, el navegador la descartaría en su fecha original sin
      * importar lo que diga este meta del lado del servidor.
+     *
+     * Extiende la sesión ACTUAL, no crea otra (2026-11-02): con una sesión
+     * nueva cambiaba el token, y como los nonces de WordPress dependen de él,
+     * una vez por día cualquier pantalla abierta dejaba de poder guardar (el
+     * error de ACF "nonce failed verification"), y las sesiones viejas se
+     * acumulaban. Al ser la misma sesión, también conserva la marca de la
+     * verificación en dos pasos. Hay que actualizar su vencimiento además de
+     * la cookie: si no, la sesión vencía aunque la cookie siguiera vigente.
      */
     public static function maybe_refresh_session( int $user_id, int $current_expiry, int $session_started ): void {
         $now         = time();
@@ -267,15 +275,18 @@ class JB3_Magic_Link {
             $new_expiry = $max_expiry; // El check_session() del caller ya habrá cortado la sesión si $now superó esto.
         }
 
+        $token   = wp_get_session_token();
+        $manager = WP_Session_Tokens::get_instance( $user_id );
+        $session = $manager->get( $token );
+        if ( ! $session ) {
+            return;
+        }
+
         update_user_meta( $user_id, self::SESSION_META, $new_expiry );
 
-        // La sesión renovada es nueva: si la actual pasó la verificación en
-        // dos pasos, la nueva también queda marcada (si no, el admin quedaría
-        // afuera en el pedido siguiente — ver JB3_Two_Factor).
-        if ( class_exists( 'JB3_Two_Factor' ) && JB3_Two_Factor::sesion_actual_verificada() ) {
-            $GLOBALS['jb3_2fa_verificado'] = true;
-        }
-        wp_set_auth_cookie( $user_id, true );
+        $session['expiration'] = $new_expiry;
+        $manager->update( $token, $session );
+        wp_set_auth_cookie( $user_id, true, '', $token );
     }
 
     // ─── Force logout ─────────────────────────────────────────────────────────

@@ -262,7 +262,7 @@ class JB3_Two_Factor {
 
 	// ─── Sesiones: solo las verificadas sobreviven ───────────────────────────
 
-	/** Marca la sesión que se está creando como verificada (ver finalizar() y JB3_Magic_Link::maybe_refresh_session()). */
+	/** Marca la sesión que se está creando como verificada (ver finalizar()). */
 	public static function marcar_sesion( array $info, $user_id ): array {
 		if ( ! empty( $GLOBALS['jb3_2fa_verificado'] ) ) {
 			$info['jb3_2fa'] = true;

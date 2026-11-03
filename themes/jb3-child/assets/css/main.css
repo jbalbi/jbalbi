@@ -319,12 +319,12 @@ h1, h2, h3 {
     line-height: 1.2em;
 }
 
-h1 { font-size: 42px; }
-h2 { font-size: 35px; }
-h3 { font-size: 29px; }
-h4 { font-size: 24px; }
-h5 { font-size: 20px; }
-h6 { font-size: 17px; }
+h1 { font-size: 40px; }
+h2 { font-size: 30px; }
+h3 { font-size: 25px; }
+h4 { font-size: 21px; }
+h5 { font-size: 18px; }
+h6 { font-size: 16px; }
 
 /* Piso de tamaño de headings en mobile: cualquier h1-h6 sin una regla más
    específica propia (la mayoría del contenido cargado a mano vía WYSIWYG en

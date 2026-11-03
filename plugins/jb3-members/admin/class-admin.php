@@ -190,7 +190,7 @@ class JB3_Admin {
         if ( ! $screen || strpos( $screen->id, 'jb3' ) === false ) {
             return;
         }
-        if ( ! get_option( 'jb3_login_page_id' ) || ! get_option( 'jb3_profile_page_id' ) || ! get_option( 'jb3_dashboard_page_id' ) ) {
+        if ( ! get_option( 'jb3_login_page_id' ) || ! get_option( 'jb3_profile_page_id' ) || ! get_option( 'jb3_dashboard_page_id' ) || ! get_option( 'jb3_delete_confirm_page_id' ) ) {
             echo '<div class="notice notice-warning"><p>'
                 . wp_kses(
                     sprintf(
@@ -736,7 +736,7 @@ class JB3_Admin {
                     <p>
                         <strong><?php esc_html_e( 'URL del Webhook (Mailchimp → WordPress):', 'jb3-members' ); ?></strong><br>
                         <code style="user-select:all;"><?php echo esc_url( JB3_Mailchimp::webhook_url() ); ?></code><br>
-                        <span class="description"><?php esc_html_e( 'Copiá esta URL en Mailchimp → Audience → Settings → Webhooks. Eventos: Unsubscribes y Subscribe.', 'jb3-members' ); ?></span>
+                        <span class="description"><?php esc_html_e( 'Copiá esta URL en Mailchimp → Audience → Settings → Webhooks. Eventos: Unsubscribes y Subscribe. Fuentes: no tildes "via the API", para que los cambios que hace el propio sitio no cuenten como baja del usuario.', 'jb3-members' ); ?></span>
                     </p>
                 </div>
                 <?php endif; ?>
@@ -840,7 +840,7 @@ class JB3_Admin {
 
         return array_merge( $cb, $email, $columns, [
             'jb3_status'     => __( 'Estado JB3', 'jb3-members' ),
-            'jb3_newsletter' => __( 'Newsletter', 'jb3-members' ),
+            'jb3_newsletter' => __( 'Suscripto al newsletter', 'jb3-members' ),
             'jb3_country'    => __( 'País', 'jb3-members' ),
             'jb3_company'    => __( 'Empresa', 'jb3-members' ),
         ] );
@@ -1226,6 +1226,12 @@ class JB3_Admin {
             update_user_meta( $user_id, 'jb3_approved_at', current_time( 'mysql' ) );
         }
 
+        // Aprobar desde la ficha manda el mismo mail que el link "Aprobar":
+        // sin esto el usuario quedaba aprobado sin enterarse.
+        if ( $old_status === 'pending' && $status === 'approved' && jb3_is_member( $user_id ) ) {
+            JB3_Email::send_user_approved( $user_id );
+        }
+
         if ( $old_status === 'approved' && $status === 'pending' ) {
             $user_data = get_userdata( $user_id );
             if ( $user_data ) {
@@ -1275,7 +1281,7 @@ class JB3_Admin {
 
         fputcsv( $out, [
             'ID', 'Nombre', 'Apellido', 'Email', 'Estado', 'País', 'Empresa',
-            'Cargo', 'Teléfono', 'Sector', 'Newsletter', 'Newsletters', 'Intereses',
+            'Cargo', 'Teléfono', 'Sector', 'Suscripto al newsletter', 'Newsletters que recibe', 'Intereses',
             'Fecha Registro WP', 'Fecha Registro JB3', 'Fecha Aprobación',
         ] );
 
@@ -1394,91 +1400,7 @@ class JB3_Admin {
         if ( ! current_user_can( 'manage_options' ) ) {
             wp_die( esc_html__( 'Sin permiso.', 'jb3-members' ) );
         }
-        ?>
-        <div class="wrap">
-            <h1><?php esc_html_e( 'JB3 Members — Ayuda', 'jb3-members' ); ?></h1>
-            <p><?php esc_html_e( 'Guía rápida de cómo usar cada pantalla del plugin, en qué orden, y qué hacer si algo no se ve reflejado donde esperabas.', 'jb3-members' ); ?></p>
-
-            <h2><?php esc_html_e( 'Flujo recomendado para actualizar la base de un país', 'jb3-members' ); ?></h2>
-            <ol style="max-width:760px;">
-                <li>
-                    <strong><?php esc_html_e( '(Opcional) Exportar Usuarios', 'jb3-members' ); ?></strong> —
-                    <?php esc_html_e( 'descargá un respaldo de la base actual antes de importar algo nuevo, por si hay que revertir.', 'jb3-members' ); ?>
-                </li>
-                <li>
-                    <strong><?php esc_html_e( 'Importar Usuarios', 'jb3-members' ); ?></strong> —
-                    <?php esc_html_e( 'subís el CSV actualizado. Por cada fila: si el email ya existe, ACTUALIZA sus datos; si no existe, CREA un usuario nuevo (auto-aprobado). A quien NO esté en el archivo no lo toca — no borra ni afecta a usuarios de otros países.', 'jb3-members' ); ?>
-                </li>
-                <li>
-                    <strong><?php esc_html_e( 'Sincronizar Mailchimp — SIEMPRE, después de importar o borrar', 'jb3-members' ); ?></strong> —
-                    <?php esc_html_e( 'este es el paso que más se olvida: importar o borrar usuarios NUNCA toca Mailchimp por sí solo. Si no corrés esta sincronización después, los cambios quedan solo en WordPress y Mailchimp sigue mostrando los datos viejos (o el contacto sigue archivado).', 'jb3-members' ); ?>
-                </li>
-                <li>
-                    <strong><?php esc_html_e( '(Si hace falta) Borrar Miembros', 'jb3-members' ); ?></strong> —
-                    <?php esc_html_e( 'para dar de baja usuarios que ya no están en la base nueva de un país. Usá "Lista CSV" con esos emails puntuales — nunca los filtros "Todos/Pendientes/Aprobados" si solo querés afectar a un país, porque esos filtros no distinguen país, afectan a TODA la base.', 'jb3-members' ); ?>
-                </li>
-            </ol>
-
-            <h2><?php esc_html_e( 'Qué hace cada pantalla', 'jb3-members' ); ?></h2>
-            <table class="widefat" style="max-width:900px;">
-                <thead><tr><th><?php esc_html_e( 'Pantalla', 'jb3-members' ); ?></th><th><?php esc_html_e( 'Para qué sirve', 'jb3-members' ); ?></th></tr></thead>
-                <tbody>
-                    <tr>
-                        <td><a href="<?php echo esc_url( admin_url( 'admin.php?page=jb3-members' ) ); ?>"><?php esc_html_e( 'Representantes', 'jb3-members' ); ?></a></td>
-                        <td><?php esc_html_e( 'Contactos de referencia por país (no son usuarios del sitio).', 'jb3-members' ); ?></td>
-                    </tr>
-                    <tr>
-                        <td><a href="<?php echo esc_url( admin_url( 'admin.php?page=jb3-export' ) ); ?>"><?php esc_html_e( 'Exportar Usuarios', 'jb3-members' ); ?></a></td>
-                        <td><?php esc_html_e( 'Descarga un CSV con todos los miembros y todos sus campos. Sirve también como plantilla para armar un import.', 'jb3-members' ); ?></td>
-                    </tr>
-                    <tr>
-                        <td><a href="<?php echo esc_url( admin_url( 'admin.php?page=jb3-import' ) ); ?>"><?php esc_html_e( 'Importar Usuarios', 'jb3-members' ); ?></a></td>
-                        <td><?php esc_html_e( 'Sube un CSV: crea usuarios nuevos y actualiza los existentes (por email). No borra a nadie. No sincroniza con Mailchimp por sí sola.', 'jb3-members' ); ?></td>
-                    </tr>
-                    <tr>
-                        <td><a href="<?php echo esc_url( admin_url( 'admin.php?page=jb3-sync' ) ); ?>"><?php esc_html_e( 'Sincronizar Mailchimp', 'jb3-members' ); ?></a></td>
-                        <td><?php esc_html_e( 'Sube a Mailchimp el estado real de WordPress (suscribe o archiva según el newsletter de cada usuario), y archiva en Mailchimp a quien ya no tenga cuenta en el sitio. Correrla después de cualquier import o borrado masivo.', 'jb3-members' ); ?></td>
-                    </tr>
-                    <tr>
-                        <td><a href="<?php echo esc_url( admin_url( 'admin.php?page=jb3-delete' ) ); ?>"><?php esc_html_e( 'Borrar Miembros', 'jb3-members' ); ?></a></td>
-                        <td><?php esc_html_e( 'Borra usuarios en lote: por rol/estado (todo el sitio) o por una lista CSV puntual de emails. Nunca borra administradores. Borrar por lista CSV archiva en Mailchimp de inmediato; por rol/estado hay que correr la sincronización después.', 'jb3-members' ); ?></td>
-                    </tr>
-                    <tr>
-                        <td><a href="<?php echo esc_url( admin_url( 'admin.php?page=jb3-settings' ) ); ?>"><?php esc_html_e( 'Configuración', 'jb3-members' ); ?></a></td>
-                        <td><?php esc_html_e( 'Páginas del sitio que usa el plugin (login, perfil, dashboard) y credenciales de Mailchimp/Google Sheets.', 'jb3-members' ); ?></td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <h2><?php esc_html_e( 'Newsletter por país — cómo funciona', 'jb3-members' ); ?></h2>
-            <p style="max-width:760px;">
-                <?php esc_html_e( 'El usuario común solo elige "recibir newsletter: sí/no" en su perfil. Si lo activa, el sistema le tilda automáticamente ÚNICAMENTE el país que puso como propio — el usuario nunca elige países a mano. Solo el administrador puede agregar o quitar países específicos para un usuario puntual, desde su ficha en Usuarios → sección "Newsletter por País" — y esa selección manual se respeta mientras el usuario no cambie su check de sí/no (si lo cambia, la regla automática vuelve a aplicarse y pisa la selección manual).', 'jb3-members' ); ?>
-            </p>
-
-            <h2><?php esc_html_e( 'Problemas comunes', 'jb3-members' ); ?></h2>
-            <table class="widefat" style="max-width:900px;">
-                <thead><tr><th><?php esc_html_e( 'Síntoma', 'jb3-members' ); ?></th><th><?php esc_html_e( 'Qué hacer', 'jb3-members' ); ?></th></tr></thead>
-                <tbody>
-                    <tr>
-                        <td><?php esc_html_e( 'Importé usuarios y no veo el cambio en Mailchimp.', 'jb3-members' ); ?></td>
-                        <td><?php esc_html_e( 'Correr "Sincronizar Mailchimp" — el import nunca sincroniza por sí solo, es un paso aparte siempre.', 'jb3-members' ); ?></td>
-                    </tr>
-                    <tr>
-                        <td><?php esc_html_e( 'Ya sincronicé, pero un contacto puntual sigue apareciendo "Archivado" en Mailchimp.', 'jb3-members' ); ?></td>
-                        <td><?php esc_html_e( 'No hace falta esperar para CORRER la sincronización — hacela apenas termines de importar/borrar. La espera es DESPUÉS: cuando la sincronización termina y dice "completado", eso confirma que Mailchimp RECIBIÓ el pedido, no que ya lo aplicó — puede tardar unos minutos en mostrar el cambio real en su propia web. Si esperaste unos minutos y seguís viéndolo archivado ahí, recién entonces abrí la ficha de ese usuario en Usuarios y dale "Actualizar" sin cambiar nada — eso fuerza una sincronización directa e inmediata de ese usuario puntual.', 'jb3-members' ); ?></td>
-                    </tr>
-                    <tr>
-                        <td><?php esc_html_e( 'El CSV no importa ninguna fila, o los acentos salen raros (í, é, ñ rotos).', 'jb3-members' ); ?></td>
-                        <td><?php esc_html_e( 'Al guardar desde Excel, elegí "CSV UTF-8 (delimitado por comas)" en vez de "CSV" a secas — el formato "CSV" común de Excel en Windows no usa UTF-8 y rompe los acentos.', 'jb3-members' ); ?></td>
-                    </tr>
-                    <tr>
-                        <td><?php esc_html_e( 'Necesito actualizar la base de UN país sin afectar a los demás.', 'jb3-members' ); ?></td>
-                        <td><?php esc_html_e( 'Importar solo crea/actualiza según lo que traiga el archivo — nunca borra por ausencia. Si además hay que dar de baja a quien ya no está en la base nueva de ese país, hacelo aparte con "Borrar Miembros → Lista CSV" (nunca con los filtros Todos/Pendientes/Aprobados, que no distinguen país).', 'jb3-members' ); ?></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <?php
+        include JB3_DIR . 'admin/views/page-help.php';
     }
 
     // -------------------------------------------------------------------------
@@ -1523,6 +1445,7 @@ class JB3_Admin {
         return 'jb3_import_state_' . get_current_user_id();
     }
 
+
     private static function import_col_map(): array {
         // All keys are lowercase — headers are normalized to lowercase on read.
         return [
@@ -1534,8 +1457,8 @@ class JB3_Admin {
             'cargo'                    => 'jb3_job_title',
             'teléfono'                 => 'jb3_phone',
             'sector'                   => 'jb3_sector',
-            'newsletter'               => 'jb3_newsletter',
-            'newsletters'              => 'jb3_newsletter_countries',
+            'suscripto al newsletter'  => 'jb3_newsletter',
+            'newsletters que recibe'   => 'jb3_newsletter_countries',
             'intereses'                => 'jb3_interests',
             'fecha registro jb3'       => 'jb3_registered_at',
             'fecha aprobación'         => 'jb3_approved_at',
@@ -1876,8 +1799,24 @@ class JB3_Admin {
                     $errors[] = sprintf( __( 'Fila %1$d: %2$s', 'jb3-members' ), $row_num, $result->get_error_message() );
                 }
 
+                // Newsletter y temas de interés son decisión del usuario: con
+                // cuenta en WordPress, el Excel solo actualiza sus datos personales.
+                unset( $meta_fields['jb3_newsletter'], $meta_fields['jb3_newsletter_countries'], $meta_fields['jb3_interests'] );
+
+                $old_country = (string) get_user_meta( $existing->ID, 'jb3_country', true );
+
                 foreach ( $meta_fields as $key => $val ) {
                     update_user_meta( $existing->ID, $key, $val );
+                }
+
+                // Si cambió de país, su grupo de newsletter lo acompaña. Y un
+                // suscripto sin ningún grupo recibe el de su país.
+                if ( get_user_meta( $existing->ID, 'jb3_newsletter', true ) ) {
+                    if ( isset( $meta_fields['jb3_country'] ) && $meta_fields['jb3_country'] !== $old_country ) {
+                        jb3_cambiar_pais_newsletter( $existing->ID, $old_country, $meta_fields['jb3_country'] );
+                    } elseif ( ! get_user_meta( $existing->ID, 'jb3_newsletter_countries', true ) ) {
+                        jb3_sync_newsletter_countries( $existing->ID, true );
+                    }
                 }
 
                 if ( ! isset( $meta_fields['jb3_status'] ) ) {
@@ -1921,6 +1860,14 @@ class JB3_Admin {
                 if ( strlen( $email ) > 60 ) {
                     // phpcs:ignore WordPress.DB.DirectDatabaseQuery
                     $wpdb->update( $wpdb->users, [ 'user_login' => (string) $user_id ], [ 'ID' => $user_id ] );
+                }
+
+                // Suscripto sin columna "Newsletters que recibe": grupo de su país, como en el registro.
+                if ( ! empty( $meta_fields['jb3_newsletter'] ) && ! isset( $meta_fields['jb3_newsletter_countries'] ) ) {
+                    $grupo = jb3_reemplazar_grupo_pais( [], '', (string) ( $meta_fields['jb3_country'] ?? '' ) );
+                    if ( $grupo ) {
+                        $meta_fields['jb3_newsletter_countries'] = $grupo;
+                    }
                 }
 
                 // Queue meta for batch INSERT (avoids 10+ individual queries per user).
@@ -2052,8 +1999,8 @@ class JB3_Admin {
                     <p style="margin:0 0 8px;"><strong><?php esc_html_e( '¿Qué hace esta sincronización?', 'jb3-members' ); ?></strong></p>
                     <ul style="list-style:disc;margin:0 0 0 20px;">
                         <li><?php esc_html_e( 'Fase 1 — WordPress → Mailchimp: sube todos los miembros aprobados. Con newsletter activo → suscribe. Con newsletter inactivo → archiva.', 'jb3-members' ); ?></li>
-                        <li><?php esc_html_e( 'Los administradores siempre se sincronizan (para recibir emails de prueba).', 'jb3-members' ); ?></li>
-                        <li><?php esc_html_e( 'Fase 2 — Mailchimp → Archivo: contactos en Mailchimp sin cuenta en WordPress quedan archivados (recuperables, no se borran definitivamente).', 'jb3-members' ); ?></li>
+                        <li><?php esc_html_e( 'Los administradores se sincronizan solo si tienen el newsletter activo.', 'jb3-members' ); ?></li>
+                        <li><?php esc_html_e( 'Fase 2 (opcional) — Mailchimp → Archivo: si tildás la opción de abajo, los contactos de Mailchimp sin cuenta en WordPress quedan archivados (recuperables, no se borran definitivamente).', 'jb3-members' ); ?></li>
                     </ul>
                     <p style="margin:10px 0 0;background:#fff3cd;border:1px solid #ffc107;padding:8px 10px;">
                         <strong><?php esc_html_e( 'Mantené el browser abierto durante el proceso.', 'jb3-members' ); ?></strong>
@@ -2096,6 +2043,15 @@ class JB3_Admin {
 
                 <!-- Errors -->
                 <div id="jb3-sync-errors" style="display:none;margin-top:12px;"></div>
+
+                <p style="margin-top:20px;">
+                    <label>
+                        <input type="checkbox" id="jb3-sync-archivar">
+                        <strong><?php esc_html_e( 'Archivar también los contactos de Mailchimp sin cuenta en el sitio', 'jb3-members' ); ?></strong>
+                    </label>
+                    <br>
+                    <span class="description"><?php esc_html_e( 'Tildalo después de borrar por Todos/Pendientes/Aprobados. Archiva TODO contacto sin cuenta, incluidos los cargados a mano en Mailchimp.', 'jb3-members' ); ?></span>
+                </p>
 
                 <!-- Buttons -->
                 <p style="margin-top:20px;">
@@ -2140,10 +2096,11 @@ class JB3_Admin {
                         spinner.style.display = on ? 'inline-block' : 'none';
                         spinner.className     = on ? 'spinner is-active' : 'spinner';
                     }
-                    function post(action, cb) {
+                    function post(action, cb, extra) {
                         var fd = new FormData();
                         fd.append('action', action);
                         fd.append('_ajax_nonce', nonce);
+                        for (var k in (extra || {})) { fd.append(k, extra[k]); }
                         return fetch(ajaxurl, { method: 'POST', body: fd })
                             .then(function(r) { return r.json(); })
                             .then(cb);
@@ -2213,7 +2170,9 @@ class JB3_Admin {
                                     + ' — ' + escHtml(state.archived) + ' <?php echo esc_js( __( 'archivados', 'jb3-members' ) ); ?>';
                             } else {
                                 barMc.style.width   = '0%';
-                                labelMc.textContent = '<?php echo esc_js( __( 'Pendiente (empieza al completar Fase 1)', 'jb3-members' ) ); ?>';
+                                labelMc.textContent = state.archivar_sin_cuenta === false
+                                    ? '<?php echo esc_js( __( 'No se ejecuta en esta sincronización', 'jb3-members' ) ); ?>'
+                                    : '<?php echo esc_js( __( 'Pendiente (empieza al completar Fase 1)', 'jb3-members' ) ); ?>';
                             }
 
                             if (state.updated_at) {
@@ -2270,6 +2229,10 @@ class JB3_Admin {
                     // Button handlers
                     // ----------------------------------------------------------------
                     btnStart.addEventListener('click', function () {
+                        var archivar = document.getElementById('jb3-sync-archivar').checked;
+                        if (archivar && !confirm(<?php echo wp_json_encode( __( 'Se van a archivar TODOS los contactos de Mailchimp sin cuenta en el sitio, incluidos los cargados a mano allá. ¿Continuar?', 'jb3-members' ) ); ?>)) {
+                            return;
+                        }
                         btnStart.disabled    = true;
                         btnStart.textContent = <?php echo wp_json_encode( __( 'Iniciando…', 'jb3-members' ) ); ?>;
                         setSpinner(true);
@@ -2287,7 +2250,7 @@ class JB3_Admin {
                             running = true;
                             renderState();
                             processChunk();
-                        }).catch(function() {
+                        }, archivar ? { archivar_sin_cuenta: 1 } : {}).catch(function() {
                             btnStart.disabled = false;
                             setSpinner(false);
                             alert('<?php echo esc_js( __( 'Error de red al iniciar. Verificá tu conexión.', 'jb3-members' ) ); ?>');
@@ -2396,7 +2359,7 @@ class JB3_Admin {
             <!-- Upload form — hidden while import runs -->
             <div id="jb3im-upload"<?php echo $existing_state ? ' style="display:none"' : ''; ?>>
                 <p><?php esc_html_e( 'Subí un archivo CSV. La primera fila debe contener los nombres de columna. La columna "Email" es obligatoria.', 'jb3-members' ); ?></p>
-                <p><?php esc_html_e( 'Si el email ya existe se actualizan sus datos; si no existe se crea un nuevo miembro (auto-aprobado).', 'jb3-members' ); ?></p>
+                <p><?php esc_html_e( 'Si el email ya existe se actualizan solo sus datos personales: el newsletter y los temas de interés quedan como los tenía el usuario. Si no existe, se crea un nuevo miembro (auto-aprobado) con todos los datos del archivo.', 'jb3-members' ); ?></p>
 
                 <details style="margin-bottom:16px;">
                     <summary style="cursor:pointer;font-weight:600;"><?php esc_html_e( 'Columnas reconocidas', 'jb3-members' ); ?></summary>
@@ -2413,9 +2376,9 @@ class JB3_Admin {
                                 [ 'Cargo',              __( 'Cargo', 'jb3-members' ) ],
                                 [ 'Teléfono',           __( 'Teléfono', 'jb3-members' ) ],
                                 [ 'Sector',             __( 'Sector', 'jb3-members' ) ],
-                                [ 'Newsletter',         __( 'Newsletter (Sí / No)', 'jb3-members' ) ],
-                                [ 'Newsletters',        __( 'Newsletters por País (nombres separados por coma)', 'jb3-members' ) ],
-                                [ 'Intereses',          __( 'Intereses (separados por coma)', 'jb3-members' ) ],
+                                [ 'Suscripto al newsletter', __( 'Sí / No (solo usuarios nuevos)', 'jb3-members' ) ],
+                                [ 'Newsletters que recibe',  __( 'Grupos de país separados por coma, ej. AR, CL (solo usuarios nuevos)', 'jb3-members' ) ],
+                                [ 'Intereses',          __( 'Intereses separados por coma (solo usuarios nuevos)', 'jb3-members' ) ],
                                 [ 'Fecha Registro JB3', __( 'Fecha de registro JB3', 'jb3-members' ) ],
                                 [ 'Fecha Aprobación',   __( 'Fecha de aprobación', 'jb3-members' ) ],
                             ] as [ $col, $desc ] ) : ?>
@@ -2723,10 +2686,10 @@ class JB3_Admin {
             // Modo lista: a diferencia del borrado por rol/estado, acá se archiva en
             // Mailchimp de inmediato (no se difiere a la sincronización masiva) — es
             // el requisito principal de este flujo y el volumen esperado es acotado.
-            $emails_to_archive = [];
+            // Primero se archiva y después se borra de WordPress.
             if ( 'list' === $filter ) {
                 foreach ( get_users( [ 'include' => $safe_ids, 'fields' => [ 'ID', 'user_email' ] ] ) as $u ) {
-                    $emails_to_archive[] = $u->user_email;
+                    JB3_Mailchimp::archive_contact( $u->user_email );
                 }
             }
 
@@ -2737,10 +2700,6 @@ class JB3_Admin {
             $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->users} WHERE ID IN ($ph)", ...$safe_ids ) );
             foreach ( $safe_ids as $id ) {
                 clean_user_cache( $id );
-            }
-
-            foreach ( $emails_to_archive as $email ) {
-                JB3_Mailchimp::archive_contact( $email );
             }
 
             $state['deleted'] += count( $safe_ids );
@@ -2879,7 +2838,7 @@ class JB3_Admin {
 
             <div class="notice notice-warning inline" style="margin:16px 0;padding:12px 16px;">
                 <p style="margin:0;"><strong><?php esc_html_e( '⚠ Esta acción es irreversible.', 'jb3-members' ); ?></strong>
-                <?php esc_html_e( 'Los administradores nunca se borran. Al borrar "Todos/Pendientes/Aprobados" el archivado en Mailchimp se hace luego, corriendo la Sincronización. Al borrar por "Lista CSV" el archivado en Mailchimp es inmediato.', 'jb3-members' ); ?></p>
+                <?php esc_html_e( 'Los administradores nunca se borran. Al borrar "Todos/Pendientes/Aprobados" el archivado en Mailchimp se hace luego, corriendo la Sincronización con la opción de archivar contactos sin cuenta. Al borrar por "Lista CSV" el archivado en Mailchimp es inmediato.', 'jb3-members' ); ?></p>
             </div>
 
             <table class="form-table" style="max-width:480px;">
@@ -3001,7 +2960,7 @@ class JB3_Admin {
                 var needsSyncReminder = (s.filter !== 'list' && s.deleted > 0);
                 if (needsSyncReminder) {
                     divRes.innerHTML += '<div class="notice notice-warning inline" style="margin-top:8px;padding:10px 14px;">'
-                        + '<p style="margin:0 0 8px;"><?php echo esc_js( __( '⚠ Este modo no archiva en Mailchimp al momento de borrar. Si vas a borrar de varias listas/países, podés hacerlo todo primero y sincronizar una sola vez al final — este link solo te lleva a esa pantalla, no ejecuta nada por su cuenta; ahí todavía hay que apretar "Iniciar sincronización".', 'jb3-members' ) ); ?></p>'
+                        + '<p style="margin:0 0 8px;"><?php echo esc_js( __( '⚠ Este modo no archiva en Mailchimp al momento de borrar. Si vas a borrar de varias listas/países, podés hacerlo todo primero y sincronizar una sola vez al final — este link solo te lleva a esa pantalla, no ejecuta nada por su cuenta; ahí hay que tildar "Archivar también los contactos de Mailchimp sin cuenta en el sitio" y apretar "Iniciar sincronización".', 'jb3-members' ) ); ?></p>'
                         + '<p style="margin:0;"><a href="<?php echo esc_url( admin_url( 'admin.php?page=jb3-sync' ) ); ?>" class="button"><?php echo esc_js( __( 'Ir a Sincronizar Mailchimp', 'jb3-members' ) ); ?></a></p>'
                         + '</div>';
                 }

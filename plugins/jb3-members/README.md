@@ -549,8 +549,8 @@ Genera un CSV con BOM UTF-8 (compatible con Excel). Excluye automáticamente adm
 | `Cargo` | Texto | |
 | `Teléfono` | Texto | |
 | `Sector` | Texto | |
-| `Newsletter` | `Sí` / `No` | |
-| `Newsletters` | Nombres separados por coma | Nombres de los grupos Mailchimp |
+| `Suscripto al newsletter` | `Sí` / `No` | |
+| `Newsletters que recibe` | Nombres separados por coma | Nombres de los grupos Mailchimp |
 | `Intereses` | Nombres separados por coma | Nombres de los grupos Mailchimp |
 | `Fecha Registro WP` | `Y-m-d H:i:s` | `user_registered` de WP |
 | `Fecha Registro JB3` | `Y-m-d H:i:s` | `jb3_registered_at` |
@@ -584,13 +584,13 @@ El import procesa **200 filas por chunk** con:
 
 **Administradores**: las filas con email de un admin se omiten completamente con mensaje de error. Los admins no se pueden modificar desde el CSV.
 
-**Newsletter para usuarios existentes**: si el CSV dice `No` → se desuscribe (siempre respetado). Si el CSV dice `Sí` pero el usuario ya tiene newsletter desactivado → **no se cambia**. Esta regla protege la baja voluntaria del usuario.
+**Usuarios existentes**: el CSV solo actualiza los datos personales. `Suscripto al newsletter`, `Newsletters que recibe` e `Intereses` se ignoran, porque son decisión del usuario. Si cambia el país y está suscripto, su grupo de newsletter pasa al país nuevo. Esas tres columnas solo se usan para usuarios nuevos.
 
 **Campo País**: acepta tanto código ISO (`AR`) como nombre completo (`Argentina`).
 
 **Campo Intereses**: acepta nombre del interés (`Películas`) o su ID de Mailchimp directamente.
 
-**Campo Newsletters**: acepta nombres exactos de los grupos Mailchimp separados por coma (`Argentina, Bolivia`).
+**Campo Newsletters que recibe**: acepta nombres exactos de los grupos Mailchimp separados por coma (`AR, BO`). Si falta y el usuario nuevo se suscribe, recibe el grupo de su país.
 
 **display_name**: se actualiza automáticamente si el CSV contiene nombre y/o apellido.
 
@@ -610,8 +610,8 @@ El import procesa **200 filas por chunk** con:
 | `Cargo` | `jb3_job_title` | |
 | `Teléfono` | `jb3_phone` | |
 | `Sector` | `jb3_sector` | |
-| `Newsletter` | `jb3_newsletter` | `Sí`, `Si`, `1`, `Yes` = suscripto |
-| `Newsletters` | `jb3_newsletter_countries` | Nombres de países separados por coma |
+| `Suscripto al newsletter` | `jb3_newsletter` | `Sí`, `Si`, `1`, `Yes` = suscripto. Solo usuarios nuevos |
+| `Newsletters que recibe` | `jb3_newsletter_countries` | Nombres de grupos separados por coma. Solo usuarios nuevos |
 | `Intereses` | `jb3_interests` | Nombres o IDs separados por coma |
 | `Fecha Registro JB3` | `jb3_registered_at` | `Y-m-d H:i:s` |
 | `Fecha Aprobación` | `jb3_approved_at` | `Y-m-d H:i:s` |
