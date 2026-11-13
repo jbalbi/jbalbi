@@ -104,7 +104,16 @@
     --nav-cta-text-hover: var(--btn-text-hover);
     --nav-cta-margin-left: 20px;
     --nav-font-size:          11px;
-    --nav-font-size-mobile:   26px;
+    /* 21px (antes 26, achicado 2026-11-04): con Termina, que es ancha, es
+       lo más grande en que "NUESTRAS MARCAS" entra en una línea aun en
+       celulares de 360px. "OPORTUNIDADES COMERCIALES" y "CONÉCTATE CON
+       NOSOTROS" igual van en dos (en una necesitarían menos de 15px). */
+    --nav-font-size-mobile:   21px;
+    /* Submenú del panel mobile (ej. los canales debajo de "Nuestras
+       marcas"): más chico que el ítem padre para que se lea como un nivel
+       anidado — con el mismo tamaño que el principal no se distinguían
+       (pedido 2026-11-04). */
+    --nav-submenu-font-size-mobile: 16px;
     --nav-font-weight:        500;
     --nav-font-weight-mobile: 500;
     /* line-height normal (no un px fijo) para que las líneas de un ítem que
@@ -1035,17 +1044,52 @@ body.admin-bar .site-header {
         display: block;
     }
 
-    /* Todo el texto del menú arranca en la misma X, con el mismo padding
-       lateral que separa al logo del borde (--header-padding-x). El
-       submenú, un poco más adentro para marcar que es un nivel anidado. */
+    /* Todo el texto del menú arranca en la misma X que el logo. El margen
+       lateral (--header-padding-x) ya lo pone .site-header__inner: antes
+       los ítems lo sumaban otra vez y el texto quedaba 20px (40 en tablet)
+       más adentro que el logo (corregido 2026-11-04). El submenú, 20px más
+       adentro para marcar que es un nivel anidado. */
     .main-nav > ul > li > a,
     .main-navigation .sub-menu a {
-        padding-left: var(--header-padding-x);
-        padding-right: var(--header-padding-x);
+        padding-left: 0;
+        padding-right: 0;
     }
 
     .main-navigation .sub-menu a {
-        padding-left: calc(var(--header-padding-x) + 20px);
+        padding-top: 8px;
+        padding-bottom: 8px;
+        padding-left: 20px;
+        font-size: var(--nav-submenu-font-size-mobile);
+    }
+
+    /* Lista del menú abierto con scroll propio (2026-11-04): con un submenú
+       desplegado no entraba en la pantalla, no se podía scrollear (la
+       página de fondo está congelada, ver "Overlay del menú mobile") y
+       quedaba por encima de la banda fija del footer (z-index 150 < 200
+       del header). Scrollea SOLO la lista: arriba quedan fijos el logo y la
+       X de cerrar, abajo la fila de LinkedIn/Regístrate/Ingresa, y todo
+       termina justo arriba de la banda.
+       Alto disponible = pantalla − header cerrado (--header-height, lo mide
+       header.js) − fila de íconos (--jb3-menu-iconos-alto, 62px medidos) −
+       banda del footer. 100vh primero, como respaldo de los navegadores sin
+       dvh (alto real con la barra del navegador a la vista). */
+    /* padding-top: aire entre la fila del logo y el primer ítem (pedido
+       2026-11-04). Va como padding y no margin para que quede adentro del
+       max-height (box-sizing: border-box) y la cuenta de abajo no cambie. */
+    html.mobile-menu-open .main-navigation.toggled {
+        --jb3-menu-iconos-alto: 62px;
+        box-sizing: border-box;
+        padding-top: 20px;
+        max-height: calc(100vh - var(--header-height, 74px) - var(--jb3-menu-iconos-alto) - var(--footer-bar-height));
+        max-height: calc(100dvh - var(--header-height, 74px) - var(--jb3-menu-iconos-alto) - var(--footer-bar-height));
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    /* Con la barra de admin de WordPress (46px en mobile) el header baja. */
+    html.mobile-menu-open body.admin-bar .main-navigation.toggled {
+        max-height: calc(100vh - 46px - var(--header-height, 74px) - var(--jb3-menu-iconos-alto) - var(--footer-bar-height));
+        max-height: calc(100dvh - 46px - var(--header-height, 74px) - var(--jb3-menu-iconos-alto) - var(--footer-bar-height));
     }
 
     /* Submenú integrado al panel (sin caja aparte, eso queda para desktop). */
@@ -1070,9 +1114,11 @@ body.admin-bar .site-header {
     }
 
     /* Íconos de cuenta/registro: ocultos con el menú cerrado; con el menú
-       abierto, en fila debajo de los ítems. El -6px compensa el padding
-       propio del ícono de LinkedIn, para que su dibujo quede en la misma X
-       que el texto del menú. La lupa no: ya está en .jb3-menu-controles. */
+       abierto, en fila debajo de los ítems. El margen lateral ya lo pone
+       .site-header__inner (igual que a los ítems, ver arriba); el -6px
+       compensa el padding propio del ícono de LinkedIn, para que su dibujo
+       quede en la misma X que el logo y el texto del menú. La lupa no: ya
+       está en .jb3-menu-controles. */
     .site-header-icons {
         display: none;
     }
@@ -1080,8 +1126,8 @@ body.admin-bar .site-header {
     .main-navigation.toggled ~ .site-header-icons {
         display: flex;
         gap: 15px;
-        margin-left: 0;
-        padding: 15px 0 15px calc(var(--header-padding-x) - 6px);
+        margin-left: -6px;
+        padding: 15px 0;
     }
 
     .site-header-icons__search {
@@ -2544,6 +2590,20 @@ body {
     margin-right: -50vw !important;
     padding-left: var(--jb3-modulo-padding-x);
     padding-right: var(--jb3-modulo-padding-x);
+}
+
+/* Bloque suelto centrado (jb3-a-center / jb3-a-right — hoy, los Grupos de
+   Login, Registro y Perfil): queda afuera de la regla de arriba, así que no
+   tenía margen lateral y en tablet/celular el formulario tocaba el borde de
+   la pantalla (2026-11-03). Desde 1024px su max-width ya deja aire a los
+   costados. */
+@media (max-width: 1023.98px) {
+    .entry-content > .jb3-a-center,
+    .entry-content > .jb3-a-right {
+        box-sizing: border-box;
+        padding-left: var(--jb3-modulo-padding-x);
+        padding-right: var(--jb3-modulo-padding-x);
+    }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

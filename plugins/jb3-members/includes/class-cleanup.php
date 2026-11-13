@@ -23,7 +23,14 @@ class JB3_Cleanup {
      * Delete pending (unapproved) jb3_member accounts older than 30 days.
      */
     public static function run() {
-        $threshold = gmdate( 'Y-m-d H:i:s', strtotime( '-30 days' ) );
+        // wp_delete_user() vive en wp-admin/includes/user.php, que WP-Cron no
+        // carga: sin esto la limpieza fallaba en el cron con la primera
+        // cuenta a borrar (detectado 2026-11-04).
+        require_once ABSPATH . 'wp-admin/includes/user.php';
+
+        // jb3_registered_at se guarda con current_time('mysql'), en la hora
+        // del sitio: el umbral, en la misma hora (antes gmdate(), en UTC).
+        $threshold = wp_date( 'Y-m-d H:i:s', strtotime( '-30 days' ) );
 
         $users = get_users( [
             'role'       => 'jb3_member',

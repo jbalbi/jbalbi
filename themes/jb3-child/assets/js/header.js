@@ -103,6 +103,12 @@
 
 	// ─── Toggle del menú hamburguesa (mobile) ───────────────────────────────
 	var setMobileMenuOpen = function ( open ) {
+		// Scroll actual ANTES de agregar la clase: con "mobile-menu-open" la
+		// página pasa a position:fixed y desde ahí window.scrollY vale 0 (ver
+		// "Bloqueo del scroll" más abajo, que lo usa para restaurarlo al cerrar).
+		if ( open && ! html.classList.contains( 'mobile-menu-open' ) ) {
+			html.setAttribute( 'data-jb3-scroll', String( window.scrollY || window.pageYOffset || 0 ) );
+		}
 		nav.classList.toggle( 'toggled', open );
 		html.classList.toggle( 'mobile-menu-open', open );
 		toggleButton.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
@@ -170,7 +176,14 @@
 		wasOpen = isOpen;
 
 		if ( isOpen ) {
-			scrollY = window.scrollY || window.pageYOffset || 0;
+			// El MutationObserver corre DESPUÉS de que se agregó la clase, y
+			// con la página ya en position:fixed window.scrollY da 0: por eso
+			// al cerrar el menú se volvía siempre arriba de todo (2026-11-04).
+			// El valor lo guarda setMobileMenuOpen() justo antes; window.scrollY
+			// queda solo de respaldo.
+			var guardado = parseFloat( html.getAttribute( 'data-jb3-scroll' ) );
+			scrollY = isNaN( guardado ) ? ( window.scrollY || window.pageYOffset || 0 ) : guardado;
+			html.removeAttribute( 'data-jb3-scroll' );
 			html.style.top = ( -scrollY ) + 'px';
 		} else {
 			html.style.top = '';
@@ -272,7 +285,10 @@
 ( function () {
 	function setHeaderHeight() {
 		var header = document.querySelector( '.site-header' );
-		if ( ! header ) {
+		// Con el menú mobile abierto el header mide todo el panel: medirlo
+		// ahí (al girar el celular, por ejemplo) arruinaría el alto del hero
+		// y el del scroll del menú (main.css, ".main-navigation.toggled").
+		if ( ! header || document.documentElement.classList.contains( 'mobile-menu-open' ) ) {
 			return;
 		}
 		document.documentElement.style.setProperty( '--header-height', header.offsetHeight + 'px' );
